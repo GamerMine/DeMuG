@@ -4,9 +4,10 @@
 #define DEFAULT_WIDTH 160
 #define DEFAULT_HEIGHT 144
 #define WINDOW_NAME "Emu_GameBoy"
+#define LOGGER_NAME "Rendering"
 
-#include <GLFW/glfw3.h>
 #include <cstdio>
+#include <GLFW/glfw3.h>
 #include <thread>
 
 #include "../logging/Logger.h"
