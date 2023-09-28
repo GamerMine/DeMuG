@@ -7,6 +7,14 @@ Logger *Logger::getInstance() {
     return Logger::instance;
 }
 
+/**
+ * Logs something into stdout asynchronously with the defined LOG_LEVEL
+ *
+ * @param logLevel
+ * @param loggerName
+ * @param format
+ * @param ...
+ */
 void Logger::log(Logger::LOG_LEVEL logLevel, const char *loggerName, const char *format, ...) {
     va_list args;
     va_start(args, format);
@@ -24,4 +32,14 @@ void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *loggerName, const 
         printf("[%s] %s ", out.str().c_str(), loggerName);
         vprintf(format, args);
     }
+}
+
+/**
+ * Sets the current log level
+ * Example : If logeLevel=WARNING, only WARNING and CRITICAL levels of log will be printed
+ *
+ * @param logLevel
+ */
+void Logger::setLogLevel(Logger::LOG_LEVEL logLevel) {
+    this->currentLogLevel = logLevel;
 }

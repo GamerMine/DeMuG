@@ -5,7 +5,7 @@
 #include <chrono>
 #include <thread>
 #include <future>
-#include <stdarg.h>
+#include <cstdarg>
 
 class Logger {
 public:
@@ -18,6 +18,7 @@ public:
 
     static Logger *getInstance();
     void log(LOG_LEVEL logLevel, const char *loggerName, const char *format, ...);
+    void setLogLevel(LOG_LEVEL logLevel);
 
 private:
     LOG_LEVEL currentLogLevel = DEBUG;
