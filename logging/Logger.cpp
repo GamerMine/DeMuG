@@ -1,10 +1,20 @@
 #include "Logger.h"
 
-Logger *Logger::getInstance() {
-    if (Logger::instance == nullptr) {
-        Logger::instance = new Logger;
+std::map<const char *, Logger *> Logger::loggers;
+
+Logger::Logger(const char *loggerName) {
+    this->currentLoggerName = loggerName;
+}
+
+Logger::~Logger() {
+    removeInstance(this->currentLoggerName);
+}
+
+Logger *Logger::getInstance(const char *loggerName) {
+    if (!loggers.contains(loggerName)) {
+        loggers[loggerName] = new Logger(loggerName);
     }
-    return Logger::instance;
+    return loggers[loggerName];
 }
 
 /**
@@ -15,22 +25,23 @@ Logger *Logger::getInstance() {
  * @param format
  * @param ...
  */
-void Logger::log(Logger::LOG_LEVEL logLevel, const char *loggerName, const char *format, ...) {
+void Logger::log(Logger::LOG_LEVEL logLevel, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    std::future<void> ret = std::async(std::launch::async, &Logger::logAsync, this, logLevel, loggerName, format, args);
+    std::future<void> ret = std::async(std::launch::async, &Logger::logAsync, this, logLevel, format, args);
     va_end(args);
 }
 
-void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *loggerName, const char *format, va_list args) {
+void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *format, va_list args) {
     if (currentLogLevel >= logLevel) {
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
         std::stringstream out;
         out << std::put_time(&tm, "%d-%m-%Y %H:%M:%S");
 
-        printf("[%s] %s ", out.str().c_str(), loggerName);
+        printf("[%s %s] <%s>: ", out.str().c_str(), levelNames[logLevel], currentLoggerName);
         vprintf(format, args);
+        printf("\n");
     }
 }
 
@@ -42,4 +53,12 @@ void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *loggerName, const 
  */
 void Logger::setLogLevel(Logger::LOG_LEVEL logLevel) {
     this->currentLogLevel = logLevel;
+}
+
+bool Logger::removeInstance(const char *loggerName) {
+    if (loggers.contains(loggerName)) {
+        loggers.erase(loggerName);
+        return true;
+    }
+    return false;
 }
