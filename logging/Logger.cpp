@@ -29,7 +29,7 @@ void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *loggerName, const 
         std::stringstream out;
         out << std::put_time(&tm, "%d-%m-%Y %H:%M:%S");
 
-        printf("[%s] %s ", out.str().c_str(), loggerName);
+        printf("[%s %s] %s ", out.str().c_str(), stringify(logLevel), loggerName);
         vprintf(format, args);
     }
 }
