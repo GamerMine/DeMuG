@@ -8,6 +8,7 @@ set(SOURCE_FILES
         hardware/Bus.cpp
         logging/Logger.cpp
         hardware/Screen.cpp
+        hardware/SharpSM83.cpp
         main.cpp
 )
 
@@ -15,6 +16,7 @@ set(HEADER_FILES
         hardware/Bus.h
         logging/Logger.h
         hardware/Screen.h
+        hardware/SharpSM83.h
 )
 
 find_package(glfw3 REQUIRED)
