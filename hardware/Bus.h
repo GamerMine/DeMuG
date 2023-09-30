@@ -2,8 +2,11 @@
 #define EMU_GAMEBOY_BUS_H
 
 #define RAM_SIZE 8192
+#define BOOT_ROM_SIZE 0xFF
+#define HRAM_SIZE 128
 
 #include "Screen.h"
+#include "SharpSM83.h"
 
 class Bus {
 public:
@@ -14,8 +17,13 @@ public:
 
 private:
     Screen *screen;
+    SharpSM83 *cpu;
+    Logger *logger;
+
+    uint8_t bootRom[BOOT_ROM_SIZE];
     uint8_t ram[RAM_SIZE];
     uint8_t vram[RAM_SIZE];
+    uint8_t hram[HRAM_SIZE];
 };
 
 

@@ -23,4 +23,4 @@ find_package(glfw3 REQUIRED)
 
 add_compile_options(-Wall -Wextra)
 add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
-target_link_libraries(Emu_GameBoy glfw)
+target_link_libraries(Emu_GameBoy glfw pthread)

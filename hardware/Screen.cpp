@@ -1,7 +1,6 @@
 #include "Screen.h"
 
-Screen::Screen() {
-    GLFWwindow* window;
+void Screen::operator()() {
     Logger *logger = Logger::getInstance(LOGGER_NAME);
 
     if (!glfwInit()) {
@@ -19,7 +18,7 @@ Screen::Screen() {
     glfwMakeContextCurrent(window);
 
     while (!glfwWindowShouldClose(window)) {
-
+        // Rendering and polling loop
     }
 
     glfwTerminate();

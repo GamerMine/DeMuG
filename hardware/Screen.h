@@ -12,9 +12,12 @@
 
 #include "../logging/Logger.h"
 
-class Screen : public std::thread {
+class Screen {
 public:
-    Screen();
+    void operator()();
+
+private:
+    GLFWwindow * window;
 
 };
 
