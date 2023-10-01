@@ -1,6 +1,7 @@
 #include "Logger.h"
 
 std::map<const char *, Logger *> Logger::loggers;
+Logger::LOG_LEVEL Logger::currentLogLevel = Logger::DEBUG;
 
 Logger::Logger(const char *loggerName) {
     this->currentLoggerName = loggerName;
@@ -33,7 +34,7 @@ void Logger::log(Logger::LOG_LEVEL logLevel, const char *format, ...) {
 }
 
 void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *format, va_list args) {
-    if (currentLogLevel >= logLevel) {
+    if (Logger::currentLogLevel <= logLevel) {
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
         std::stringstream out;

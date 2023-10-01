@@ -26,7 +26,7 @@ public:
     void setLogLevel(LOG_LEVEL logLevel);
 
 private:
-    LOG_LEVEL currentLogLevel = DEBUG;
+    static LOG_LEVEL currentLogLevel;
     const char *currentLoggerName;
     const char *levelNames[4] = {"DEBUG", "INFO", "WARNING", "CRITICAL"};
 

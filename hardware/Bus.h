@@ -3,7 +3,10 @@
 
 #define RAM_SIZE 8192
 #define BOOT_ROM_SIZE 0xFF
-#define HRAM_SIZE 128
+#define HRAM_SIZE 12
+#define BOOT_ROM_LOCATION "resources/boot/DMG_ROM.bin"
+
+#include <fstream>
 
 #include "Screen.h"
 #include "SharpSM83.h"
@@ -17,13 +20,15 @@ public:
 
 private:
     Screen *screen;
-    SharpSM83 *cpu;
+    class SharpSM83 *cpu;
     Logger *logger;
 
     uint8_t bootRom[BOOT_ROM_SIZE];
     uint8_t ram[RAM_SIZE];
     uint8_t vram[RAM_SIZE];
     uint8_t hram[HRAM_SIZE];
+
+    void readBootRom();
 };
 
 

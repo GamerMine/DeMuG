@@ -10,9 +10,11 @@
 
 class SharpSM83 {
 public:
-    explicit SharpSM83(Bus *bus);
+    explicit SharpSM83(class Bus *bus);
 
     void reset();
+
+    [[noreturn]] void operator()();
 
 private:
     union {
@@ -31,12 +33,12 @@ private:
     union {
         union {
             struct {
-                uint8_t B;
                 uint8_t C;
-                uint8_t D;
+                uint8_t B;
                 uint8_t E;
-                uint8_t H;
+                uint8_t D;
                 uint8_t L;
+                uint8_t H;
                 uint8_t unused;
                 uint8_t A;
             };
@@ -199,14 +201,14 @@ private:
             [this]() {return ADC(&registers.A, &registers.L);},
             [this]() {return ADC(&registers.A, nullptr);},
             [this]() {return ADC(&registers.A, &registers.A);},
-            [this]() {return SUB(&registers.A, &registers.B);},
-            [this]() {return SUB(&registers.A, &registers.C);},
-            [this]() {return SUB(&registers.A, &registers.D);},
-            [this]() {return SUB(&registers.A, &registers.E);},
-            [this]() {return SUB(&registers.A, &registers.H);},
-            [this]() {return SUB(&registers.A, &registers.L);},
-            [this]() {return SUB(&registers.A, nullptr);},
-            [this]() {return SUB(&registers.A, &registers.A);},
+            [this]() {return SUB(&registers.B);},
+            [this]() {return SUB(&registers.C);},
+            [this]() {return SUB(&registers.D);},
+            [this]() {return SUB(&registers.E);},
+            [this]() {return SUB(&registers.H);},
+            [this]() {return SUB(&registers.L);},
+            [this]() {return SUB(registers.HL);},
+            [this]() {return SUB(&registers.A);},
             [this]() {return SBC(&registers.A, &registers.B);},
             [this]() {return SBC(&registers.A, &registers.C);},
             [this]() {return SBC(&registers.A, &registers.D);},
@@ -239,14 +241,14 @@ private:
             [this]() {return OR(&registers.A, &registers.L);},
             [this]() {return OR(&registers.A, nullptr);},
             [this]() {return OR(&registers.A, &registers.A);},
-            [this]() {return CP(&registers.A, &registers.B);},
-            [this]() {return CP(&registers.A, &registers.C);},
-            [this]() {return CP(&registers.A, &registers.D);},
-            [this]() {return CP(&registers.A, &registers.E);},
-            [this]() {return CP(&registers.A, &registers.H);},
-            [this]() {return CP(&registers.A, &registers.L);},
-            [this]() {return CP(&registers.A, nullptr);},
-            [this]() {return CP(&registers.A, &registers.A);},
+            [this]() {return CP(&registers.B);},
+            [this]() {return CP(&registers.C);},
+            [this]() {return CP(&registers.D);},
+            [this]() {return CP(&registers.E);},
+            [this]() {return CP(&registers.H);},
+            [this]() {return CP(&registers.L);},
+            [this]() {return CP(registers.HL);},
+            [this]() {return CP(&registers.A);},
             [this]() {return RET(&flags.zero, true);},
             [this]() {return POP(&registers.BC);},
             [this]() {return JP(&flags.zero, true);},
@@ -269,7 +271,7 @@ private:
             NIMP,
             [this]() {return CALL(&flags.carry, true);},
             [this]() {return PUSH(&registers.DE);},
-            [this]() {return SUB(&registers.A, nullptr);},
+            [this]() {return SUB(nullptr);},
             [this]() {return RST(0x0010);},
             [this]() {return RET(&flags.carry);},
             [this]() {return RETI();},
@@ -289,7 +291,7 @@ private:
             [this]() {return RST(0x0020);},
             [this]() {return ADD(&SP, nullptr);},
             [this]() {return JP(&registers.HL);},
-            [this]() {return LD(registers.HL, &registers.A);}, // TODO: This is not correct
+            [this]() {return LD(nullptr);},
             NIMP,
             NIMP,
             NIMP,
@@ -305,11 +307,11 @@ private:
             [this]() {return RST(0x0030);},
             [this]() {return LD(&registers.HL, &SP, true);},
             [this]() {return LD(&SP, &registers.HL);},
-            [this]() {return LD(&registers.A, registers.HL);}, // TODO: This is not correct
+            [this]() {return LD(&registers.A);},
             [this]() {return EI();},
             NIMP,
             NIMP,
-            [this]() {return CP(&registers.A, nullptr);},
+            [this]() {return CP(nullptr);},
             [this]() {return RST(0x0038);},
     };
 
@@ -575,7 +577,9 @@ private:
 
 private:
     // Normal instructions
+    static uint8_t NIMP();
     uint8_t NOP();
+    uint8_t LD(uint8_t *reg);
     uint8_t LD(uint8_t *reg1, uint8_t *reg2);
     uint8_t LD(uint8_t *reg1, uint8_t reg2);
     uint8_t LD(uint8_t reg1, uint8_t *reg2);
@@ -591,13 +595,15 @@ private:
     uint8_t RLCA();
     uint8_t ADD(uint8_t *reg1, uint8_t *reg2);
     uint8_t ADC(uint8_t *reg1, uint8_t *reg2);
-    uint8_t SUB(uint8_t *reg1, uint8_t *reg2);
+    uint8_t SUB(uint8_t *reg);
+    uint8_t SUB(uint8_t reg);
     uint8_t SBC(uint8_t *reg1, uint8_t *reg2);
     uint8_t AND(uint8_t *reg1, uint8_t *reg2);
     uint8_t XOR(uint8_t *reg);
     uint8_t XOR(uint16_t reg);
     uint8_t OR(uint8_t *reg1, uint8_t *reg2);
-    uint8_t CP(uint8_t *reg1, uint8_t *reg2);
+    uint8_t CP(uint8_t *reg);
+    uint8_t CP(uint8_t reg);
     uint8_t ADD(uint16_t *reg1, uint16_t *reg2);
     uint8_t RRCA();
     uint8_t STOP();
@@ -617,7 +623,6 @@ private:
     uint8_t PUSH(uint16_t *reg);
     uint8_t RST(uint16_t addr);
     uint8_t PREFIX();
-    static uint8_t NIMP();
     uint8_t RETI();
     uint8_t LDH(uint8_t *reg);
     uint8_t DI();
@@ -636,7 +641,5 @@ private:
     uint8_t RES(uint8_t bit, uint8_t *reg);
     uint8_t SET(uint8_t bit, uint8_t *reg);
 };
-
-// TODO: Stopped at LD DE,$0104		; $0021  Convert and load logo data from cart into Video RAM
 
 #endif //EMU_GAMEBOY_SHARPSM83_H
