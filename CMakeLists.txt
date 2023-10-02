@@ -15,6 +15,7 @@ set(SOURCE_FILES
 set(HEADER_FILES
         hardware/Bus.h
         logging/Logger.h
+        hardware/Ppu.h
         hardware/Screen.h
         hardware/SharpSM83.h
 )

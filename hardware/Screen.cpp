@@ -17,8 +17,10 @@ void Screen::operator()() {
 
     glfwMakeContextCurrent(window);
 
+    using namespace std::chrono_literals;
     while (!glfwWindowShouldClose(window)) {
         // Rendering and polling loop
+        std::this_thread::sleep_for(1s);
     }
 
     glfwTerminate();

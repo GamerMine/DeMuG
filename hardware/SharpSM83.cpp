@@ -1,5 +1,7 @@
 #include "SharpSM83.h"
 
+bool enableSleep = false;
+
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
 
@@ -24,11 +26,11 @@ void SharpSM83::reset() {
 [[noreturn]] void SharpSM83::operator()() {
     using namespace std::chrono_literals;
     while (true) {
-        if (PC >= 0x0034) std::this_thread::sleep_for(500ms);
+        if (PC == 0x0034) enableSleep = true;
+        if (enableSleep) std::this_thread::sleep_for(500ms);
         uint8_t instr = mBus->read(PC++);
         Logger::getInstance("CPU")->log(Logger::DEBUG, "Executing instruction: %X at %X", instr, PC-1);
         opcodes[instr]();
-        Logger::getInstance("CPU")->log(Logger::DEBUG, "regin: %X", registers.B);
     }
 }
 
@@ -39,8 +41,10 @@ uint8_t SharpSM83::NOP() {
 uint8_t SharpSM83::LD(uint8_t *reg) {
     if (reg == nullptr) {
         mBus->write(mBus->read(PC + 1) << 8 | mBus->read(PC), registers.A);
+        PC += 2;
     } else {
         *reg = mBus->read(mBus->read(PC + 1) << 8 | mBus->read(PC));
+        PC += 2;
     }
     return 4;
 }
@@ -51,6 +55,7 @@ uint8_t SharpSM83::LD(uint16_t *reg1, uint16_t *reg2, bool addDataToSP) { // TOD
         uint16_t addr = mBus->read(PC + 1) << 8 | mBus->read(PC);
         mBus->write(addr, SP & 0xFF);
         mBus->write(addr + 1, SP >> 8);
+        PC += 2;
         cycles = 5;
     }
     else if (reg2 == nullptr) {
@@ -180,9 +185,7 @@ uint8_t SharpSM83::INC(uint16_t *reg) {
 }
 
 uint8_t SharpSM83::DEC(uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "reg: %X", *reg);
     *reg = *reg - 1;
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "reg: %X", registers.B);
 
     flags.zero = *reg == 0x00;
     flags.negative = 1;
