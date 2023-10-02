@@ -53,6 +53,7 @@ private:
 
     uint16_t PC, SP;
     Bus *mBus;
+    static Logger *logger;
 
 private:
     using opcodeFunc = std::function<uint8_t()>;

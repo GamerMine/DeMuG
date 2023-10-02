@@ -1,6 +1,7 @@
 #include "SharpSM83.h"
 
 bool enableSleep = false;
+Logger *SharpSM83::logger;
 
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
@@ -8,6 +9,8 @@ SharpSM83::SharpSM83(class Bus *bus) {
     PC = 0x0000;
     SP = 0x0000;
     flags.rawFlags = 0x00;
+
+    logger = Logger::getInstance("Cpu");
 }
 
 void SharpSM83::reset() {
@@ -29,7 +32,7 @@ void SharpSM83::reset() {
         if (PC == 0x0034) enableSleep = true;
         if (enableSleep) std::this_thread::sleep_for(500ms);
         uint8_t instr = mBus->read(PC++);
-        Logger::getInstance("CPU")->log(Logger::DEBUG, "Executing instruction: %X at %X", instr, PC-1);
+        logger->log(Logger::DEBUG, "%sExecuting instruction: %X at %X", Colors::BLUE, instr, PC-1);
         opcodes[instr]();
     }
 }
@@ -383,149 +386,149 @@ uint8_t SharpSM83::RL(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::NIMP() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::LD(uint8_t *reg1, uint8_t reg2) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::INC(uint16_t reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::DEC(uint16_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::DEC(uint16_t reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RLCA() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::ADD(uint8_t *reg1, uint8_t *reg2) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::ADC(uint8_t *reg1, uint8_t *reg2) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::SUB(uint8_t reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::SBC(uint8_t *reg1, uint8_t *reg2) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::AND(uint8_t *reg1, uint8_t *reg2) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::XOR(uint16_t reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::OR(uint8_t *reg1, uint8_t *reg2) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::ADD(uint16_t *reg1, uint16_t *reg2) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RRCA() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::STOP() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RRA() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::DAA() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::CPL() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::SCF() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::CCF() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::HALT() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::JP(bool *flag, bool invert) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::JP(uint16_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RST(uint16_t addr) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RETI() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::DI() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::EI() {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RLC(uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RRC(uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RR(uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::SLA(uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::SRA(uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::SWAP(uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::SRL(uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::RES(uint8_t bit, uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }
 
 uint8_t SharpSM83::SET(uint8_t bit, uint8_t *reg) {
-    Logger::getInstance("CPU")->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented"); return 0;
 }

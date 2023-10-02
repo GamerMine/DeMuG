@@ -7,6 +7,7 @@ set(PROJECT_VERSION 1.0.0)
 set(SOURCE_FILES
         hardware/Bus.cpp
         logging/Logger.cpp
+        hardware/Ppu.cpp
         hardware/Screen.cpp
         hardware/SharpSM83.cpp
         main.cpp

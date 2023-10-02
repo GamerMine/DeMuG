@@ -21,7 +21,7 @@ public:
 
 private:
     class SharpSM83 *cpu;
-    Ppu *ppu;
+    class Ppu *ppu;
     Logger *logger;
 
     uint8_t bootRom[BOOT_ROM_SIZE]{};

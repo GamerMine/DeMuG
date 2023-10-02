@@ -13,7 +13,7 @@ Bus::Bus() {
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {
-    logger->log(Logger::DEBUG, "WRITE: %X at %X", data, addr);
+    logger->log(Logger::DEBUG, "%sWRITE%s: %X at %X", Colors::DARK_YELLOW, Colors::DEFAULT, data, addr);
     if (addr <= 0x00FF) { // DMG BOOT ROM
         // We should not write into the boot rom (Read Only)
         logger->log(Logger::WARNING, "Trying to write in an unauthorized area: 0x%X", addr);
@@ -40,7 +40,7 @@ uint8_t Bus::read(uint16_t addr) {
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr);
     if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
 
-    logger->log(Logger::DEBUG, "READ: %X at %X", value, addr);
+    logger->log(Logger::DEBUG, "%sREAD%s: %X at %X", Colors::GREEN, Colors::DEFAULT, value, addr);
     return value;
 }
 
