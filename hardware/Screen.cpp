@@ -22,19 +22,34 @@ void Screen::operator()() {
     glfwMakeContextCurrent(window);
     glViewport(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
+    double currentTime;
+    double lastTime;
+
     using namespace std::chrono_literals;
     while (!glfwWindowShouldClose(window)) {
         // Rendering commands
-        if (mPpu->LCDC.lcdEnable) {
-            glClearColor(0xFF, 0xFF, 0xFF, 0xFF);
-        } else {
-            glClearColor(0x00, 0x00, 0x00, 0xFF);
+        currentTime = glfwGetTime();
+
+        if (currentTime - lastTime >= 1.0 / FRAMERATE) {
+            lastTime = currentTime;
+            render();
         }
-        glClear(GL_COLOR_BUFFER_BIT);
 
         glfwPollEvents();
         glfwSwapBuffers(window);
     }
 
     glfwTerminate();
+}
+
+void Screen::render() {
+    if (mPpu->LCDC.lcdEnable) {
+        glClearColor(0xFF, 0xFF, 0xFF, 0xFF);
+
+        mPpu->LY = mPpu->LY + 1;
+        if (mPpu->LY >= 153) mPpu->LY = 0x00;
+    } else {
+        glClearColor(0x00, 0x00, 0x00, 0xFF);
+    }
+    glClear(GL_COLOR_BUFFER_BIT);
 }

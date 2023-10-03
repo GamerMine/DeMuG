@@ -29,8 +29,8 @@ void SharpSM83::reset() {
 [[noreturn]] void SharpSM83::operator()() {
     using namespace std::chrono_literals;
     while (true) {
-        if (PC == 0x0034) enableSleep = true;
-        if (enableSleep) std::this_thread::sleep_for(500ms);
+        //if (PC == 0x0034) enableSleep = true;
+        //if (enableSleep) std::this_thread::sleep_for(200ms);
         uint8_t instr = mBus->read(PC++);
         logger->log(Logger::DEBUG, "%sExecuting instruction: %X at %X", Colors::BLUE, instr, PC-1);
         opcodes[instr]();
@@ -267,7 +267,7 @@ uint8_t SharpSM83::CP(uint8_t *reg) {
         cycles = 1;
     }
 
-    flags.zero = result == 0x00;
+    flags.zero = (uint8_t)result == 0x00;
     flags.negative = 1;
     flags.carry = result > 0xFF;
     flags.halfCarry = result > 0xF;

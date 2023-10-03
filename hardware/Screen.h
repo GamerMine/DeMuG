@@ -3,6 +3,7 @@
 
 #define DEFAULT_WIDTH 160
 #define DEFAULT_HEIGHT 144
+#define FRAMERATE 60
 #define WINDOW_NAME "Emu_GameBoy"
 #define LOGGER_NAME "Rendering"
 
@@ -23,6 +24,8 @@ public:
 private:
     class Ppu *mPpu;
     GLFWwindow * window{};
+
+    void render();
 
 };
 

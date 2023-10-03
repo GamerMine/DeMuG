@@ -12,8 +12,8 @@ Ppu::Ppu() {
 }
 
 void Ppu::operator()() {
-    std::thread renderThread(std::ref(*screen));
-    renderThread.join();
+    std::thread screenThread(std::ref(*screen));
+    screenThread.join();
 }
 
 uint8_t Ppu::read(uint16_t addr) const {
