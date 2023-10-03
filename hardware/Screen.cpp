@@ -1,5 +1,9 @@
 #include "Screen.h"
 
+Screen::Screen(class Ppu *ppu) {
+    mPpu = ppu;
+}
+
 void Screen::operator()() {
     Logger *logger = Logger::getInstance(LOGGER_NAME);
 
@@ -16,11 +20,20 @@ void Screen::operator()() {
     }
 
     glfwMakeContextCurrent(window);
+    glViewport(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
     using namespace std::chrono_literals;
     while (!glfwWindowShouldClose(window)) {
-        // Rendering and polling loop
-        std::this_thread::sleep_for(1s);
+        // Rendering commands
+        if (mPpu->LCDC.lcdEnable) {
+            glClearColor(0xFF, 0xFF, 0xFF, 0xFF);
+        } else {
+            glClearColor(0x00, 0x00, 0x00, 0xFF);
+        }
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glfwPollEvents();
+        glfwSwapBuffers(window);
     }
 
     glfwTerminate();

@@ -8,16 +8,21 @@
 
 #include <cstdio>
 #include <GLFW/glfw3.h>
+#include <GL/gl.h>
 #include <thread>
 
 #include "../logging/Logger.h"
+#include "Ppu.h"
 
 class Screen {
 public:
+    Screen(class Ppu *ppu);
+
     void operator()();
 
 private:
-    GLFWwindow * window;
+    class Ppu *mPpu;
+    GLFWwindow * window{};
 
 };
 

@@ -8,7 +8,7 @@ Ppu::Ppu() {
     LY = 0x00;
     LYC = 0x00;
 
-    screen = new Screen();
+    screen = new Screen(this);
 }
 
 void Ppu::operator()() {
