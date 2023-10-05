@@ -42,12 +42,20 @@ void Screen::operator()() {
     glfwTerminate();
 }
 
+uint16_t primaryTileDataBlock = 0x8000;
 void Screen::render() {
     if (mPpu->LCDC.lcdEnable) {
         glClearColor(0xFF, 0xFF, 0xFF, 0xFF);
 
         mPpu->LY = mPpu->LY + 1;
         if (mPpu->LY >= 153) mPpu->LY = 0x00;
+        primaryTileDataBlock = mPpu->LCDC.tileDataArea ? 0x8000 : 0x9000;
+        for (uint8_t i = 0x00; i < 0xFF; i++) {
+            if (i == 0x80) primaryTileDataBlock = 0x8800;
+            for (uint8_t j = 0; j < 16; j++) {
+                //mPpu->vram[(primaryTileDataBlock - 0x80) + i]
+            }
+        }
     } else {
         glClearColor(0x00, 0x00, 0x00, 0xFF);
     }

@@ -48,6 +48,38 @@ public:
 
     uint8_t SCY, SCX; // Vertical & Horizontal Scroll Registers | 0xFF42 & 0xFF43
     uint8_t LY, LYC; // Scanline Register & Scanline Compare Register | 0xFF44 & 0xFF45
+
+    union {
+        struct {
+            bool index3 : 2; // BLACK
+            bool index2 : 2; // DARK GRAY
+            bool index1 : 2; // LIGHT GRAY
+            bool index0 : 2; // WHITE
+        };
+        uint8_t raw;
+    } BGP{}; // 0xFF47
+
+    union {
+        struct {
+            bool index3 : 2; // BLACK
+            bool index2 : 2; // DARK GRAY
+            bool index1 : 2; // LIGHT GRAY
+            bool index0 : 2; // WHITE
+        };
+        uint8_t raw;
+    } OBP0{}; // 0xFF48
+
+    union {
+        struct {
+            bool index3 : 2; // BLACK
+            bool index2 : 2; // DARK GRAY
+            bool index1 : 2; // LIGHT GRAY
+            bool index0 : 2; // WHITE
+        };
+        uint8_t raw;
+    } OBP1{}; // 0xFF49
+
+    uint8_t vram[RAM_SIZE]{};
 };
 
 #endif //EMU_GAMEBOY_PPU_H

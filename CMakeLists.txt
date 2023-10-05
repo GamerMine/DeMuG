@@ -22,11 +22,12 @@ set(HEADER_FILES
 )
 
 find_package(glfw3 REQUIRED)
+find_package(spdlog REQUIRED)
 
 add_compile_options(-Wall -Wextra)
 add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
 if (UNIX OR LINUX)
     target_link_libraries(Emu_GameBoy glfw pthread OpenGL)
 elseif (WIN32)
-    target_link_libraries(Emu_GameBoy glfw pthread opengl)
+    target_link_libraries(Emu_GameBoy glfw pthread opengl32)
 endif ()

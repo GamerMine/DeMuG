@@ -26,7 +26,6 @@ private:
 
     uint8_t bootRom[BOOT_ROM_SIZE]{};
     uint8_t ram[RAM_SIZE]{};
-    uint8_t vram[RAM_SIZE]{};
     uint8_t hram[HRAM_SIZE]{};
 
     void readBootRom();

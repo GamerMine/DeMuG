@@ -13,18 +13,18 @@ Bus::Bus() {
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {
-    logger->log(Logger::DEBUG, "%sWRITE%s: %X at %X", Colors::DARK_YELLOW, Colors::DEFAULT, data, addr);
+    if (addr == 0xFF47) logger->log(Logger::DEBUG, "%sWRITE%s: %X at %X", Colors::DARK_YELLOW, Colors::DEFAULT, data, addr);
     if (addr <= 0x00FF) { // DMG BOOT ROM
         // We should not write into the boot rom (Read Only)
         logger->log(Logger::WARNING, "Trying to write in an unauthorized area: 0x%X", addr);
     }
     if (addr >= 0x8000 && addr <= 0x9FFF) { // VRAM
-        vram[addr - 0x8000] = data;
+        ppu->write(addr, data);
     }
     if (addr >= 0xC000 && addr <= 0xDFFF) { // WRAM
         ram[addr - 0xC000] = data;
     }
-    if (addr >= 0xFF40 && addr <= 0xFF45) { // PPU
+    if (addr >= 0xFF40 && addr <= 0xFF49) { // PPU
         ppu->write(addr, data);
     }
     if (addr >= 0xFF80 && addr <= 0xFFFE) { // HRAM
@@ -35,12 +35,12 @@ void Bus::write(uint16_t addr, uint8_t data) {
 uint8_t Bus::read(uint16_t addr) {
     uint8_t value = 0xFF;
     if (addr <= 0x00FF) value = bootRom[addr]; // DMG BOOT ROM
-    if (addr >= 0x8000 && addr <= 0x9FFF) value = vram[addr - 0x8000]; // VRAM
+    if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
     if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr);
     if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
 
-    logger->log(Logger::DEBUG, "%sREAD%s: %X at %X", Colors::GREEN, Colors::DEFAULT, value, addr);
+    //if (addr == 0xFF44) logger->log(Logger::DEBUG, "%sREAD%s: %X at %X", Colors::GREEN, Colors::DEFAULT, value, addr);
     return value;
 }
 
