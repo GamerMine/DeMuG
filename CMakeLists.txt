@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
-project(Emu_GameBoy)
+project(Emu_GameBoy C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(PROJECT_VERSION 1.0.0)
@@ -21,13 +21,13 @@ set(HEADER_FILES
         hardware/SharpSM83.h
 )
 
-find_package(glfw3 REQUIRED)
-find_package(spdlog REQUIRED)
-
 add_compile_options(-Wall -Wextra)
+add_subdirectory(lib/raylib)
 add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
 if (UNIX OR LINUX)
-    target_link_libraries(Emu_GameBoy glfw pthread OpenGL)
+    target_link_libraries(Emu_GameBoy pthread raylib)
 elseif (WIN32)
-    target_link_libraries(Emu_GameBoy glfw pthread opengl32)
+    target_link_libraries(Emu_GameBoy pthread raylib)
 endif ()
+
+add_custom_command(TARGET Emu_GameBoy PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR}/)

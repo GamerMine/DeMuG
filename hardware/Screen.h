@@ -3,13 +3,12 @@
 
 #define DEFAULT_WIDTH 160
 #define DEFAULT_HEIGHT 144
-#define FRAMERATE 60
+#define FRAMERATE 59.7
 #define WINDOW_NAME "Emu_GameBoy"
 #define LOGGER_NAME "Rendering"
 
 #include <cstdio>
-#include <GLFW/glfw3.h>
-#include <GL/gl.h>
+#include "raylib.h"
 #include <thread>
 
 #include "../logging/Logger.h"
@@ -23,9 +22,20 @@ public:
 
 private:
     class Ppu *mPpu;
-    GLFWwindow * window{};
+
+    struct Pixel {
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+    };
+
+    Pixel *screen{};
+    Pixel *tiles{};
+
+    Texture2D gameTexture, tilesTexture;
 
     void render();
+    void renderTiles();
 
 };
 

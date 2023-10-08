@@ -4,7 +4,7 @@
 #define RAM_SIZE 8192
 #define BOOT_ROM_SIZE 0xFF
 #define HRAM_SIZE 12
-#define BOOT_ROM_LOCATION "resources/boot/DMG_ROM.bin"
+#define BOOT_ROM_LOCATION "boot/DMG_ROM.bin"
 
 #include <fstream>
 
@@ -27,7 +27,9 @@ private:
     uint8_t bootRom[BOOT_ROM_SIZE]{};
     uint8_t ram[RAM_SIZE]{};
     uint8_t hram[HRAM_SIZE]{};
+    uint8_t *gameRom;
 
+    void readGameRom(const char *filename);
     void readBootRom();
 };
 

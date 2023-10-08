@@ -1,22 +1,22 @@
 #include "Logger.h"
 
-const char *Colors::DEFAULT         = "\033[39m";
-const char *Colors::DARK_BLACK      = "\033[30m";
-const char *Colors::DARK_RED        = "\033[31m";
-const char *Colors::DARK_GREEN      = "\033[32m";
-const char *Colors::DARK_YELLOW     = "\033[33m";
-const char *Colors::DARK_BLUE       = "\033[34m";
-const char *Colors::DARK_MAGENTA    = "\033[35m";
-const char *Colors::DARK_CYAN       = "\033[36m";
-const char *Colors::LIGHT_GRAY      = "\033[37m";
-const char *Colors::DARK_GRAY       = "\033[90m";
-const char *Colors::RED             = "\033[91m";
-const char *Colors::GREEN           = "\033[92m";
-const char *Colors::ORANGE          = "\033[93m";
-const char *Colors::BLUE            = "\033[94m";
-const char *Colors::MAGENTA         = "\033[95m";
-const char *Colors::CYAN            = "\033[96m";
-const char *Colors::WHITE           = "\033[97m";
+const char *Colors::LOG_DEFAULT         = "\033[39m";
+const char *Colors::LOG_DARK_BLACK      = "\033[30m";
+const char *Colors::LOG_DARK_RED        = "\033[31m";
+const char *Colors::LOG_DARK_GREEN      = "\033[32m";
+const char *Colors::LOG_DARK_YELLOW     = "\033[33m";
+const char *Colors::LOG_DARK_BLUE       = "\033[34m";
+const char *Colors::LOG_DARK_MAGENTA    = "\033[35m";
+const char *Colors::LOG_DARK_CYAN       = "\033[36m";
+const char *Colors::LOG_LIGHT_GRAY      = "\033[37m";
+const char *Colors::LOG_DARK_GRAY       = "\033[90m";
+const char *Colors::LOG_RED             = "\033[91m";
+const char *Colors::LOG_GREEN           = "\033[92m";
+const char *Colors::LOG_ORANGE          = "\033[93m";
+const char *Colors::LOG_BLUE            = "\033[94m";
+const char *Colors::LOG_MAGENTA         = "\033[95m";
+const char *Colors::LOG_CYAN            = "\033[96m";
+const char *Colors::LOG_WHITE           = "\033[97m";
 
 std::map<const char *, Logger *> Logger::loggers;
 Logger::LOG_LEVEL Logger::currentLogLevel = Logger::DEBUG;
@@ -59,13 +59,13 @@ void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *format, va_list ar
         out << std::put_time(&tm, "%d-%m-%Y %H:%M:%S");
 
         switch (logLevel) {
-            case DEBUG: printf("[%s %s%s%s] <%s>: ", out.str().c_str(), Colors::DARK_GRAY, levelNames[logLevel], Colors::DEFAULT, currentLoggerName); break;
-            case WARNING: printf("[%s %s%s%s] <%s>: ", out.str().c_str(), Colors::ORANGE, levelNames[logLevel], Colors::DEFAULT, currentLoggerName); break;
-            case CRITICAL: printf("[%s %s%s%s] <%s>: ", out.str().c_str(), Colors::DARK_RED, levelNames[logLevel], Colors::DEFAULT, currentLoggerName); break;
+            case DEBUG: printf("[%s %s%s%s] <%s>: ", out.str().c_str(), Colors::LOG_DARK_GRAY, levelNames[logLevel], Colors::LOG_DEFAULT, currentLoggerName); break;
+            case WARNING: printf("[%s %s%s%s] <%s>: ", out.str().c_str(), Colors::LOG_ORANGE, levelNames[logLevel], Colors::LOG_DEFAULT, currentLoggerName); break;
+            case CRITICAL: printf("[%s %s%s%s] <%s>: ", out.str().c_str(), Colors::LOG_DARK_RED, levelNames[logLevel], Colors::LOG_DEFAULT, currentLoggerName); break;
             default: printf("[%s %s] <%s>: ", out.str().c_str(), levelNames[logLevel], currentLoggerName); break;
         }
         vprintf(format, args);
-        printf("%s\n", Colors::DEFAULT);
+        printf("%s\n", Colors::LOG_DEFAULT);
     }
 }
 
@@ -76,7 +76,7 @@ void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *format, va_list ar
  * @param logLevel
  */
 void Logger::setLogLevel(Logger::LOG_LEVEL logLevel) {
-    this->currentLogLevel = logLevel;
+    currentLogLevel = logLevel;
 }
 
 bool Logger::removeInstance(const char *loggerName) {

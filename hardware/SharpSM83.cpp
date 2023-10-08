@@ -32,7 +32,7 @@ void SharpSM83::reset() {
         //if (PC == 0x0034) enableSleep = true;
         //if (enableSleep) std::this_thread::sleep_for(200ms);
         uint8_t instr = mBus->read(PC++);
-        //logger->log(Logger::DEBUG, "%sExecuting instruction: %X at %X", Colors::BLUE, instr, PC-1);
+        //logger->log(Logger::DEBUG, "%sExecuting instruction: %X at %X", Colors::LOG_BLUE, instr, PC-1);
         opcodes[instr]();
     }
 }

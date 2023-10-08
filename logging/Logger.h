@@ -23,7 +23,7 @@ public:
     static bool removeInstance(const char *loggerName);
 
     void log(LOG_LEVEL logLevel, const char *format, ...);
-    void setLogLevel(LOG_LEVEL logLevel);
+    static void setLogLevel(LOG_LEVEL logLevel);
 
 private:
     static LOG_LEVEL currentLogLevel;
@@ -38,23 +38,23 @@ private:
 
 class Colors {
 public:
-    static const char *DEFAULT;
-    static const char *DARK_BLACK;
-    static const char *DARK_RED;
-    static const char *DARK_GREEN;
-    static const char *DARK_YELLOW;
-    static const char *DARK_BLUE;
-    static const char *DARK_MAGENTA;
-    static const char *DARK_CYAN;
-    static const char *LIGHT_GRAY;
-    static const char *DARK_GRAY;
-    static const char *RED;
-    static const char *GREEN;
-    static const char *ORANGE;
-    static const char *BLUE;
-    static const char *MAGENTA;
-    static const char *CYAN;
-    static const char *WHITE;
+    static const char *LOG_DEFAULT;
+    static const char *LOG_DARK_BLACK;
+    static const char *LOG_DARK_RED;
+    static const char *LOG_DARK_GREEN;
+    static const char *LOG_DARK_YELLOW;
+    static const char *LOG_DARK_BLUE;
+    static const char *LOG_DARK_MAGENTA;
+    static const char *LOG_DARK_CYAN;
+    static const char *LOG_LIGHT_GRAY;
+    static const char *LOG_DARK_GRAY;
+    static const char *LOG_RED;
+    static const char *LOG_GREEN;
+    static const char *LOG_ORANGE;
+    static const char *LOG_BLUE;
+    static const char *LOG_MAGENTA;
+    static const char *LOG_CYAN;
+    static const char *LOG_WHITE;
 };
 
 

@@ -7,6 +7,10 @@
 #include "Screen.h"
 #include "Bus.h"
 
+// Color palette
+#define DARK_GRAY 0x555555
+#define LIGHT_GRAY 0xAAAAAA
+
 class Ppu {
 public:
     explicit Ppu();
@@ -51,30 +55,30 @@ public:
 
     union {
         struct {
-            bool index3 : 2; // BLACK
-            bool index2 : 2; // DARK GRAY
-            bool index1 : 2; // LIGHT GRAY
             bool index0 : 2; // WHITE
+            bool index1 : 2; // LIGHT GRAY
+            bool index2 : 2; // DARK GRAY
+            bool index3 : 2; // BLACK
         };
         uint8_t raw;
     } BGP{}; // 0xFF47
 
     union {
         struct {
-            bool index3 : 2; // BLACK
-            bool index2 : 2; // DARK GRAY
-            bool index1 : 2; // LIGHT GRAY
             bool index0 : 2; // WHITE
+            bool index1 : 2; // LIGHT GRAY
+            bool index2 : 2; // DARK GRAY
+            bool index3 : 2; // BLACK
         };
         uint8_t raw;
     } OBP0{}; // 0xFF48
 
     union {
         struct {
-            bool index3 : 2; // BLACK
-            bool index2 : 2; // DARK GRAY
-            bool index1 : 2; // LIGHT GRAY
             bool index0 : 2; // WHITE
+            bool index1 : 2; // LIGHT GRAY
+            bool index2 : 2; // DARK GRAY
+            bool index3 : 2; // BLACK
         };
         uint8_t raw;
     } OBP1{}; // 0xFF49
