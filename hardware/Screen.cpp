@@ -8,6 +8,7 @@ Screen::Screen(class Ppu *ppu) {
 
 void Screen::operator()() {
     InitWindow(1280, 720, WINDOW_NAME);
+    SetTargetFPS(60);
 
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
@@ -29,18 +30,10 @@ void Screen::operator()() {
     tilesDataTexture = LoadTextureFromImage(tilesDataRender);
     tilesMapTexture = LoadTextureFromImage(tilesMapRender);
 
-    double currentTime;
-    double lastTime;
-
     using namespace std::chrono_literals;
     while (!WindowShouldClose()) {
         // Rendering commands
-        currentTime = GetTime();
-
-        if (currentTime - lastTime >= 1.0 / FRAMERATE) {
-            lastTime = currentTime;
-            render();
-        }
+        render();
 
         PollInputEvents();
     }
@@ -55,12 +48,10 @@ uint16_t tileDataBlock = 0x8000;
 bool test = true;
 void Screen::render() {
     if (mPpu->LCDC.lcdEnable) {
-        mPpu->LY = mPpu->LY + 1;
-        if (mPpu->LY >= 153) mPpu->LY = 0x00;
-
         setTileData();
         renderTilesData();
         renderTilesMap();
+        renderScreen();
 
         BeginDrawing();
         ClearBackground(DARKBLUE);
@@ -129,6 +120,17 @@ void Screen::renderTilesMap() {
         }
     }
     UpdateTexture(tilesMapTexture, tilesMapPixelArray);
+}
+
+void Screen::renderScreen() {
+    for (uint8_t y = 0; y < DEFAULT_HEIGHT; y++) {
+        mPpu->LY = mPpu->LY + 1;
+        if (mPpu->LY >= 153) mPpu->LY = 0x00;
+        for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
+            screenPixelArray[y * DEFAULT_WIDTH + x] = tilesMapPixelArray[(mPpu->SCY + y) * 32*8 + (mPpu->SCX + x)];
+        }
+    }
+    UpdateTexture(gameTexture, screenPixelArray);
 }
 
 #pragma clang diagnostic pop

@@ -41,6 +41,7 @@ private:
     void renderTilesData();
     void setTileData();
     void renderTilesMap();
+    void renderScreen();
 
 };
 
