@@ -23,6 +23,7 @@ private:
     class SharpSM83 *cpu;
     class Ppu *ppu;
     Logger *logger;
+    const char *romName;
 
     uint8_t bootRom[BOOT_ROM_SIZE]{};
     uint8_t ram[RAM_SIZE]{};

@@ -51,6 +51,10 @@ void Logger::log(Logger::LOG_LEVEL logLevel, const char *format, ...) {
     va_end(args);
 }
 
+void Logger::log(Logger::LOG_LEVEL logLevel, const char *format, va_list args) {
+    std::future<void> ret = std::async(std::launch::async, &Logger::logAsync, this, logLevel, format, args);
+}
+
 void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *format, va_list args) {
     if (Logger::currentLogLevel <= logLevel) {
         auto t = std::time(nullptr);

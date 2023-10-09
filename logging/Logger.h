@@ -23,6 +23,7 @@ public:
     static bool removeInstance(const char *loggerName);
 
     void log(LOG_LEVEL logLevel, const char *format, ...);
+    void log(LOG_LEVEL logLevel, const char *format, va_list args);
     static void setLogLevel(LOG_LEVEL logLevel);
 
 private:

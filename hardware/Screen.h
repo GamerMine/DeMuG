@@ -29,13 +29,18 @@ private:
         uint8_t b;
     };
 
-    Pixel *screen{};
-    Pixel *tiles{};
+    Pixel *screenPixelArray{};
+    Pixel *tilesDataPixelArray{};
+    Pixel *tilesMapPixelArray{};
 
-    Texture2D gameTexture, tilesTexture;
+    uint8_t tilesData[0xFF][8][8]{};
+
+    Texture2D gameTexture{}, tilesDataTexture{}, tilesMapTexture{};
 
     void render();
-    void renderTiles();
+    void renderTilesData();
+    void setTileData();
+    void renderTilesMap();
 
 };
 

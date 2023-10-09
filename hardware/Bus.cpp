@@ -3,7 +3,8 @@
 Bus::Bus() {
     logger = Logger::getInstance("Bus");
     gameRom = new uint8_t[32*1024];
-    readGameRom("test/Tetris.gb");
+    romName = nullptr;
+    readGameRom("Tetris.gb");
     readBootRom();
     cpu = new SharpSM83(this);
     std::thread cpuThread(std::ref(*cpu));
@@ -37,7 +38,7 @@ void Bus::write(uint16_t addr, uint8_t data) {
 uint8_t Bus::read(uint16_t addr) {
     uint8_t value = 0xFF;
     if (addr <= 0x00FF) value = bootRom[addr]; // DMG BOOT ROM
-    if (addr >= 0x0100 && addr <= 0x1000) value = gameRom[addr - 0x0100];
+    if (addr >= 0x0100 && addr <= 0x1000 && romName != nullptr) value = gameRom[addr]; // Game cartridge
     if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
     if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr);
@@ -56,6 +57,7 @@ void Bus::readGameRom(const char *filename) {
         logger->log(Logger::CRITICAL, "File not found: %s", filename);
         return;
     }
+    romName = filename;
 
     char byte;
 
