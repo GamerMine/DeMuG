@@ -8,7 +8,6 @@ Screen::Screen(class Ppu *ppu) {
 
 void Screen::operator()() {
     InitWindow(1280, 720, WINDOW_NAME);
-    SetTargetFPS(60);
 
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
@@ -34,8 +33,6 @@ void Screen::operator()() {
     while (!WindowShouldClose()) {
         // Rendering commands
         render();
-
-        PollInputEvents();
     }
 
     UnloadTexture(gameTexture);
@@ -123,11 +120,14 @@ void Screen::renderTilesMap() {
 }
 
 void Screen::renderScreen() {
-    for (uint8_t y = 0; y < DEFAULT_HEIGHT; y++) {
+    for (uint8_t y = 0; y < 153; y++) {
         mPpu->LY = mPpu->LY + 1;
         if (mPpu->LY >= 153) mPpu->LY = 0x00;
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
-            screenPixelArray[y * DEFAULT_WIDTH + x] = tilesMapPixelArray[(mPpu->SCY + y) * 32*8 + (mPpu->SCX + x)];
+            if (y < DEFAULT_HEIGHT) {
+                screenPixelArray[y * DEFAULT_WIDTH + x] = tilesMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
+                                                                             (mPpu->SCX + x)];
+            }
         }
     }
     UpdateTexture(gameTexture, screenPixelArray);
