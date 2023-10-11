@@ -14,7 +14,7 @@ public:
 
     void reset();
 
-    [[noreturn]] void operator()();
+    void operator()();
 
 private:
     union {
@@ -581,11 +581,11 @@ private:
     static uint8_t NIMP();
     uint8_t NOP();
     uint8_t LD(uint8_t *reg);
-    uint8_t LD(uint8_t *reg1, uint8_t *reg2);
+    uint8_t LD(uint8_t *reg1, const uint8_t *reg2);
     uint8_t LD(uint8_t *reg1, uint8_t reg2);
-    uint8_t LD(uint8_t reg1, uint8_t *reg2);
-    uint8_t LD(uint16_t *reg1, uint16_t *reg2, bool addDataToSP = false);
-    uint8_t LD(uint16_t reg1, uint8_t *reg2, bool incrementReg1 = false, bool decrementReg1 = false);
+    uint8_t LD(uint8_t reg1, const uint8_t *reg2);
+    uint8_t LD(uint16_t *reg1, const uint16_t *reg2, bool addDataToSP = false);
+    uint8_t LD(uint16_t reg1, const uint8_t *reg2, bool incrementReg1 = false, bool decrementReg1 = false);
     uint8_t LD(uint8_t *reg1, uint16_t reg2, bool incrementReg2 = false, bool decrementReg2 = false);
     uint8_t INC(uint8_t *reg);
     uint8_t INC(uint16_t *reg);
@@ -596,36 +596,36 @@ private:
     uint8_t RLCA();
     uint8_t ADD(uint8_t *reg1, uint8_t *reg2);
     uint8_t ADC(uint8_t *reg1, uint8_t *reg2);
-    uint8_t SUB(uint8_t *reg);
+    uint8_t SUB(const uint8_t *reg);
     uint8_t SUB(uint8_t reg);
     uint8_t SBC(uint8_t *reg1, uint8_t *reg2);
     uint8_t AND(uint8_t *reg1, uint8_t *reg2);
-    uint8_t XOR(uint8_t *reg);
+    uint8_t XOR(const uint8_t *reg);
     uint8_t XOR(uint16_t reg);
     uint8_t OR(uint8_t *reg1, uint8_t *reg2);
-    uint8_t CP(uint8_t *reg);
+    uint8_t CP(const uint8_t *reg);
     uint8_t CP(uint8_t reg);
     uint8_t ADD(uint16_t *reg1, uint16_t *reg2);
     uint8_t RRCA();
     uint8_t STOP();
     uint8_t RLA();
-    uint8_t JR(bool *flag, bool invert = false);
+    uint8_t JR(const bool *flag, bool invert = false);
     uint8_t RRA();
     uint8_t DAA();
     uint8_t CPL();
     uint8_t SCF();
     uint8_t CCF();
     uint8_t HALT();
-    uint8_t RET(bool *flag, bool invert = false);
+    uint8_t RET(const bool *flag, bool invert = false);
     uint8_t POP(uint16_t *reg);
     uint8_t JP(bool *flag, bool invert = false);
     uint8_t JP(uint16_t *reg);
-    uint8_t CALL(bool *flag, bool invert = false);
-    uint8_t PUSH(uint16_t *reg);
+    uint8_t CALL(const bool *flag, bool invert = false);
+    uint8_t PUSH(const uint16_t *reg);
     uint8_t RST(uint16_t addr);
     uint8_t PREFIX();
     uint8_t RETI();
-    uint8_t LDH(uint8_t *reg);
+    uint8_t LDH(const uint8_t *reg);
     uint8_t DI();
     uint8_t EI();
 
@@ -638,7 +638,7 @@ private:
     uint8_t SRA(uint8_t *reg);
     uint8_t SWAP(uint8_t *reg);
     uint8_t SRL(uint8_t *reg);
-    uint8_t BIT(uint8_t bit, uint8_t *reg);
+    uint8_t BIT(uint8_t bit, const uint8_t *reg);
     uint8_t RES(uint8_t bit, uint8_t *reg);
     uint8_t SET(uint8_t bit, uint8_t *reg);
 };

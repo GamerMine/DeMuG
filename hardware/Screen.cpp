@@ -1,13 +1,12 @@
 #include "Screen.h"
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "NullDereference"
 Screen::Screen(class Ppu *ppu) {
     mPpu = ppu;
 }
 
 void Screen::operator()() {
     InitWindow(1280, 720, WINDOW_NAME);
+    SetWindowMonitor(0);
 
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
@@ -24,20 +23,31 @@ void Screen::operator()() {
 
     Image gameRender = {.data = screenPixelArray, .width = DEFAULT_WIDTH, .height = DEFAULT_HEIGHT, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
     Image tilesDataRender = {.data = tilesDataPixelArray, .width = 16 * 8, .height = 16 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
-    Image tilesMapRender = {.data = tilesMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
+    Image tileMapRender = {.data = tilesMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
     gameTexture = LoadTextureFromImage(gameRender);
     tilesDataTexture = LoadTextureFromImage(tilesDataRender);
-    tilesMapTexture = LoadTextureFromImage(tilesMapRender);
+    tilesMapTexture = LoadTextureFromImage(tileMapRender);
 
-    using namespace std::chrono_literals;
+    double currentTime;
+    double lastTime;
+
     while (!WindowShouldClose()) {
-        // Rendering commands
-        render();
+        currentTime = GetTime();
+
+        setTileData();
+        bufferTilesMap();
+        bufferScreen();
+
+        if (currentTime - lastTime >= 1.0 / FRAMERATE) {
+            lastTime = currentTime;
+            render();
+        }
     }
 
     UnloadTexture(gameTexture);
     UnloadTexture(tilesDataTexture);
     UnloadTexture(tilesMapTexture);
+    Bus::GLOBAL_HALT = true;
     CloseWindow();
 }
 
@@ -45,16 +55,13 @@ uint16_t tileDataBlock = 0x8000;
 bool test = true;
 void Screen::render() {
     if (mPpu->LCDC.lcdEnable) {
-        setTileData();
         renderTilesData();
-        renderTilesMap();
-        renderScreen();
 
         BeginDrawing();
         ClearBackground(DARKBLUE);
         DrawTexturePro(gameTexture,
                        (Rectangle){0, 0, static_cast<float>(gameTexture.width), static_cast<float>(gameTexture.height)},
-                       (Rectangle){0, 0, static_cast<float>(gameTexture.width * 5), static_cast<float>(gameTexture.height * 5)},
+                       (Rectangle){0, 0, static_cast<float>(gameTexture.width), static_cast<float>(gameTexture.height)},
                        (Vector2){0, 0},
                        0,
                        RAYWHITE);
@@ -104,7 +111,7 @@ void Screen::setTileData() {
     }
 }
 
-void Screen::renderTilesMap() {
+void Screen::bufferTilesMap() {
     for (uint16_t value = 0; value < 1024; value++) {
         for (uint8_t y = 0; y < 8; y++) {
             for (uint8_t x = 0; x < 8; x++) {
@@ -119,10 +126,10 @@ void Screen::renderTilesMap() {
     UpdateTexture(tilesMapTexture, tilesMapPixelArray);
 }
 
-void Screen::renderScreen() {
+void Screen::bufferScreen() {
     for (uint8_t y = 0; y < 153; y++) {
-        mPpu->LY = mPpu->LY + 1;
         if (mPpu->LY >= 153) mPpu->LY = 0x00;
+        mPpu->LY = mPpu->LY + 1;
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
                 screenPixelArray[y * DEFAULT_WIDTH + x] = tilesMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
@@ -132,5 +139,3 @@ void Screen::renderScreen() {
     }
     UpdateTexture(gameTexture, screenPixelArray);
 }
-
-#pragma clang diagnostic pop

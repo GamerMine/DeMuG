@@ -1,15 +1,17 @@
 #include "Bus.h"
 
+bool Bus::GLOBAL_HALT = false;
+
 Bus::Bus() {
     logger = Logger::getInstance("Bus");
     gameRom = new uint8_t[32*1024];
     romName = nullptr;
     readGameRom("Tetris.gb");
     readBootRom();
-    cpu = new SharpSM83(this);
-    std::thread cpuThread(std::ref(*cpu));
     ppu = new Ppu;
     std::thread ppuThread(std::ref(*ppu));
+    cpu = new SharpSM83(this);
+    std::thread cpuThread(std::ref(*cpu));
 
     cpuThread.join();
     ppuThread.join();
@@ -77,7 +79,7 @@ void Bus::readBootRom() {
 
     if (!file.good()) {
         logger->log(Logger::CRITICAL, "File not found: %s", BOOT_ROM_LOCATION);
-        return;
+        exit(1);
     }
 
     char byte;

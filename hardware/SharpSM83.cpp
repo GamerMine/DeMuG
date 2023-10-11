@@ -1,6 +1,5 @@
 #include "SharpSM83.h"
 
-bool enableSleep = false;
 Logger *SharpSM83::logger;
 
 SharpSM83::SharpSM83(class Bus *bus) {
@@ -26,9 +25,9 @@ void SharpSM83::reset() {
     flags.rawFlags = 0x00;
 }
 
-[[noreturn]] void SharpSM83::operator()() {
+void SharpSM83::operator()() {
     using namespace std::chrono_literals;
-    while (true) {
+    while (!Bus::GLOBAL_HALT) {
         uint8_t instr = mBus->read(PC++);
         opcodes[instr]();
     }
@@ -49,7 +48,7 @@ uint8_t SharpSM83::LD(uint8_t *reg) {
     return 4;
 }
 
-uint8_t SharpSM83::LD(uint16_t *reg1, uint16_t *reg2, bool addDataToSP) { // TODO: Support for addDataToSP
+uint8_t SharpSM83::LD(uint16_t *reg1, const uint16_t *reg2, bool addDataToSP) { // TODO: Support for addDataToSP
     uint8_t cycles;
     if (reg1 == nullptr) {
         uint16_t addr = mBus->read(PC + 1) << 8 | mBus->read(PC);
@@ -70,7 +69,7 @@ uint8_t SharpSM83::LD(uint16_t *reg1, uint16_t *reg2, bool addDataToSP) { // TOD
     return cycles;
 }
 
-uint8_t SharpSM83::LD(uint16_t reg1, uint8_t *reg2, bool incrementReg1, bool decrementReg1) {
+uint8_t SharpSM83::LD(uint16_t reg1, const uint8_t *reg2, bool incrementReg1, bool decrementReg1) {
     uint8_t cycles;
     if (reg2 == nullptr) {
         mBus->write(reg1, mBus->read(PC++));
@@ -86,7 +85,7 @@ uint8_t SharpSM83::LD(uint16_t reg1, uint8_t *reg2, bool incrementReg1, bool dec
     return cycles;
 }
 
-uint8_t SharpSM83::LD(uint8_t *reg1, uint8_t *reg2) {
+uint8_t SharpSM83::LD(uint8_t *reg1, const uint8_t *reg2) {
     uint8_t cycles;
     if (reg2 == nullptr) {
         *reg1 = mBus->read(PC++);
@@ -98,7 +97,7 @@ uint8_t SharpSM83::LD(uint8_t *reg1, uint8_t *reg2) {
     return cycles;
 }
 
-uint8_t SharpSM83::LD(uint8_t reg1, uint8_t *reg2) {
+uint8_t SharpSM83::LD(uint8_t reg1, const uint8_t *reg2) {
     mBus->write(0xFF00 + reg1, *reg2);
     return 2;
 }
@@ -110,7 +109,7 @@ uint8_t SharpSM83::LD(uint8_t *reg1, uint16_t reg2, bool incrementReg2, bool dec
     return 2;
 }
 
-uint8_t SharpSM83::LDH(uint8_t *reg) {
+uint8_t SharpSM83::LDH(const uint8_t *reg) {
     if (reg == nullptr) {
         mBus->write(0xFF00 + mBus->read(PC++), registers.A);
     } else {
@@ -119,7 +118,7 @@ uint8_t SharpSM83::LDH(uint8_t *reg) {
     return 3;
 }
 
-uint8_t SharpSM83::XOR(uint8_t *reg) {
+uint8_t SharpSM83::XOR(const uint8_t *reg) {
     uint8_t cycles;
     if (reg == nullptr) {
         registers.A = mBus->read(PC++) ^ registers.A;
@@ -142,7 +141,7 @@ uint8_t SharpSM83::PREFIX() {
     return pfxOpcodes[mBus->read(PC++)]();
 }
 
-uint8_t SharpSM83::JR(bool *flag, bool invert) {
+uint8_t SharpSM83::JR(const bool *flag, bool invert) {
     uint8_t cycles;
     if (flag == nullptr) {
         auto relAddr = (int8_t)mBus->read(PC++);
@@ -194,7 +193,7 @@ uint8_t SharpSM83::DEC(uint8_t *reg) {
     return 1;
 }
 
-uint8_t SharpSM83::SUB(uint8_t *reg) {
+uint8_t SharpSM83::SUB(const uint8_t *reg) {
     uint8_t cycles;
     uint8_t value;
     if (reg == nullptr) {
@@ -215,7 +214,7 @@ uint8_t SharpSM83::SUB(uint8_t *reg) {
     return cycles;
 }
 
-uint8_t SharpSM83::CALL(bool *flag, bool invert) {
+uint8_t SharpSM83::CALL(const bool *flag, bool invert) {
     uint8_t cycles;
     if (flag == nullptr) {
         uint16_t addr = mBus->read(PC + 1) << 8 | mBus->read(PC);
@@ -253,7 +252,7 @@ uint8_t SharpSM83::CALL(bool *flag, bool invert) {
     return cycles;
 }
 
-uint8_t SharpSM83::CP(uint8_t *reg) {
+uint8_t SharpSM83::CP(const uint8_t *reg) {
     uint8_t cycles;
     uint16_t result;
     if (reg == nullptr) {
@@ -283,7 +282,7 @@ uint8_t SharpSM83::CP(uint8_t reg) {
     return 2;
 }
 
-uint8_t SharpSM83::PUSH(uint16_t *reg) {
+uint8_t SharpSM83::PUSH(const uint16_t *reg) {
     if (reg == nullptr) {
         SP--;
         mBus->write(SP--, registers.A);
@@ -319,7 +318,7 @@ uint8_t SharpSM83::POP(uint16_t *reg) {
     return 3;
 }
 
-uint8_t SharpSM83::RET(bool *flag, bool invert) {
+uint8_t SharpSM83::RET(const bool *flag, bool invert) {
     uint8_t cycles;
     if (flag == nullptr) {
         PC = mBus->read(SP + 1) << 8 | mBus->read(SP);
@@ -347,7 +346,7 @@ uint8_t SharpSM83::RET(bool *flag, bool invert) {
     return cycles;
 }
 
-uint8_t SharpSM83::BIT(uint8_t bit, uint8_t *reg) {
+uint8_t SharpSM83::BIT(uint8_t bit, const uint8_t *reg) {
     uint8_t cycles;
     if (reg == nullptr) {
         flags.zero = (mBus->read(registers.HL) & (1 << bit)) == 0;

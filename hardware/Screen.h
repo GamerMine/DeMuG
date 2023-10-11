@@ -40,8 +40,8 @@ private:
     void render();
     void renderTilesData();
     void setTileData();
-    void renderTilesMap();
-    void renderScreen();
+    void bufferTilesMap();
+    void bufferScreen();
 
 };
 
