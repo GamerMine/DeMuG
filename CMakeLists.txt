@@ -6,6 +6,7 @@ set(PROJECT_VERSION 1.0.0)
 
 set(SOURCE_FILES
         hardware/Bus.cpp
+        hardware/InputManager.cpp
         logging/Logger.cpp
         hardware/Ppu.cpp
         hardware/Screen.cpp
@@ -15,6 +16,7 @@ set(SOURCE_FILES
 
 set(HEADER_FILES
         hardware/Bus.h
+        hardware/InputManager.h
         logging/Logger.h
         hardware/Ppu.h
         hardware/Screen.h

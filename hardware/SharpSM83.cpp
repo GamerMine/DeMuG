@@ -1,6 +1,7 @@
 #include "SharpSM83.h"
 
 Logger *SharpSM83::logger;
+bool SharpSM83::PAUSE = false;
 
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
@@ -29,11 +30,15 @@ void SharpSM83::operator()() {
     using namespace std::chrono_literals;
     size_t cycles;
     while (!Bus::GLOBAL_HALT) {
-        uint8_t instr = mBus->read(PC++);
-        cycles += opcodes[instr]();
-        if (cycles >= 70224*3) {
-            cycles = 0;
-            mBus->sendPpuWorkSignal();
+        if (!PAUSE) {
+            uint8_t instr = mBus->read(PC++);
+            //if (PC - 1 >= 0x00e7) logger->log(Logger::DEBUG, "%sExecuting Instruction : 0x%X at %X %s", Colors::LOG_DARK_BLUE, instr, PC - 1, Colors::LOG_DEFAULT);
+            cycles += opcodes[instr]();
+            if (cycles >= 70224 *
+                          2) { // Considering the Game Boy CPU is running at 4194304Hz (~4.19Mhz) and the screen refreshing at ~59.7275hz = 4194304/59.7275 ~= 70224 cycles
+                cycles = 0;
+                mBus->sendPpuWorkSignal();
+            }
         }
     }
 }

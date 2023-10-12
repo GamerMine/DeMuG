@@ -8,6 +8,7 @@
 
 #include <fstream>
 
+#include "InputManager.h"
 #include "Ppu.h"
 #include "Screen.h"
 #include "SharpSM83.h"
@@ -22,9 +23,12 @@ public:
     void write(uint16_t addr, uint8_t data);
     uint8_t read(uint16_t addr);
 
+    void reset();
+
 private:
     class SharpSM83 *cpu;
     class Ppu *ppu;
+    class InputManager *inputManager;
     Logger *logger;
     const char *romName;
 

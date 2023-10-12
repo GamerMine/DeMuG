@@ -16,6 +16,7 @@ public:
     explicit Ppu();
 
     void operator()();
+    void reset();
 
     uint8_t read(uint16_t addr) const;
     void write(uint16_t addr, uint8_t data);

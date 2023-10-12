@@ -12,9 +12,12 @@ Bus::Bus() {
     std::thread ppuThread(std::ref(*ppu));
     cpu = new SharpSM83(this);
     std::thread cpuThread(std::ref(*cpu));
+    inputManager = new InputManager(this);
+    std::thread inputsThread(std::ref(*inputManager));
 
     cpuThread.join();
     ppuThread.join();
+    inputsThread.join();
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {
@@ -95,4 +98,11 @@ void Bus::readBootRom() {
 
 void Bus::sendPpuWorkSignal() {
     ppu->bufferScreen = true;
+}
+
+void Bus::reset() {
+    using namespace std::chrono_literals;
+    ppu->reset();
+    std::this_thread::sleep_for(30ms);
+    cpu->reset();
 }

@@ -34,10 +34,14 @@ void Screen::operator()() {
     while (!WindowShouldClose()) {
         currentTime = GetTime();
 
+        // Render buffering
+        // ----------------------------------------------------------------
         setTileData();
-        bufferTilesMap();
+        generateTileMap1();
         if (mPpu->bufferScreen) bufferScreen();
 
+        // Render
+        // ----------------------------------------------------------------
         if (currentTime - lastTime >= 1.0 / FRAMERATE) {
             lastTime = currentTime;
             render();
@@ -111,7 +115,7 @@ void Screen::setTileData() {
     }
 }
 
-void Screen::bufferTilesMap() {
+void Screen::generateTileMap1() {
     for (uint16_t value = 0; value < 1024; value++) {
         for (uint8_t y = 0; y < 8; y++) {
             for (uint8_t x = 0; x < 8; x++) {
@@ -127,16 +131,22 @@ void Screen::bufferTilesMap() {
 }
 
 void Screen::bufferScreen() {
-    mPpu->bufferScreen = false;
-    for (uint8_t y = 0; y < 153; y++) {
-        if (mPpu->LY >= 153) mPpu->LY = 0x00;
-        mPpu->LY = mPpu->LY + 1;
+    mPpu->LY = 0x00;
+    for (uint8_t y = 0; y < DEFAULT_HEIGHT + 9; y++) { // 9 the number of vertical blanking scanlines
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
                 screenPixelArray[y * DEFAULT_WIDTH + x] = tilesMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
                                                                              (mPpu->SCX + x)];
             }
         }
+        mPpu->LY = mPpu->LY + 1;
     }
     UpdateTexture(gameTexture, screenPixelArray);
+    mPpu->bufferScreen = false;
+}
+
+void Screen::reset() {
+    screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
+    tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
+    tilesMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
 }

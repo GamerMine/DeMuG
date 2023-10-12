@@ -13,8 +13,9 @@ public:
     explicit SharpSM83(class Bus *bus);
 
     void reset();
-
     void operator()();
+
+    static bool PAUSE;
 
 private:
     union {

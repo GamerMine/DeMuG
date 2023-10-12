@@ -16,9 +16,10 @@
 
 class Screen {
 public:
-    Screen(class Ppu *ppu);
+    explicit Screen(class Ppu *ppu);
 
     void operator()();
+    void reset();
 
 private:
     class Ppu *mPpu;
@@ -40,7 +41,7 @@ private:
     void render();
     void renderTilesData();
     void setTileData();
-    void bufferTilesMap();
+    void generateTileMap1();
     void bufferScreen();
 
 };

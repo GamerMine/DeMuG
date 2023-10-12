@@ -7,8 +7,28 @@ Ppu::Ppu() {
     SCX = 0x00;
     LY = 0x00;
     LYC = 0x00;
+    BGP.raw = 0x00;
+    OBP0.raw = 0x00;
+    OBP1.raw = 0x00;
 
     screen = new Screen(this);
+}
+
+void Ppu::reset() {
+    screen->reset();
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(10ms);
+    LCDC.raw = 0x00;
+    STAT.raw = 0x00;
+    SCY = 0x00;
+    SCX = 0x00;
+    LY = 0x00;
+    LYC = 0x00;
+    BGP.raw = 0x00;
+    OBP0.raw = 0x00;
+    OBP1.raw = 0x00;
+
+    for (uint8_t &i : vram) i = 0x00;
 }
 
 void Ppu::operator()() {
