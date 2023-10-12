@@ -13,6 +13,7 @@ Ppu::Ppu() {
 
 void Ppu::operator()() {
     std::thread screenThread(std::ref(*screen));
+    bufferScreen = false;
     screenThread.join();
 }
 

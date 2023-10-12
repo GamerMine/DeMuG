@@ -92,3 +92,7 @@ void Bus::readBootRom() {
 
     file.close();
 }
+
+void Bus::sendPpuWorkSignal() {
+    ppu->bufferScreen = true;
+}

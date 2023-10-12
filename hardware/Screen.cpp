@@ -36,7 +36,7 @@ void Screen::operator()() {
 
         setTileData();
         bufferTilesMap();
-        bufferScreen();
+        if (mPpu->bufferScreen) bufferScreen();
 
         if (currentTime - lastTime >= 1.0 / FRAMERATE) {
             lastTime = currentTime;
@@ -61,7 +61,7 @@ void Screen::render() {
         ClearBackground(DARKBLUE);
         DrawTexturePro(gameTexture,
                        (Rectangle){0, 0, static_cast<float>(gameTexture.width), static_cast<float>(gameTexture.height)},
-                       (Rectangle){0, 0, static_cast<float>(gameTexture.width), static_cast<float>(gameTexture.height)},
+                       (Rectangle){0, 0, static_cast<float>(gameTexture.width * 5), static_cast<float>(gameTexture.height * 5)},
                        (Vector2){0, 0},
                        0,
                        RAYWHITE);
@@ -127,6 +127,7 @@ void Screen::bufferTilesMap() {
 }
 
 void Screen::bufferScreen() {
+    mPpu->bufferScreen = false;
     for (uint8_t y = 0; y < 153; y++) {
         if (mPpu->LY >= 153) mPpu->LY = 0x00;
         mPpu->LY = mPpu->LY + 1;

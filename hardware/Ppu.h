@@ -84,6 +84,8 @@ public:
     } OBP1{}; // 0xFF49
 
     uint8_t vram[RAM_SIZE]{};
+
+    std::atomic<bool> bufferScreen;
 };
 
 #endif //EMU_GAMEBOY_PPU_H

@@ -27,9 +27,14 @@ void SharpSM83::reset() {
 
 void SharpSM83::operator()() {
     using namespace std::chrono_literals;
+    size_t cycles;
     while (!Bus::GLOBAL_HALT) {
         uint8_t instr = mBus->read(PC++);
-        opcodes[instr]();
+        cycles += opcodes[instr]();
+        if (cycles >= 70224*3) {
+            cycles = 0;
+            mBus->sendPpuWorkSignal();
+        }
     }
 }
 
