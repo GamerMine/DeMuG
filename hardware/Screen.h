@@ -5,10 +5,9 @@
 #define DEFAULT_HEIGHT 144
 #define FRAMERATE 59.7
 #define WINDOW_NAME "Emu_GameBoy"
-#define LOGGER_NAME "Rendering"
 
 #include <cstdio>
-#include "raylib.h"
+#include <raylib.h>
 #include <thread>
 
 #include "../logging/Logger.h"
@@ -37,6 +36,9 @@ private:
     uint8_t tilesData[0xFF][8][8]{};
 
     Texture2D gameTexture{}, tilesDataTexture{}, tilesMapTexture{};
+
+    static void DrawInstructions(int x, int y);
+    static void DrawFlags(int x, int y);
 
     void render();
     void renderTilesData();

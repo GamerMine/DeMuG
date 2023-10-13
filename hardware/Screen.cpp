@@ -71,19 +71,41 @@ void Screen::render() {
                        RAYWHITE);
         DrawTexturePro(tilesDataTexture,
                        (Rectangle){0, 0, static_cast<float>(tilesDataTexture.width), static_cast<float>(tilesDataTexture.height)},
-                       (Rectangle){820, 320, static_cast<float>(tilesDataTexture.width * 3), static_cast<float>(tilesDataTexture.height * 3)},
+                       (Rectangle){810, static_cast<float>(GetRenderHeight() - tilesDataTexture.height * 2 - 10), static_cast<float>(tilesDataTexture.width * 2), static_cast<float>(tilesDataTexture.height * 2)},
                        (Vector2){0, 0},
                        0,
                        RAYWHITE);
-        DrawTexturePro(tilesMapTexture,
+        /*DrawTexturePro(tilesMapTexture,
                        (Rectangle){0, 0, static_cast<float>(tilesMapTexture.width), static_cast<float>(tilesMapTexture.height)},
                        (Rectangle){820, 0, static_cast<float>(tilesMapTexture.width), static_cast<float>(tilesMapTexture.height)},
                        (Vector2){0, 0},
                        0,
-                       RAYWHITE);
+                       RAYWHITE);*/
+        DrawInstructions(820, 0);
+        DrawFlags(1100, 0);
         EndDrawing();
     }
 }
+
+void Screen::DrawInstructions(int x, int y) {
+    if (!SharpSM83::DEBUG_INFO.instrLog.empty()) {
+        for (int8_t entry = 0; entry < 9; entry++) {
+            if (entry == 4) {
+                DrawText(SharpSM83::DEBUG_INFO.instrLog[entry].c_str(), x, (y + entry) * 32, 30, YELLOW);
+            } else {
+                DrawText(SharpSM83::DEBUG_INFO.instrLog[entry].c_str(), x, (y + entry) * 32, 30, WHITE);
+            }
+        }
+    }
+}
+
+void Screen::DrawFlags(int x, int y) {
+    DrawText("Z", x, y * 32, 30, SharpSM83::DEBUG_INFO.Z ? GREEN : RED);
+    DrawText("C", x, (y + 1) * 32, 30, SharpSM83::DEBUG_INFO.C ? GREEN : RED);
+    DrawText("N", x, (y + 2) * 32, 30, SharpSM83::DEBUG_INFO.N ? GREEN : RED);
+    DrawText("HC", x, (y + 3) * 32, 30, SharpSM83::DEBUG_INFO.HC ? GREEN : RED);
+}
+
 
 void Screen::renderTilesData() {
     for (uint8_t tile = 0; tile < 0xFF; tile++) {

@@ -5,7 +5,8 @@ std::vector<InputManager::sKey> InputManager::registeredKeys = {};
 InputManager::InputManager(class Bus *bus) {
     mBus = bus;
     registerKey(KEY_R);
-    registerKey(KEY_P);
+    registerKey(KEY_SPACE);
+    registerKey(KEY_N);
 }
 
 void InputManager::operator()() {
@@ -31,12 +32,16 @@ void InputManager::registerKey(int key) {
 
 void InputManager::keyPressed(int key) {
     switch (key) {
-        case KEY_P: {
+        case KEY_SPACE: {
             SharpSM83::PAUSE = !SharpSM83::PAUSE;
             break;
         }
         case KEY_R: {
             mBus->reset();
+            break;
+        }
+        case KEY_N: {
+            SharpSM83::NEXT_INSTR = true;
             break;
         }
         default: {break;}
