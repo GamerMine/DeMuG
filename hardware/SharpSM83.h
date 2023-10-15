@@ -67,6 +67,7 @@ private:
     } registers{};
 
     uint16_t PC, SP;
+    bool interruptShouldBeEnabled, IME; // Interrupt master enable flag
     Bus *mBus;
     static Logger *logger;
 
@@ -211,14 +212,14 @@ private:
             [this]() {return ADD(&registers.L);},
             [this]() {return ADD(registers.HL);},
             [this]() {return ADD(&registers.A);},
-            [this]() {return ADC(&registers.A, &registers.B);},
-            [this]() {return ADC(&registers.A, &registers.C);},
-            [this]() {return ADC(&registers.A, &registers.D);},
-            [this]() {return ADC(&registers.A, &registers.E);},
-            [this]() {return ADC(&registers.A, &registers.H);},
-            [this]() {return ADC(&registers.A, &registers.L);},
-            [this]() {return ADC(&registers.A, nullptr);},
-            [this]() {return ADC(&registers.A, &registers.A);},
+            [this]() {return ADC(&registers.B);},
+            [this]() {return ADC(&registers.C);},
+            [this]() {return ADC(&registers.D);},
+            [this]() {return ADC(&registers.E);},
+            [this]() {return ADC(&registers.H);},
+            [this]() {return ADC(&registers.L);},
+            [this]() {return ADC(registers.HL);},
+            [this]() {return ADC(&registers.A);},
             [this]() {return SUB(&registers.B);},
             [this]() {return SUB(&registers.C);},
             [this]() {return SUB(&registers.D);},
@@ -235,14 +236,14 @@ private:
             [this]() {return SBC(&registers.A, &registers.L);},
             [this]() {return SBC(&registers.A, nullptr);},
             [this]() {return SBC(&registers.A, &registers.A);},
-            [this]() {return AND(&registers.A, &registers.B);},
-            [this]() {return AND(&registers.A, &registers.C);},
-            [this]() {return AND(&registers.A, &registers.D);},
-            [this]() {return AND(&registers.A, &registers.E);},
-            [this]() {return AND(&registers.A, &registers.H);},
-            [this]() {return AND(&registers.A, &registers.L);},
-            [this]() {return AND(&registers.A, nullptr);},
-            [this]() {return AND(&registers.A, &registers.A);},
+            [this]() {return AND(&registers.B);},
+            [this]() {return AND(&registers.C);},
+            [this]() {return AND(&registers.D);},
+            [this]() {return AND(&registers.E);},
+            [this]() {return AND(&registers.H);},
+            [this]() {return AND(&registers.L);},
+            [this]() {return AND(registers.HL);},
+            [this]() {return AND(&registers.A);},
             [this]() {return XOR(&registers.B);},
             [this]() {return XOR(&registers.C);},
             [this]() {return XOR(&registers.D);},
@@ -251,14 +252,14 @@ private:
             [this]() {return XOR(&registers.L);},
             [this]() {return XOR(registers.HL);},
             [this]() {return XOR(&registers.A);},
-            [this]() {return OR(&registers.A, &registers.B);},
-            [this]() {return OR(&registers.A, &registers.C);},
-            [this]() {return OR(&registers.A, &registers.D);},
-            [this]() {return OR(&registers.A, &registers.E);},
-            [this]() {return OR(&registers.A, &registers.H);},
-            [this]() {return OR(&registers.A, &registers.L);},
-            [this]() {return OR(&registers.A, nullptr);},
-            [this]() {return OR(&registers.A, &registers.A);},
+            [this]() {return OR(&registers.B);},
+            [this]() {return OR(&registers.C);},
+            [this]() {return OR(&registers.D);},
+            [this]() {return OR(&registers.E);},
+            [this]() {return OR(&registers.H);},
+            [this]() {return OR(&registers.L);},
+            [this]() {return OR(registers.HL);},
+            [this]() {return OR(&registers.A);},
             [this]() {return CP(&registers.B);},
             [this]() {return CP(&registers.C);},
             [this]() {return CP(&registers.D);},
@@ -281,12 +282,12 @@ private:
             [this]() {return PREFIX();},
             [this]() {return CALL(&flags.zero);},
             [this]() {return CALL(nullptr);},
-            [this]() {return ADC(&registers.A, nullptr);},
+            [this]() {return ADC(nullptr);},
             [this]() {return RST(0x0008);},
             [this]() {return RET(&flags.carry, true);},
             [this]() {return POP(&registers.DE);},
             [this]() {return JP(&flags.carry, true);},
-            NIMP,
+            [this]() {return NIMP();},
             [this]() {return CALL(&flags.carry, true);},
             [this]() {return PUSH(&registers.DE);},
             [this]() {return SUB(nullptr);},
@@ -294,41 +295,41 @@ private:
             [this]() {return RET(&flags.carry);},
             [this]() {return RETI();},
             [this]() {return JP(&flags.carry);},
-            NIMP,
+            [this]() {return NIMP();},
             [this]() {return CALL(&flags.carry);},
-            NIMP,
+            [this]() {return NIMP();},
             [this]() {return SBC(&registers.A, nullptr);},
             [this]() {return RST(0x0018);},
             [this]() {return LDH(nullptr);},
             [this]() {return POP(&registers.HL);},
             [this]() {return LD(registers.C, &registers.A);},
-            NIMP,
-            NIMP,
+            [this]() {return NIMP();},
+            [this]() {return NIMP();},
             [this]() {return PUSH(&registers.HL);},
-            [this]() {return AND(&registers.A, nullptr);},
+            [this]() {return AND(nullptr);},
             [this]() {return RST(0x0020);},
             [this]() {return ADD(&SP, nullptr);},
             [this]() {return JP(&registers.HL);},
             [this]() {return LD(nullptr);},
-            NIMP,
-            NIMP,
-            NIMP,
+            [this]() {return NIMP();},
+            [this]() {return NIMP();},
+            [this]() {return NIMP();},
             [this]() {return XOR(nullptr);},
             [this]() {return RST(0x0028);},
             [this]() {return LDH(&registers.A);},
             [this]() {return POP(nullptr);},
             [this]() {return LD(&registers.A, registers.C);},
             [this]() {return DI();},
-            NIMP,
+            [this]() {return NIMP();},
             [this]() {return PUSH(nullptr);},
-            [this]() {return OR(&registers.A, nullptr);},
+            [this]() {return OR(nullptr);},
             [this]() {return RST(0x0030);},
             [this]() {return LD(&registers.HL, &SP, true);},
             [this]() {return LD(&SP, &registers.HL);},
             [this]() {return LD(&registers.A);},
             [this]() {return EI();},
-            NIMP,
-            NIMP,
+            [this]() {return NIMP();},
+            [this]() {return NIMP();},
             [this]() {return CP(nullptr);},
             [this]() {return RST(0x0038);},
     };
@@ -854,7 +855,7 @@ private:
 
 private:
     // Normal instructions
-    static uint8_t NIMP();
+    uint8_t NIMP();
     uint8_t NOP();
     uint8_t LD(uint8_t *reg);
     uint8_t LD(uint8_t *reg1, const uint8_t *reg2);
@@ -872,15 +873,18 @@ private:
     uint8_t RLCA();
     uint8_t ADD(const uint8_t *reg);
     uint8_t ADD(uint16_t reg);
-    uint8_t ADD(uint16_t *reg1, uint16_t *reg2);
-    uint8_t ADC(uint8_t *reg1, uint8_t *reg2);
+    uint8_t ADD(uint16_t *reg1, const uint16_t *reg2);
+    uint8_t ADC(const uint8_t *reg);
+    uint8_t ADC(uint16_t reg);
     uint8_t SUB(const uint8_t *reg);
-    uint8_t SUB(uint8_t reg);
+    uint8_t SUB(uint16_t reg);
     uint8_t SBC(uint8_t *reg1, uint8_t *reg2);
-    uint8_t AND(uint8_t *reg1, uint8_t *reg2);
+    uint8_t AND(const uint8_t *reg);
+    uint8_t AND(uint16_t reg);
     uint8_t XOR(const uint8_t *reg);
     uint8_t XOR(uint16_t reg);
-    uint8_t OR(uint8_t *reg1, uint8_t *reg2);
+    uint8_t OR(const uint8_t *reg);
+    uint8_t OR(uint16_t reg);
     uint8_t CP(const uint8_t *reg);
     uint8_t CP(uint16_t reg);
     uint8_t RRCA();
@@ -895,8 +899,8 @@ private:
     uint8_t HALT();
     uint8_t RET(const bool *flag, bool invert = false);
     uint8_t POP(uint16_t *reg);
-    uint8_t JP(bool *flag, bool invert = false);
-    uint8_t JP(uint16_t *reg);
+    uint8_t JP(const bool *flag, bool invert = false);
+    uint8_t JP(const uint16_t *reg);
     uint8_t CALL(const bool *flag, bool invert = false);
     uint8_t PUSH(const uint16_t *reg);
     uint8_t RST(uint16_t addr);

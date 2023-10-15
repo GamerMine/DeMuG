@@ -25,17 +25,43 @@ public:
 
     void reset();
 
+    union {
+        struct {
+            bool unused : 3;
+            bool joypad : 1;
+            bool serial : 1;
+            bool timer  : 1;
+            bool lcd    : 1;
+            bool vblank : 1;
+        };
+        uint8_t raw;
+    } IE {}; // Interrupt Enable controls handlers calls
+
+    union {
+        struct {
+            bool unused : 3;
+            bool joypad : 1;
+            bool serial : 1;
+            bool timer  : 1;
+            bool lcd    : 1;
+            bool vblank : 1;
+        };
+        uint8_t raw;
+    } IF {}; // Interrupt flag controls handlers request
+
 private:
     class SharpSM83 *cpu;
     class Ppu *ppu;
     class InputManager *inputManager;
     Logger *logger;
+
     const char *romName;
+    uint8_t disableBootRom;
 
     uint8_t bootRom[BOOT_ROM_SIZE]{};
     uint8_t ram[RAM_SIZE]{};
     uint8_t hram[HRAM_SIZE]{};
-    uint8_t *gameRom;
+    std::array<uint8_t, 32*1024> gameRom;
 
     void readGameRom(const char *filename);
     void readBootRom();

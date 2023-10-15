@@ -11,6 +11,8 @@ SharpSM83::SharpSM83(class Bus *bus) {
     PC = 0x0000;
     SP = 0x0000;
     flags.rawFlags = 0x00;
+    interruptShouldBeEnabled = false;
+    IME = false;
 
     logger = Logger::getInstance("Cpu");
 }
@@ -26,6 +28,8 @@ void SharpSM83::reset() {
     registers.H = 0;
     registers.L = 0;
     flags.rawFlags = 0x00;
+    interruptShouldBeEnabled = false;
+    IME = false;
 }
 
 void SharpSM83::operator()() {
@@ -35,6 +39,8 @@ void SharpSM83::operator()() {
         if (!PAUSE || NEXT_INSTR) {
             NEXT_INSTR = false;
             uint8_t instr = mBus->read(PC++);
+            //if (PC - 1 >= 0x03A0) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr].c_str(), PC - 1);
+            if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             cycles += opcodes[instr]();
             if (cycles >= 70224) { // Considering the Game Boy CPU is running at 4194304Hz (~4.19Mhz) and the screen refreshing at ~59.7275hz = 4194304/59.7275 ~= 70224 cycles
                 cycles = 0;
@@ -77,6 +83,7 @@ uint8_t SharpSM83::LD(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::LD(uint16_t *reg1, const uint16_t *reg2, bool addDataToSP) { // TODO: Support for addDataToSP
+    if (addDataToSP) logger->log(Logger::WARNING, "Using an unimplemented function of LD 'addDataToSP'");
     uint8_t cycles;
     if (reg1 == nullptr) {
         uint16_t addr = mBus->read(PC + 1) << 8 | mBus->read(PC);
@@ -410,7 +417,7 @@ uint8_t SharpSM83::RL(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::NIMP() {
-    logger->log(Logger::DEBUG, "Not implemented 1"); return 0;
+    logger->log(Logger::WARNING, "Not implemented following %s at %X", opcodeStr[mBus->read(PC - 2)].c_str(), PC - 2); return 0;
 }
 
 uint8_t SharpSM83::LD(uint8_t *reg1, uint8_t reg2) {
@@ -418,19 +425,44 @@ uint8_t SharpSM83::LD(uint8_t *reg1, uint8_t reg2) {
 }
 
 uint8_t SharpSM83::INC(uint16_t reg) {
-    logger->log(Logger::DEBUG, "Not implemented 3"); return 0;
+    uint8_t value = mBus->read(reg);
+    value = value + 1;
+    mBus->write(reg, value);
+
+    flags.zero = value == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = value > 0xF;
+
+    return 3;
 }
 
 uint8_t SharpSM83::DEC(uint16_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented 4"); return 0;
+    *reg = *reg - 1;
+
+    return 2;
 }
 
 uint8_t SharpSM83::DEC(uint16_t reg) {
-    logger->log(Logger::DEBUG, "Not implemented 5"); return 0;
+    uint8_t value = mBus->read(reg);
+    value = value - 1;
+    mBus->write(reg, value);
+
+    flags.zero = value == 0x00;
+    flags.negative = 1;
+    flags.halfCarry = value > 0xF;
+
+    return 3;
 }
 
 uint8_t SharpSM83::RLCA() {
-    logger->log(Logger::DEBUG, "Not implemented 6"); return 0;
+    flags.carry = registers.A >> 7;
+    registers.A = (registers.A << 1) + flags.carry;
+
+    flags.zero = 0;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+
+    return 1;
 }
 
 uint8_t SharpSM83::ADD(const uint8_t *reg) {
@@ -465,44 +497,158 @@ uint8_t SharpSM83::ADD(uint16_t reg) {
     return 0;
 }
 
-uint8_t SharpSM83::ADD(uint16_t *reg1, uint16_t *reg2) {
-    logger->log(Logger::DEBUG, "Not implemented 7"); return 0;
+uint8_t SharpSM83::ADD(uint16_t *reg1, const uint16_t *reg2) {
+    uint8_t cycles;
+    if (reg2 == nullptr) {
+        *reg1 = *reg1 + (int8_t)mBus->read(PC++);
+
+        flags.zero = 0;
+        flags.negative = 0;
+        flags.halfCarry = *reg1 > 0xF;
+        flags.carry = *reg1 > 0xFF;
+        cycles = 4;
+    } else {
+        uint32_t value = *reg1 + *reg2;
+        *reg1 = *reg1 + *reg2;
+        flags.negative = 0;
+        flags.halfCarry = (value >> 8) > 0xF;
+        flags.carry = (value >> 8) > 0xFF;
+        cycles = 2;
+    }
+
+    return cycles;
 }
 
-uint8_t SharpSM83::ADC(uint8_t *reg1, uint8_t *reg2) {
-    logger->log(Logger::DEBUG, "Not implemented 8"); return 0;
+uint8_t SharpSM83::ADC(const uint8_t *reg) {
+    uint8_t cycles;
+    uint16_t result;
+    if (reg == nullptr) {
+        result = registers.A + mBus->read(PC++) + flags.carry;
+        cycles = 2;
+    } else {
+        result = registers.A + *reg + flags.carry;
+        cycles = 1;
+    }
+    registers.A = (uint8_t)result;
+
+    flags.zero = (result & 0xFF) == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = result > 0xF;
+    flags.carry = result > 0xFF;
+
+    return cycles;
 }
 
-uint8_t SharpSM83::SUB(uint8_t reg) {
-    logger->log(Logger::DEBUG, "Not implemented 9"); return 0;
+uint8_t SharpSM83::ADC(uint16_t reg) {
+    uint16_t result = registers.A + mBus->read(reg) + flags.carry;
+    registers.A = (uint8_t)result;
+
+    flags.zero = (result & 0xFF) == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = result > 0xF;
+    flags.carry = result > 0xFF;
+
+    return 2;
+}
+
+uint8_t SharpSM83::SUB(uint16_t reg) {
+    uint8_t value = mBus->read(reg);
+
+    flags.zero = (registers.A - value) == 0x00;
+    flags.negative = 1;
+    flags.halfCarry = (registers.A - value) > 0xF;
+    flags.carry = value > registers.A;
+
+    registers.A = registers.A - value;
+
+    return 2;
 }
 
 uint8_t SharpSM83::SBC(uint8_t *reg1, uint8_t *reg2) {
     logger->log(Logger::DEBUG, "Not implemented 10"); return 0;
 }
 
-uint8_t SharpSM83::AND(uint8_t *reg1, uint8_t *reg2) {
-    logger->log(Logger::DEBUG, "Not implemented 11"); return 0;
+uint8_t SharpSM83::AND(const uint8_t *reg) {
+    uint8_t cycles;
+    if (reg == nullptr) {
+        registers.A = registers.A & mBus->read(PC++);
+        cycles = 2;
+    } else {
+        registers.A = registers.A & *reg;
+        cycles = 1;
+    }
+
+    flags.zero = registers.A == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 1;
+    flags.carry = 0;
+
+    return cycles;
+}
+
+uint8_t SharpSM83::AND(uint16_t reg) {
+    registers.A = registers.A & mBus->read(reg);
+
+    flags.zero = registers.A == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 1;
+    flags.carry = 0;
+
+    return 2;
 }
 
 uint8_t SharpSM83::XOR(uint16_t reg) {
     logger->log(Logger::DEBUG, "Not implemented 12"); return 0;
 }
 
-uint8_t SharpSM83::OR(uint8_t *reg1, uint8_t *reg2) {
-    logger->log(Logger::DEBUG, "Not implemented 13"); return 0;
+uint8_t SharpSM83::OR(const uint8_t *reg) {
+    uint8_t cycles;
+    if (reg == nullptr) {
+        registers.A = registers.A | mBus->read(PC++);
+        cycles = 2;
+    } else {
+        registers.A = registers.A | *reg;
+        cycles = 1;
+    }
+
+    flags.zero = registers.A == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+    flags.carry = 0;
+
+    return cycles;
+}
+
+uint8_t SharpSM83::OR(uint16_t reg) {
+    registers.A = registers.A | mBus->read(reg);
+
+    flags.zero = registers.A == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+    flags.carry = 0;
+
+    return 2;
 }
 
 uint8_t SharpSM83::RRCA() {
     logger->log(Logger::DEBUG, "Not implemented 14"); return 0;
 }
 
-uint8_t SharpSM83::STOP() {
-    logger->log(Logger::DEBUG, "Not implemented 15"); return 0;
+uint8_t SharpSM83::STOP() { // The STOP instruction seems to be resest after a key press
+    //PAUSE = true; // TODO skipping this instruction
+
+    return 0;
 }
 
 uint8_t SharpSM83::RRA() {
-    logger->log(Logger::DEBUG, "Not implemented 16"); return 0;
+    flags.carry = registers.A & 0x01;
+    registers.A = (registers.A >> 1) + (flags.carry << 7);
+
+    flags.zero = 0;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+
+    return 1;
 }
 
 uint8_t SharpSM83::DAA() {
@@ -510,7 +656,12 @@ uint8_t SharpSM83::DAA() {
 }
 
 uint8_t SharpSM83::CPL() {
-    logger->log(Logger::DEBUG, "Not implemented 18"); return 0;
+    registers.A = ~registers.A;
+
+    flags.negative = 1;
+    flags.halfCarry = 1;
+
+    return 0;
 }
 
 uint8_t SharpSM83::SCF() {
@@ -525,16 +676,48 @@ uint8_t SharpSM83::HALT() {
     logger->log(Logger::DEBUG, "Not implemented 21"); return 0;
 }
 
-uint8_t SharpSM83::JP(bool *flag, bool invert) {
-    logger->log(Logger::DEBUG, "Not implemented 22\tPC = %X", PC - 1); return 0;
+uint8_t SharpSM83::JP(const bool *flag, bool invert) {
+    uint8_t cycles;
+    if (flag == nullptr) {
+        PC = mBus->read(PC + 1) << 8 | mBus->read(PC);
+        cycles = 4;
+    } else {
+        if (invert) {
+            if (!*flag) {
+                PC = mBus->read(PC + 1) << 8 | mBus->read(PC);
+                cycles = 4;
+            } else {
+                PC = PC + 2;
+                cycles = 3;
+            }
+        } else {
+            if (*flag) {
+                PC = mBus->read(PC + 1) << 8 | mBus->read(PC);
+                cycles = 4;
+            } else {
+                PC = PC + 2;
+                cycles = 3;
+            }
+        }
+    }
+
+    return cycles;
 }
 
-uint8_t SharpSM83::JP(uint16_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented 23"); return 0;
+uint8_t SharpSM83::JP(const uint16_t *reg) {
+    PC = *reg;
+
+    return 1;
 }
 
 uint8_t SharpSM83::RST(uint16_t addr) {
-    logger->log(Logger::DEBUG, "Not implemented 24"); return 0;
+    SP--;
+    mBus->write(SP--, PC >> 8);
+    mBus->write(SP, PC & 0xFF);
+
+    PC = addr;
+
+    return 4;
 }
 
 uint8_t SharpSM83::RETI() {
@@ -542,11 +725,15 @@ uint8_t SharpSM83::RETI() {
 }
 
 uint8_t SharpSM83::DI() {
-    logger->log(Logger::DEBUG, "Not implemented 26"); return 0;
+    interruptShouldBeEnabled = false;
+
+    return 1;
 }
 
 uint8_t SharpSM83::EI() {
-    logger->log(Logger::DEBUG, "Not implemented 27"); return 0;
+    interruptShouldBeEnabled = true;
+
+    return 1;
 }
 
 uint8_t SharpSM83::RLC(uint8_t *reg) {
@@ -562,25 +749,54 @@ uint8_t SharpSM83::RR(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::SLA(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented 31"); return 0;
 }
 
 uint8_t SharpSM83::SRA(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented 32"); return 0;
 }
 
 uint8_t SharpSM83::SWAP(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented"); return 0;
+    uint8_t cycles;
+    uint8_t value;
+    if (reg == nullptr) {
+        value = mBus->read(registers.HL);
+        value = value << 4 | value >> 4;
+        mBus->write(registers.HL, value);
+        cycles = 4;
+    } else {
+        *reg = *reg << 4 | *reg >> 4;
+        value = *reg;
+        cycles = 2;
+    }
+
+    flags.zero = value == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+    flags.carry = 0;
+
+    return cycles;
 }
 
 uint8_t SharpSM83::SRL(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented 34"); return 0;
 }
 
 uint8_t SharpSM83::RES(uint8_t bit, uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented"); return 0;
+    uint8_t cycles;
+    if (reg == nullptr) {
+        uint8_t value = mBus->read(registers.HL);
+        value = value & ~(1 << bit);
+        mBus->write(registers.HL, value);
+        cycles = 4;
+    } else {
+        *reg = *reg & ~(1 << bit);
+        cycles = 2;
+    }
+
+    return cycles;
 }
 
 uint8_t SharpSM83::SET(uint8_t bit, uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented"); return 0;
+    logger->log(Logger::DEBUG, "Not implemented 36"); return 0;
 }
