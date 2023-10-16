@@ -57,7 +57,9 @@ void SharpSM83::generateDebugDrawInfos() {
             DEBUG_INFO.instrLog.clear();
             for (int8_t entry = 0; entry < 9; entry++) {
                 uint8_t instr = mBus->read((PC - 4) + entry);
-                DEBUG_INFO.instrLog.push_back(std::format("{:X}: {:s}", ((PC - 4) + entry), opcodeStr[instr]));
+                std::stringstream ss;
+                ss << std::hex << ((PC - 4) + entry) << " " << opcodeStr[instr];
+                DEBUG_INFO.instrLog.push_back(ss.str());
             }
             DEBUG_INFO.Z = flags.zero;
             DEBUG_INFO.C = flags.carry;
@@ -598,7 +600,14 @@ uint8_t SharpSM83::AND(uint16_t reg) {
 }
 
 uint8_t SharpSM83::XOR(uint16_t reg) {
-    logger->log(Logger::DEBUG, "Not implemented 12"); return 0;
+    registers.A = mBus->read(reg) ^ registers.A;
+
+    flags.zero = registers.A == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+    flags.carry = 0;
+
+    return 2;
 }
 
 uint8_t SharpSM83::OR(const uint8_t *reg) {
@@ -800,3 +809,5 @@ uint8_t SharpSM83::RES(uint8_t bit, uint8_t *reg) {
 uint8_t SharpSM83::SET(uint8_t bit, uint8_t *reg) {
     logger->log(Logger::DEBUG, "Not implemented 36"); return 0;
 }
+
+SharpSM83::debugInfo::~debugInfo() = default;

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <thread>
+#include <format>
 #include <vector>
 #include <string>
 
@@ -24,6 +25,7 @@ public:
         bool C;
         bool HC;
         bool N;
+        ~debugInfo();
     };
 
     static bool PAUSE;

@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.26)
 project(Emu_GameBoy C CXX)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(PROJECT_VERSION 1.0.0)
 
 set(SOURCE_FILES
@@ -23,9 +24,9 @@ set(HEADER_FILES
         hardware/SharpSM83.h
 )
 
-add_compile_options(-Wall -Wextra)
 add_subdirectory(lib/raylib)
 add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
+target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra -fno-rtti)
 if (UNIX OR LINUX)
     target_link_libraries(Emu_GameBoy pthread raylib)
 elseif (WIN32)
