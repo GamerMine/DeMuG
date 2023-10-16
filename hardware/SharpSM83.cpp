@@ -34,11 +34,16 @@ void SharpSM83::reset() {
 
 void SharpSM83::operator()() {
     size_t cycles;
-    std::thread tFill{&SharpSM83::generateDebugDrawInfos, this};
     while (!Bus::GLOBAL_HALT) {
         if (!PAUSE || NEXT_INSTR) {
             NEXT_INSTR = false;
             uint8_t instr = mBus->read(PC++);
+            DEBUG_INFO.currentInstr = opcodeStr[instr];
+            DEBUG_INFO.currentAddr = PC - 1;
+            DEBUG_INFO.Z = flags.zero;
+            DEBUG_INFO.C = flags.carry;
+            DEBUG_INFO.HC = flags.halfCarry;
+            DEBUG_INFO.N = flags.negative;
             //if (PC - 1 >= 0x03A0) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr].c_str(), PC - 1);
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             cycles += opcodes[instr]();
@@ -46,25 +51,6 @@ void SharpSM83::operator()() {
                 cycles = 0;
                 mBus->sendPpuWorkSignal();
             }
-        }
-    }
-    tFill.join();
-}
-
-void SharpSM83::generateDebugDrawInfos() {
-    while (!Bus::GLOBAL_HALT) {
-        if (!PAUSE || NEXT_INSTR) {
-            DEBUG_INFO.instrLog.clear();
-            for (int8_t entry = 0; entry < 9; entry++) {
-                uint8_t instr = mBus->read((PC - 4) + entry);
-                std::stringstream ss;
-                ss << std::hex << ((PC - 4) + entry) << " " << opcodeStr[instr];
-                DEBUG_INFO.instrLog.push_back(ss.str());
-            }
-            DEBUG_INFO.Z = flags.zero;
-            DEBUG_INFO.C = flags.carry;
-            DEBUG_INFO.HC = flags.halfCarry;
-            DEBUG_INFO.N = flags.negative;
         }
     }
 }
@@ -419,7 +405,7 @@ uint8_t SharpSM83::RL(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::NIMP() {
-    logger->log(Logger::WARNING, "Not implemented following %s at %X", opcodeStr[mBus->read(PC - 2)].c_str(), PC - 2); return 0;
+    logger->log(Logger::WARNING, "Not implemented following %s at %X", opcodeStr[mBus->read(PC - 2)], PC - 2); return 0;
 }
 
 uint8_t SharpSM83::LD(uint8_t *reg1, uint8_t reg2) {

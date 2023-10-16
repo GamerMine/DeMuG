@@ -88,15 +88,41 @@ void Screen::render() {
 }
 
 void Screen::DrawInstructions(int x, int y) {
-    if (!SharpSM83::DEBUG_INFO.instrLog.empty()) {
-        for (int8_t entry = 0; entry < 9; entry++) {
-            if (entry == 4) {
-                DrawText(SharpSM83::DEBUG_INFO.instrLog[entry].c_str(), x, (y + entry) * 32, 30, YELLOW);
-            } else {
-                DrawText(SharpSM83::DEBUG_INFO.instrLog[entry].c_str(), x, (y + entry) * 32, 30, WHITE);
-            }
-        }
-    }
+    std::stringstream ss;
+    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr - 4) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr - 4)];
+    DrawText(ss.str().c_str(), x, (y + 0) * 32, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr - 3) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr - 3)];
+    DrawText(ss.str().c_str(), x, (y + 1) * 32, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr - 2) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr - 2)];
+    DrawText(ss.str().c_str(), x, (y + 2) * 32, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr - 1) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr - 1)];
+    DrawText(ss.str().c_str(), x, (y + 3) * 32, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.currentAddr << " " << SharpSM83::DEBUG_INFO.currentInstr;
+    DrawText(ss.str().c_str(), x, (y + 4) * 32, 30, YELLOW);
+    ss.str("");
+    ss.clear();
+    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr + 1) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr + 1)];
+    DrawText(ss.str().c_str(), x, (y + 5) * 32, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr + 2) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr + 2)];
+    DrawText(ss.str().c_str(), x, (y + 6) * 32, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr + 3) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr + 3)];
+    DrawText(ss.str().c_str(), x, (y + 7) * 32, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr + 4) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr + 4)];
+    DrawText(ss.str().c_str(), x, (y + 8) * 32, 30, WHITE);
 }
 
 void Screen::DrawFlags(int x, int y) {

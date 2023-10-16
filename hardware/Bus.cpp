@@ -10,7 +10,7 @@ Bus::Bus() {
     readBootRom();
     readGameRom("Tetris.gb");
 
-    ppu = new Ppu;
+    ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
     cpu = new SharpSM83(this);
     std::thread cpuThread(std::ref(*cpu));
@@ -62,7 +62,6 @@ uint8_t Bus::read(uint16_t addr) {
 }
 
 void Bus::readGameRom(const char *filename) {
-    uint16_t i;
     logger->log(Logger::DEBUG, "Reading game : %s", filename);
     std::ifstream file(filename, std::ios::binary);
 

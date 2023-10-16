@@ -1,6 +1,7 @@
 #include "Ppu.h"
 
-Ppu::Ppu() {
+Ppu::Ppu(Bus *bus) {
+    mBus = bus;
     LCDC.raw = 0x00;
     STAT.raw = 0x00;
     SCY = 0x00;

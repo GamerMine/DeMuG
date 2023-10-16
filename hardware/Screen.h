@@ -37,7 +37,7 @@ private:
 
     Texture2D gameTexture{}, tilesDataTexture{}, tilesMapTexture{};
 
-    static void DrawInstructions(int x, int y);
+    void DrawInstructions(int x, int y);
     static void DrawFlags(int x, int y);
 
     void render();

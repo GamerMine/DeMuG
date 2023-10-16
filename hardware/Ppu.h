@@ -13,7 +13,9 @@
 
 class Ppu {
 public:
-    explicit Ppu();
+    explicit Ppu(class Bus *bus);
+
+    class Bus *mBus;
 
     void operator()();
     void reset();
