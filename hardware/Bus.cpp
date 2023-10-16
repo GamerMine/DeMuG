@@ -72,13 +72,7 @@ void Bus::readGameRom(const char *filename) {
     }
     romName = filename;
 
-    char byte;
-    using namespace std::chrono_literals;
-    while (file.get(byte)) {
-        std::this_thread::sleep_for(1us);
-        gameRom[i++] = (uint8_t)byte;
-    }
-
+    file.read(reinterpret_cast<char *>(gameRom.data()), sizeof(char) * gameRom.size());
     file.close();
 }
 
