@@ -38,12 +38,14 @@ void SharpSM83::operator()() {
         if (!PAUSE || NEXT_INSTR) {
             NEXT_INSTR = false;
             uint8_t instr = mBus->read(PC++);
-            DEBUG_INFO.currentInstr = opcodeStr[instr];
-            DEBUG_INFO.currentAddr = PC - 1;
-            DEBUG_INFO.Z = flags.zero;
-            DEBUG_INFO.C = flags.carry;
-            DEBUG_INFO.HC = flags.halfCarry;
-            DEBUG_INFO.N = flags.negative;
+            {
+                DEBUG_INFO.currentInstr = opcodeStr[instr];
+                DEBUG_INFO.currentAddr = PC - 1;
+                DEBUG_INFO.Z = flags.zero;
+                DEBUG_INFO.C = flags.carry;
+                DEBUG_INFO.HC = flags.halfCarry;
+                DEBUG_INFO.N = flags.negative;
+            }
             //if (PC - 1 >= 0x03A0) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr].c_str(), PC - 1);
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             cycles += opcodes[instr]();

@@ -6,6 +6,7 @@
 #define HRAM_SIZE 12
 #define BOOT_ROM_LOCATION "boot/DMG_ROM.bin"
 
+#include <array>
 #include <fstream>
 
 #include "InputManager.h"
