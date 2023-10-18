@@ -37,6 +37,19 @@ void SharpSM83::operator()() {
     while (!Bus::GLOBAL_HALT) {
         if (!PAUSE || NEXT_INSTR) {
             NEXT_INSTR = false;
+            {
+                if (IME) {
+                    if (IE.vblank && IF.vblank) {
+                        IME = 0;
+                        interruptShouldBeEnabled = false;
+                        IF.vblank = 0;
+                        SP--;
+                        mBus->write(SP--, PC >> 8);
+                        mBus->write(SP, PC & 0xFF);
+                        PC = 0x0040;
+                    }
+                }
+            }
             uint8_t instr = mBus->read(PC++);
             {
                 DEBUG_INFO.currentInstr = opcodeStr[instr];
@@ -46,10 +59,10 @@ void SharpSM83::operator()() {
                 DEBUG_INFO.HC = flags.halfCarry;
                 DEBUG_INFO.N = flags.negative;
             }
-            //if (PC - 1 >= 0x03A0) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr].c_str(), PC - 1);
+            if (executingInterrupt) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC - 1);
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             cycles += opcodes[instr]();
-            if (cycles >= 70224) { // Considering the Game Boy CPU is running at 4194304Hz (~4.19Mhz) and the screen refreshing at ~59.7275hz = 4194304/59.7275 ~= 70224 cycles
+            if (cycles >= 70224 * 2) { // Considering the Game Boy CPU is running at 4194304Hz (~4.19Mhz) and the screen refreshing at ~59.7275hz = 4194304/59.7275 ~= 70224 cycles
                 cycles = 0;
                 mBus->sendPpuWorkSignal();
             }
@@ -255,8 +268,8 @@ uint8_t SharpSM83::CALL(const bool *flag, bool invert) {
         if (invert) {
             if (!*flag) {
                 SP--;
-                mBus->write(SP--, PC & 0xFF);
-                mBus->write(SP, PC >> 8);
+                mBus->write(SP--, PC >> 8);
+                mBus->write(SP, PC & 0xFF);
                 PC = addr;
                 cycles = 6;
             } else {
@@ -265,8 +278,8 @@ uint8_t SharpSM83::CALL(const bool *flag, bool invert) {
         } else {
             if (*flag) {
                 SP--;
-                mBus->write(SP--, PC & 0xFF);
-                mBus->write(SP, PC >> 8);
+                mBus->write(SP--, PC >> 8);
+                mBus->write(SP, PC & 0xFF);
                 PC = addr;
                 cycles = 6;
             } else {
@@ -718,7 +731,12 @@ uint8_t SharpSM83::RST(uint16_t addr) {
 }
 
 uint8_t SharpSM83::RETI() {
-    logger->log(Logger::DEBUG, "Not implemented 25"); return 0;
+    PC = mBus->read(SP + 1) << 8 | mBus->read(SP);
+    SP += 2;
+    interruptShouldBeEnabled = true;
+    IME = true;
+
+    return 4;
 }
 
 uint8_t SharpSM83::DI() {

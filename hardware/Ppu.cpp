@@ -60,7 +60,7 @@ void Ppu::write(uint16_t addr, uint8_t data) {
     if (addr == 0xFF41) STAT.raw = data;
     if (addr == 0xFF42) SCY = data;
     if (addr == 0xFF43) SCX = data;
-    if (addr == 0xFF44) Logger::getInstance("PPU")->log(Logger::WARNING, "LY register is read-only");
+    //if (addr == 0xFF44) Logger::getInstance("PPU")->log(Logger::WARNING, "LY register is read-only");
     if (addr == 0xFF45) LYC = data;
     if (addr == 0xFF47) BGP.raw = data;
     if (addr == 0xFF48) OBP0.raw = data;

@@ -186,6 +186,7 @@ void Screen::bufferScreen() {
                 screenPixelArray[y * DEFAULT_WIDTH + x] = tilesMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
                                                                              (mPpu->SCX + x)];
             }
+            if (y == 144) SharpSM83::IF.vblank = 1;
         }
         mPpu->LY = mPpu->LY + 1;
     }

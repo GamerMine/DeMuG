@@ -43,13 +43,22 @@ void Bus::write(uint16_t addr, uint8_t data) {
     if (addr >= 0xFF80 && addr <= 0xFFFE) { // HRAM
         hram[addr - 0xFF80] = data;
     }
-    if (addr == 0xFFFF) logger->log(Logger::DEBUG, "Writing %X to 0xFFFF", data);
+    if (addr == 0xFF0F) {
+        logger->log(Logger::DEBUG, "Writing %X to 0xFF0F", data);
+        SharpSM83::IF.raw = data;
+    }
+    if (addr == 0xFFFF) {
+        logger->log(Logger::DEBUG, "Writing %X to 0xFFFF", data);
+        cpu->IE.raw = data;
+    }
 }
 
 uint8_t Bus::read(uint16_t addr) {
     uint8_t value = 0xFF;
     if (addr <= 0x00FF && !disableBootRom) value = bootRom[addr]; // DMG BOOT ROM if mapped
-    if (addr <= 0x00FF && disableBootRom) value = gameRom[addr]; // Game cartridge if boot rom is unmapped
+    if (addr <= 0x00FF && disableBootRom) {
+        value = gameRom[addr];
+    } // Game cartridge if boot rom is unmapped
     if (addr >= 0x0100 && addr <= 0x7FFF && romName != nullptr) {
         value = gameRom[addr];
     } // Game cartridge
@@ -71,7 +80,7 @@ void Bus::readGameRom(const char *filename) {
     }
     romName = filename;
 
-    file.read(reinterpret_cast<char *>(gameRom.data()), sizeof(char) * gameRom.size());
+    file.read(reinterpret_cast<char *>(gameRom.data()), sizeof(uint8_t) * gameRom.size());
     file.close();
 }
 

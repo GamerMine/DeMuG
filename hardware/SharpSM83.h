@@ -17,6 +17,30 @@ public:
     void reset();
     void operator()();
 
+    union {
+        struct {
+            bool unused : 3;
+            bool joypad : 1;
+            bool serial : 1;
+            bool timer  : 1;
+            bool lcd    : 1;
+            bool vblank : 1;
+        };
+        uint8_t raw;
+    } IE {}; // Interrupt Enable controls handlers calls
+
+    inline static union {
+        struct {
+            bool unused : 3;
+            bool joypad : 1;
+            bool serial : 1;
+            bool timer  : 1;
+            bool lcd    : 1;
+            bool vblank : 1;
+        };
+        uint8_t raw;
+    } IF {}; // Interrupt flag controls handlers request
+
     // Debug //
     struct debugInfo {
         const char *currentInstr;
@@ -28,6 +52,7 @@ public:
         ~debugInfo();
     };
 
+    inline static bool executingInterrupt = false;
     static bool PAUSE;
     static bool NEXT_INSTR;
     static debugInfo DEBUG_INFO;
@@ -47,6 +72,7 @@ private:
         };
         uint8_t rawFlags;
     } flags{};
+
     union {
         union {
             struct {
