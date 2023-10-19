@@ -49,6 +49,6 @@ void InputManager::keyPressed(int key) {
 }
 
 void InputManager::keyReleased(int key) {
-
+    (void) key;
 }
 

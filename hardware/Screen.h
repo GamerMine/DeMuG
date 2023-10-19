@@ -29,12 +29,29 @@ private:
         uint8_t b;
     };
 
+    struct Object {
+        uint8_t Ypos;
+        uint8_t Xpos;
+        uint8_t tileIndex;
+        union {
+            struct {
+                bool unused : 4;
+                bool dmgPalette : 1;
+                bool xFlip : 1;
+                bool yFlip : 1;
+                bool priority : 1;
+            };
+            uint8_t attributes;
+        };
+    };
+
     Pixel *screenPixelArray{};
     Pixel *tilesDataPixelArray{};
     Pixel *backgroundMapPixelArray{};
     Pixel *windowMapPixelArray{};
 
     uint8_t tilesData[0xFF][8][8]{};
+    Object objects[40];
 
     Texture2D gameTexture{}, tilesDataTexture{}, backgroundMapTexture{}, windowMapTexture{};
 
@@ -44,6 +61,7 @@ private:
     void render();
     void renderTilesData();
     void setTileData();
+    void setObjects();
     void generateBackgroundTileMap();
     void generateWindowTileMap();
     void bufferScreen();

@@ -7,9 +7,7 @@
 #include "Screen.h"
 #include "Bus.h"
 
-// Color palette
-#define DARK_GRAY 0x555555
-#define LIGHT_GRAY 0xAAAAAA
+#define OAM_SIZE 0xA0
 
 class Ppu {
 public:
@@ -87,6 +85,7 @@ public:
     } OBP1{}; // 0xFF49
 
     uint8_t vram[RAM_SIZE]{};
+    uint8_t OAM[OAM_SIZE]{};
 
     std::atomic<bool> bufferScreen;
 };

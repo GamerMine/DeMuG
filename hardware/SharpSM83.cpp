@@ -59,10 +59,9 @@ void SharpSM83::operator()() {
                 DEBUG_INFO.HC = flags.halfCarry;
                 DEBUG_INFO.N = flags.negative;
             }
-            if (executingInterrupt) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC - 1);
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             cycles += opcodes[instr]();
-            if (cycles >= 70224) { // Considering the Game Boy CPU is running at 4194304Hz (~4.19Mhz) and the screen refreshing at ~59.7275hz = 4194304/59.7275 ~= 70224 cycles
+            if (cycles >= 70224 * 2) { // Considering the Game Boy CPU is running at 4194304Hz (~4.19Mhz) and the screen refreshing at ~59.7275hz = 4194304/59.7275 ~= 70224 cycles
                 cycles = 0;
                 mBus->sendPpuWorkSignal();
             }

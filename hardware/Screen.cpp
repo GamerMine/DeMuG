@@ -43,6 +43,7 @@ void Screen::operator()() {
         // Render buffering
         // ----------------------------------------------------------------
         setTileData();
+        setObjects();
         generateBackgroundTileMap();
         generateWindowTileMap();
         if (mPpu->bufferScreen) bufferScreen();
@@ -174,6 +175,17 @@ void Screen::setTileData() {
                 tilesData[tile][byte][pixel] = pixelID;
             }
         }
+    }
+}
+
+void Screen::setObjects() {
+    for (uint8_t o = 0; o < 40; o++) { // There are 40 objects in the OAM (Object Attribute Memory)
+        Object obj{};
+        obj.Ypos = mPpu->read(0xFE00 + (o * 4) + 0);
+        obj.Xpos = mPpu->read(0xFE00 + (o * 4) + 1);
+        obj.tileIndex = mPpu->read(0xFE00 + (o * 4) + 2);
+        obj.attributes = mPpu->read(0xFE00 + (o * 4) + 3);
+        objects[o] = obj;
     }
 }
 
