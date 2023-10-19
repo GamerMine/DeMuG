@@ -43,12 +43,10 @@ void Bus::write(uint16_t addr, uint8_t data) {
     if (addr >= 0xFF80 && addr <= 0xFFFE) { // HRAM
         hram[addr - 0xFF80] = data;
     }
-    if (addr == 0xFF0F) {
-        logger->log(Logger::DEBUG, "Writing %X to 0xFF0F", data);
+    if (addr == 0xFF0F) { // Writing to Interrupt Flags
         SharpSM83::IF.raw = data;
     }
-    if (addr == 0xFFFF) {
-        logger->log(Logger::DEBUG, "Writing %X to 0xFFFF", data);
+    if (addr == 0xFFFF) { // Writing to Interrupt Enable
         cpu->IE.raw = data;
     }
 }

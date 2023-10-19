@@ -62,7 +62,7 @@ void SharpSM83::operator()() {
             if (executingInterrupt) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC - 1);
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             cycles += opcodes[instr]();
-            if (cycles >= 70224 * 2) { // Considering the Game Boy CPU is running at 4194304Hz (~4.19Mhz) and the screen refreshing at ~59.7275hz = 4194304/59.7275 ~= 70224 cycles
+            if (cycles >= 70224) { // Considering the Game Boy CPU is running at 4194304Hz (~4.19Mhz) and the screen refreshing at ~59.7275hz = 4194304/59.7275 ~= 70224 cycles
                 cycles = 0;
                 mBus->sendPpuWorkSignal();
             }
@@ -662,7 +662,18 @@ uint8_t SharpSM83::RRA() {
 }
 
 uint8_t SharpSM83::DAA() {
-    logger->log(Logger::DEBUG, "Not implemented 17"); return 0;
+    if (!flags.negative) {
+        if (flags.carry || registers.A > 0x99) {registers.A += 0x60; flags.carry = 1;}
+        if (flags.halfCarry || (registers.A & 0x0F) > 0x09) {registers.A += 0x06;}
+    } else {
+        if (flags.carry) registers.A -= 0x60;
+        if (flags.halfCarry) registers.A -= 0x06;
+    }
+
+    flags.zero = registers.A == 0x00;
+    flags.halfCarry = 0;
+
+    return 1;
 }
 
 uint8_t SharpSM83::CPL() {
@@ -764,7 +775,25 @@ uint8_t SharpSM83::RR(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::SLA(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented 31"); return 0;
+    uint8_t cycles;
+    uint8_t value;
+    if (reg == nullptr) {
+        value = mBus->read(registers.HL);
+        flags.carry = value >> 7;
+        mBus->write(registers.HL, value << 1);
+        cycles = 4;
+    } else {
+        flags.carry = *reg >> 7;
+        *reg = *reg << 1;
+        value = *reg;
+        cycles = 2;
+    }
+
+    flags.zero = *reg == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+
+    return cycles;
 }
 
 uint8_t SharpSM83::SRA(uint8_t *reg) {
@@ -794,7 +823,25 @@ uint8_t SharpSM83::SWAP(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::SRL(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented 34"); return 0;
+    uint8_t cycles;
+    uint8_t value;
+    if (reg == nullptr) {
+        value = mBus->read(registers.HL);
+        flags.carry = value & 0x01;
+        mBus->write(registers.HL, value >> 1);
+        cycles = 4;
+    } else {
+        flags.carry = *reg & 0x01;
+        *reg = *reg >> 1;
+        value = *reg;
+        cycles = 2;
+    }
+
+    flags.zero = *reg == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+
+    return cycles;
 }
 
 uint8_t SharpSM83::RES(uint8_t bit, uint8_t *reg) {
