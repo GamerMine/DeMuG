@@ -10,7 +10,8 @@ void Screen::operator()() {
 
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
-    tilesMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
+    backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
+    windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
 
     // Initialize screen pixel array
     for (long i = 0; i < DEFAULT_WIDTH*DEFAULT_HEIGHT; i++) screenPixelArray[i] = Pixel(0x00, 0x00, 0x00);
@@ -18,15 +19,20 @@ void Screen::operator()() {
     // Initialize tileset pixel array
     for (long i = 0; i < 16*8*16*8; i++) tilesDataPixelArray[i] = Pixel(0x00, 0x00, 0x00);
 
-    // Initialize tile map pixel array
-    for (long i = 0; i < 32 * 8 * 32 * 8; i++) tilesMapPixelArray[i] = Pixel(0x00, 0x00, 0x00);
+    // Initialize background map pixel array
+    for (long i = 0; i < 32 * 8 * 32 * 8; i++) backgroundMapPixelArray[i] = Pixel(0x00, 0x00, 0x00);
+
+    // Initialize window map pixel array
+    for (long i = 0; i < 32 * 8 * 32 * 8; i++) windowMapPixelArray[i] = Pixel(0x00, 0x00, 0x00);
 
     Image gameRender = {.data = screenPixelArray, .width = DEFAULT_WIDTH, .height = DEFAULT_HEIGHT, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
     Image tilesDataRender = {.data = tilesDataPixelArray, .width = 16 * 8, .height = 16 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
-    Image tileMapRender = {.data = tilesMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
+    Image backgroundMapRender = {.data = backgroundMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
+    Image windowMapRender = {.data = windowMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
     gameTexture = LoadTextureFromImage(gameRender);
     tilesDataTexture = LoadTextureFromImage(tilesDataRender);
-    tilesMapTexture = LoadTextureFromImage(tileMapRender);
+    backgroundMapTexture = LoadTextureFromImage(backgroundMapRender);
+    windowMapTexture = LoadTextureFromImage(windowMapRender);
 
     double currentTime;
     double lastTime;
@@ -37,7 +43,8 @@ void Screen::operator()() {
         // Render buffering
         // ----------------------------------------------------------------
         setTileData();
-        generateTileMap1();
+        generateBackgroundTileMap();
+        generateWindowTileMap();
         if (mPpu->bufferScreen) bufferScreen();
 
         // Render
@@ -50,7 +57,8 @@ void Screen::operator()() {
 
     UnloadTexture(gameTexture);
     UnloadTexture(tilesDataTexture);
-    UnloadTexture(tilesMapTexture);
+    UnloadTexture(backgroundMapTexture);
+    UnloadTexture(windowMapTexture);
     Bus::GLOBAL_HALT = true;
     CloseWindow();
 }
@@ -75,12 +83,18 @@ void Screen::render() {
                        (Vector2){0, 0},
                        0,
                        RAYWHITE);
-        /*DrawTexturePro(tilesMapTexture,
-                       (Rectangle){0, 0, static_cast<float>(tilesMapTexture.width), static_cast<float>(tilesMapTexture.height)},
-                       (Rectangle){820, 0, static_cast<float>(tilesMapTexture.width), static_cast<float>(tilesMapTexture.height)},
+        /*DrawTexturePro(backgroundMapTexture,
+                       (Rectangle){0, 0, static_cast<float>(backgroundMapTexture.width), static_cast<float>(backgroundMapTexture.height)},
+                       (Rectangle){820, 0, static_cast<float>(backgroundMapTexture.width), static_cast<float>(backgroundMapTexture.height)},
                        (Vector2){0, 0},
                        0,
                        RAYWHITE);*/
+        DrawTexturePro(windowMapTexture,
+                       (Rectangle){0, 0, static_cast<float>(windowMapTexture.width), static_cast<float>(windowMapTexture.height)},
+                       (Rectangle){820, 0, static_cast<float>(windowMapTexture.width), static_cast<float>(windowMapTexture.height)},
+                       (Vector2){0, 0},
+                       0,
+                       RAYWHITE);
         DrawInstructions(820, 0);
         DrawFlags(1100, 0);
         EndDrawing();
@@ -163,19 +177,34 @@ void Screen::setTileData() {
     }
 }
 
-void Screen::generateTileMap1() {
+void Screen::generateBackgroundTileMap() {
     for (uint16_t value = 0; value < 1024; value++) {
         for (uint8_t y = 0; y < 8; y++) {
             for (uint8_t x = 0; x < 8; x++) {
                 uint8_t pixelID = tilesData[mPpu->read(0x9800 + value)][y][x];
-                if (pixelID == mPpu->BGP.index3) tilesMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x00, 0x00, 0x00);
-                else if (pixelID == mPpu->BGP.index2) tilesMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x55, 0x55, 0x55);
-                else if (pixelID == mPpu->BGP.index1) tilesMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xAA, 0xAA, 0xAA);
-                else if (pixelID == mPpu->BGP.index0) tilesMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xFF, 0xFF, 0xFF);
+                if (pixelID == mPpu->BGP.index3) backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x00, 0x00, 0x00);
+                else if (pixelID == mPpu->BGP.index2) backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x55, 0x55, 0x55);
+                else if (pixelID == mPpu->BGP.index1) backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xAA, 0xAA, 0xAA);
+                else if (pixelID == mPpu->BGP.index0) backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xFF, 0xFF, 0xFF);
             }
         }
     }
-    UpdateTexture(tilesMapTexture, tilesMapPixelArray);
+    UpdateTexture(backgroundMapTexture, backgroundMapPixelArray);
+}
+
+void Screen::generateWindowTileMap() {
+    for (uint16_t value = 0; value < 1024; value++) {
+        for (uint8_t y = 0; y < 8; y++) {
+            for (uint8_t x = 0; x < 8; x++) {
+                uint8_t pixelID = tilesData[mPpu->read(0x9C00 + value)][y][x];
+                if (pixelID == mPpu->BGP.index3) windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x00, 0x00, 0x00);
+                else if (pixelID == mPpu->BGP.index2) windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x55, 0x55, 0x55);
+                else if (pixelID == mPpu->BGP.index1) windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xAA, 0xAA, 0xAA);
+                else if (pixelID == mPpu->BGP.index0) windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xFF, 0xFF, 0xFF);
+            }
+        }
+    }
+    UpdateTexture(windowMapTexture, windowMapPixelArray);
 }
 
 void Screen::bufferScreen() {
@@ -183,8 +212,11 @@ void Screen::bufferScreen() {
     for (uint8_t y = 0; y < DEFAULT_HEIGHT + 9; y++) { // 9 the number of vertical blanking scanlines
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
-                screenPixelArray[y * DEFAULT_WIDTH + x] = tilesMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
+                screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
                                                                              (mPpu->SCX + x)];
+                if (mPpu->LCDC.windowEnable) {
+                    screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[y * 32 * 8 + x];
+                }
             }
             if (y == 144) SharpSM83::IF.vblank = 1;
         }
@@ -197,5 +229,6 @@ void Screen::bufferScreen() {
 void Screen::reset() {
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
-    tilesMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
+    backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
+    windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
 }

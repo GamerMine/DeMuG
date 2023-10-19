@@ -31,11 +31,12 @@ private:
 
     Pixel *screenPixelArray{};
     Pixel *tilesDataPixelArray{};
-    Pixel *tilesMapPixelArray{};
+    Pixel *backgroundMapPixelArray{};
+    Pixel *windowMapPixelArray{};
 
     uint8_t tilesData[0xFF][8][8]{};
 
-    Texture2D gameTexture{}, tilesDataTexture{}, tilesMapTexture{};
+    Texture2D gameTexture{}, tilesDataTexture{}, backgroundMapTexture{}, windowMapTexture{};
 
     void DrawInstructions(int x, int y);
     static void DrawFlags(int x, int y);
@@ -43,7 +44,8 @@ private:
     void render();
     void renderTilesData();
     void setTileData();
-    void generateTileMap1();
+    void generateBackgroundTileMap();
+    void generateWindowTileMap();
     void bufferScreen();
 
 };

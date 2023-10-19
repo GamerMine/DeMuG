@@ -641,7 +641,14 @@ uint8_t SharpSM83::OR(uint16_t reg) {
 }
 
 uint8_t SharpSM83::RRCA() {
-    logger->log(Logger::DEBUG, "Not implemented 14"); return 0;
+    flags.carry = registers.A & 0x01;
+    registers.A = registers.A >> 1;
+
+    flags.zero = 0;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+
+    return 0;
 }
 
 uint8_t SharpSM83::STOP() { // The STOP instruction seems to be resest after a key press
@@ -767,7 +774,26 @@ uint8_t SharpSM83::RLC(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::RRC(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented 29"); return 0;
+    uint8_t cycles;
+    uint8_t value;
+    if (reg == nullptr) {
+        value = mBus->read(registers.HL);
+        flags.carry = value & 0x01;
+        value = value >> 1;
+        mBus->write(registers.HL, value);
+        cycles = 4;
+    } else {
+        flags.carry = *reg & 0x01;
+        *reg = *reg >> 1;
+        value = *reg;
+        cycles = 2;
+    }
+
+    flags.zero = value == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+
+    return cycles;
 }
 
 uint8_t SharpSM83::RR(uint8_t *reg) {
@@ -860,7 +886,18 @@ uint8_t SharpSM83::RES(uint8_t bit, uint8_t *reg) {
 }
 
 uint8_t SharpSM83::SET(uint8_t bit, uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented 36"); return 0;
+    uint8_t cycles;
+    if (reg == nullptr) {
+        uint8_t value = mBus->read(registers.HL);
+        value |= (0x1 << bit);
+        mBus->write(registers.HL, value);
+        cycles = 4;
+    } else {
+        *reg = *reg | (0x1 << bit);
+        cycles = 2;
+    }
+
+    return cycles;
 }
 
 SharpSM83::debugInfo::~debugInfo() = default;
