@@ -20,15 +20,6 @@ public:
     void operator()();
     void reset();
 
-private:
-    class Ppu *mPpu;
-
-    struct Pixel {
-        uint8_t r;
-        uint8_t g;
-        uint8_t b;
-    };
-
     struct Object {
         uint8_t Ypos;
         uint8_t Xpos;
@@ -44,6 +35,14 @@ private:
             uint8_t attributes;
         };
     };
+private:
+    class Ppu *mPpu;
+
+    struct Pixel {
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+    };
 
     Pixel *screenPixelArray{};
     Pixel *tilesDataPixelArray{};
@@ -51,7 +50,7 @@ private:
     Pixel *windowMapPixelArray{};
 
     uint8_t tilesData[0xFF][8][8]{};
-    Object objects[40];
+    std::array<Object, 40> objects {};
 
     Texture2D gameTexture{}, tilesDataTexture{}, backgroundMapTexture{}, windowMapTexture{};
 
@@ -65,6 +64,7 @@ private:
     void generateBackgroundTileMap();
     void generateWindowTileMap();
     void bufferScreen();
+    std::array<Object, 10> getObjectToRender(uint8_t currentY);
 
 };
 

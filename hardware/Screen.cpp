@@ -90,12 +90,12 @@ void Screen::render() {
                        (Vector2){0, 0},
                        0,
                        RAYWHITE);*/
-        DrawTexturePro(windowMapTexture,
+        /*DrawTexturePro(windowMapTexture,
                        (Rectangle){0, 0, static_cast<float>(windowMapTexture.width), static_cast<float>(windowMapTexture.height)},
                        (Rectangle){820, 0, static_cast<float>(windowMapTexture.width), static_cast<float>(windowMapTexture.height)},
                        (Vector2){0, 0},
                        0,
-                       RAYWHITE);
+                       RAYWHITE);*/
         DrawInstructions(820, 0);
         DrawFlags(1100, 0);
         EndDrawing();
@@ -222,6 +222,7 @@ void Screen::generateWindowTileMap() {
 void Screen::bufferScreen() {
     mPpu->LY = 0x00;
     for (uint8_t y = 0; y < DEFAULT_HEIGHT + 9; y++) { // 9 the number of vertical blanking scanlines
+        std::array<Object, 10> objs = getObjectToRender(y);
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
                 screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
@@ -236,6 +237,21 @@ void Screen::bufferScreen() {
     }
     UpdateTexture(gameTexture, screenPixelArray);
     mPpu->bufferScreen = false;
+}
+
+std::array<Screen::Object, 10> Screen::getObjectToRender(uint8_t currentY) {
+    std::array<Screen::Object, 10> objs{};
+
+    uint8_t objCount = 0;
+    for (Object &obj : objects) {
+        if (obj.Ypos >= 16 && obj.Ypos < 160) { // The Ypos is actually stored as currentY coord + 16, since we cannot draw out of the screen, do not get them
+            if (currentY >= obj.Ypos - 16 && currentY <= obj.Ypos - (mPpu->LCDC.objSize ? 0 : 8)) {
+                objCount++;
+                objs[objCount - 1] = obj;
+            }
+        }
+        if (objCount == 10) break;
+    }
 }
 
 void Screen::reset() {
