@@ -48,6 +48,7 @@ uint8_t Ppu::read(uint16_t addr) const {
     if (addr == 0xFF43) value = SCX;
     if (addr == 0xFF44) value = LY;
     if (addr == 0xFF45) value = LYC;
+    if (addr == 0xFF46) value = DMA;
     if (addr == 0xFF47) value = BGP.raw;
     if (addr == 0xFF48) value = OBP0.raw;
     if (addr == 0xFF49) value = OBP1.raw;
@@ -64,7 +65,22 @@ void Ppu::write(uint16_t addr, uint8_t data) {
     if (addr == 0xFF43) SCX = data;
     if (addr == 0xFF44) Logger::getInstance("PPU")->log(Logger::WARNING, "LY register is read-only");
     if (addr == 0xFF45) LYC = data;
+    if (addr == 0xFF46) {
+        DMA = data;
+        startTransfer();
+    }
     if (addr == 0xFF47) BGP.raw = data;
     if (addr == 0xFF48) OBP0.raw = data;
     if (addr == 0xFF49) OBP1.raw = data;
+}
+
+void Ppu::startTransfer() {
+    uint16_t page = DMA & 0xFF00;
+    SharpSM83::PAUSE = true;
+
+    for (uint8_t lAddr = 0x00; lAddr < 0xA0; lAddr++) {
+        OAM[lAddr] = mBus->read(page + lAddr);
+    }
+    SharpSM83::dmaCycles = true;
+    SharpSM83::PAUSE = false;
 }

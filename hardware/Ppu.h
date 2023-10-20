@@ -21,6 +21,9 @@ public:
     uint8_t read(uint16_t addr) const;
     void write(uint16_t addr, uint8_t data);
 
+private:
+    void startTransfer();
+
 public:
     class Screen *screen;
 
@@ -53,6 +56,7 @@ public:
 
     uint8_t SCY, SCX; // Vertical & Horizontal Scroll Registers | 0xFF42 & 0xFF43
     uint8_t LY, LYC; // Scanline Register & Scanline Compare Register | 0xFF44 & 0xFF45
+    uint8_t DMA; // Start a DMA transfer when writing to this register, Direct Memory Access
 
     union {
         struct {

@@ -36,7 +36,7 @@ void Bus::write(uint16_t addr, uint8_t data) {
     if (addr >= 0xFE00 && addr <= 0xFE9F) { // PPU OAM
         ppu->write(addr, data);
     }
-    if (addr >= 0xFF40 && addr <= 0xFF49) { // PPU VRAM
+    if (addr >= 0xFF40 && addr <= 0xFF49) { // PPU Registers
         ppu->write(addr, data);
     }
     if (addr == 0xFF50 && data != 0x00) {

@@ -56,7 +56,7 @@ public:
     static bool PAUSE;
     static bool NEXT_INSTR;
     static debugInfo DEBUG_INFO;
-
+    inline static bool dmaCycles = false;
 
 private:
     union {
