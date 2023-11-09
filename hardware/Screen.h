@@ -34,6 +34,7 @@ public:
             };
             uint8_t attributes;
         };
+        bool isReal;
     };
 private:
     class Ppu *mPpu;
@@ -58,13 +59,15 @@ private:
     static void DrawFlags(int x, int y);
 
     void render();
-    void renderTilesData();
+    void bufferTilesData();
     void setTileData();
     void setObjects();
     void generateBackgroundTileMap();
     void generateWindowTileMap();
     void bufferScreen();
-    std::array<Object, 10> getObjectToRender(uint8_t currentY);
+    void getObjectToRender(std::array<Object, 10> &out, uint8_t currentY);
+    Screen::Pixel getBGPPixelFromID(uint8_t pixelID) const;
+    Screen::Pixel getOBPPixelFromID(uint8_t pixelID, bool palette) const;
 
 };
 

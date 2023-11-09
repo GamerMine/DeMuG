@@ -46,12 +46,13 @@ void Screen::operator()() {
         setObjects();
         generateBackgroundTileMap();
         generateWindowTileMap();
-        if (mPpu->bufferScreen) bufferScreen();
+        bufferTilesData();
 
         // Render
         // ----------------------------------------------------------------
         if (currentTime - lastTime >= 1.0 / FRAMERATE) {
             lastTime = currentTime;
+            bufferScreen();
             render();
         }
     }
@@ -65,11 +66,8 @@ void Screen::operator()() {
 }
 
 uint16_t tileDataBlock = 0x8000;
-bool test = true;
 void Screen::render() {
     if (mPpu->LCDC.lcdEnable) {
-        renderTilesData();
-
         BeginDrawing();
         ClearBackground(DARKBLUE);
         DrawTexturePro(gameTexture,
@@ -84,18 +82,18 @@ void Screen::render() {
                        (Vector2){0, 0},
                        0,
                        RAYWHITE);
-        /*DrawTexturePro(backgroundMapTexture,
+        DrawTexturePro(backgroundMapTexture,
                        (Rectangle){0, 0, static_cast<float>(backgroundMapTexture.width), static_cast<float>(backgroundMapTexture.height)},
-                       (Rectangle){820, 0, static_cast<float>(backgroundMapTexture.width), static_cast<float>(backgroundMapTexture.height)},
+                       (Rectangle){1090, 360, static_cast<float>(backgroundMapTexture.width / 1.5), static_cast<float>(backgroundMapTexture.height / 1.5)},
                        (Vector2){0, 0},
                        0,
-                       RAYWHITE);*/
-        /*DrawTexturePro(windowMapTexture,
+                       RAYWHITE);
+        DrawTexturePro(windowMapTexture,
                        (Rectangle){0, 0, static_cast<float>(windowMapTexture.width), static_cast<float>(windowMapTexture.height)},
-                       (Rectangle){820, 0, static_cast<float>(windowMapTexture.width), static_cast<float>(windowMapTexture.height)},
+                       (Rectangle){1090, 540, static_cast<float>(windowMapTexture.width / 1.5), static_cast<float>(windowMapTexture.height / 1.5)},
                        (Vector2){0, 0},
                        0,
-                       RAYWHITE);*/
+                       RAYWHITE);
         DrawInstructions(820, 0);
         DrawFlags(1100, 0);
         EndDrawing();
@@ -148,15 +146,12 @@ void Screen::DrawFlags(int x, int y) {
 }
 
 
-void Screen::renderTilesData() {
+void Screen::bufferTilesData() {
     for (uint8_t tile = 0; tile < 0xFF; tile++) {
         for (uint8_t y = 0; y < 8; y++){
             for (uint8_t x = 0; x < 8; x++) {
                 uint8_t pixelID = tilesData[tile][y][x];
-                if (pixelID == mPpu->BGP.index3) tilesDataPixelArray[(tile / 16 * 8 + y) * 128 + (tile % 16 * 8 + x)] = Pixel(0x00, 0x00, 0x00);
-                else if (pixelID == mPpu->BGP.index2) tilesDataPixelArray[(tile / 16 * 8 + y) * 128 + (tile % 16 * 8 + x)] = Pixel(0x55, 0x55, 0x55);
-                else if (pixelID == mPpu->BGP.index1) tilesDataPixelArray[(tile / 16 * 8 + y) * 128 + (tile % 16 * 8 + x)] = Pixel(0xAA, 0xAA, 0xAA);
-                else if (pixelID == mPpu->BGP.index0) tilesDataPixelArray[(tile / 16 * 8 + y) * 128 + (tile % 16 * 8 + x)] = Pixel(0xFF, 0xFF, 0xFF);
+                tilesDataPixelArray[(tile / 16 * 8 + y) * 128 + (tile % 16 * 8 + x)] = getBGPPixelFromID(pixelID);
             }
         }
     }
@@ -185,6 +180,7 @@ void Screen::setObjects() {
         obj.Xpos = mPpu->read(0xFE00 + (o * 4) + 1);
         obj.tileIndex = mPpu->read(0xFE00 + (o * 4) + 2);
         obj.attributes = mPpu->read(0xFE00 + (o * 4) + 3);
+        obj.isReal = true;
         objects[o] = obj;
     }
 }
@@ -194,10 +190,8 @@ void Screen::generateBackgroundTileMap() {
         for (uint8_t y = 0; y < 8; y++) {
             for (uint8_t x = 0; x < 8; x++) {
                 uint8_t pixelID = tilesData[mPpu->read(0x9800 + value)][y][x];
-                if (pixelID == mPpu->BGP.index3) backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x00, 0x00, 0x00);
-                else if (pixelID == mPpu->BGP.index2) backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x55, 0x55, 0x55);
-                else if (pixelID == mPpu->BGP.index1) backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xAA, 0xAA, 0xAA);
-                else if (pixelID == mPpu->BGP.index0) backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xFF, 0xFF, 0xFF);
+                backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = getBGPPixelFromID(
+                        pixelID);
             }
         }
     }
@@ -209,10 +203,7 @@ void Screen::generateWindowTileMap() {
         for (uint8_t y = 0; y < 8; y++) {
             for (uint8_t x = 0; x < 8; x++) {
                 uint8_t pixelID = tilesData[mPpu->read(0x9C00 + value)][y][x];
-                if (pixelID == mPpu->BGP.index3) windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x00, 0x00, 0x00);
-                else if (pixelID == mPpu->BGP.index2) windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0x55, 0x55, 0x55);
-                else if (pixelID == mPpu->BGP.index1) windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xAA, 0xAA, 0xAA);
-                else if (pixelID == mPpu->BGP.index0) windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = Pixel(0xFF, 0xFF, 0xFF);
+                windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = getBGPPixelFromID(pixelID);
             }
         }
     }
@@ -222,36 +213,126 @@ void Screen::generateWindowTileMap() {
 void Screen::bufferScreen() {
     mPpu->LY = 0x00;
     for (uint8_t y = 0; y < DEFAULT_HEIGHT + 9; y++) { // 9 the number of vertical blanking scanlines
-        std::array<Object, 10> objs = getObjectToRender(y);
+        std::array<Object, 10> objs{};
+        getObjectToRender(objs, y);
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
+                // First drawn layer is the background
                 screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
                                                                              (mPpu->SCX + x)];
+                // Second drawn layer is the window
                 if (mPpu->LCDC.windowEnable) {
                     screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[y * 32 * 8 + x];
                 }
+
+                // Third draw layer is the objects
+                if (mPpu->LCDC.objEnable) {
+                    for (Object &obj: objs) {
+                        if (obj.isReal) {
+                            if (x >= (obj.Xpos - 8) && x <= obj.Xpos) {
+                                screenPixelArray[y * DEFAULT_WIDTH + x] = getOBPPixelFromID(
+                                        tilesData[obj.tileIndex][y - (obj.Ypos - 16)][x - (obj.Xpos - 8)],
+                                        obj.dmgPalette);
+                            }
+                        }
+                    }
+                }
             }
-            if (y == 144) SharpSM83::IF.vblank = 1;
         }
+        if (y == 144) SharpSM83::IF.vblank = 1;
+        mPpu->STAT.LYCequalLY = (mPpu->LY == mPpu->LYC);
+        if (mPpu->STAT.modeLYCequalLY && mPpu->STAT.LYCequalLY) SharpSM83::IF.lcd = 1;
         mPpu->LY = mPpu->LY + 1;
     }
     UpdateTexture(gameTexture, screenPixelArray);
-    mPpu->bufferScreen = false;
 }
 
-std::array<Screen::Object, 10> Screen::getObjectToRender(uint8_t currentY) {
-    std::array<Screen::Object, 10> objs{};
-
+void Screen::getObjectToRender(std::array<Object, 10> &out, uint8_t currentY) {
     uint8_t objCount = 0;
-    for (Object &obj : objects) {
-        if (obj.Ypos >= 16 && obj.Ypos < 160) { // The Ypos is actually stored as currentY coord + 16, since we cannot draw out of the screen, do not get them
+    for (auto &obj : objects) {
+        if (obj.Ypos >= 16 && obj.Ypos < 160 && obj.isReal) { // The Ypos is actually stored as currentY coord + 16, since we cannot draw out of the screen, do not get them
             if (currentY >= obj.Ypos - 16 && currentY <= obj.Ypos - (mPpu->LCDC.objSize ? 0 : 8)) {
+                out[objCount] = obj;
                 objCount++;
-                objs[objCount - 1] = obj;
             }
         }
         if (objCount == 10) break;
     }
+}
+
+Screen::Pixel Screen::getBGPPixelFromID(uint8_t pixelID) const {
+    Pixel pixel{};
+    if (pixelID == mPpu->BGP.index3) {
+        pixel.r = 0x00;
+        pixel.g = 0x00;
+        pixel.b = 0x00;
+    }
+    else if (pixelID == mPpu->BGP.index2) {
+        pixel.r = 0x55;
+        pixel.g = 0x55;
+        pixel.b = 0x55;
+    }
+    else if (pixelID == mPpu->BGP.index1) {
+        pixel.r = 0xAA;
+        pixel.g = 0xAA;
+        pixel.b = 0xAA;
+    }
+    else if (pixelID == mPpu->BGP.index0) {
+        pixel.r = 0xFF;
+        pixel.g = 0xFF;
+        pixel.b = 0xFF;
+    }
+
+    return pixel;
+}
+
+Screen::Pixel Screen::getOBPPixelFromID(uint8_t pixelID, bool palette) const {
+    Pixel pixel {};
+    if (palette) {
+        if (pixelID == mPpu->OBP1.index3) {
+            pixel.r = 0x00;
+            pixel.g = 0x00;
+            pixel.b = 0x00;
+        }
+        else if (pixelID == mPpu->OBP1.index2) {
+            pixel.r = 0x55;
+            pixel.g = 0x55;
+            pixel.b = 0x55;
+        }
+        else if (pixelID == mPpu->OBP1.index1) {
+            pixel.r = 0xAA;
+            pixel.g = 0xAA;
+            pixel.b = 0xAA;
+        }
+        else if (pixelID == mPpu->OBP1.index0) {
+            pixel.r = 0xFF;
+            pixel.g = 0xFF;
+            pixel.b = 0xFF;
+        }
+    } else {
+        if (pixelID == mPpu->OBP0.index3) {
+            pixel.r = 0x00;
+            pixel.g = 0x00;
+            pixel.b = 0x00;
+        }
+        else if (pixelID == mPpu->OBP0.index2) {
+            pixel.r = 0x55;
+            pixel.g = 0x55;
+            pixel.b = 0x55;
+        }
+        else if (pixelID == mPpu->OBP0.index1) {
+            pixel.r = 0xAA;
+            pixel.g = 0xAA;
+            pixel.b = 0xAA;
+        }
+        else if (pixelID == mPpu->OBP0.index0) {
+            pixel.r = 0xFF;
+            pixel.g = 0xFF;
+            pixel.b = 0xFF;
+        }
+    }
+
+    return pixel;
 }
 
 void Screen::reset() {

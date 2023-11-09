@@ -5,10 +5,10 @@ bool Bus::GLOBAL_HALT = false;
 Bus::Bus() {
     logger = Logger::getInstance("Bus");
     romName = nullptr;
-    disableBootRom = false;
+    disableBootRom = true;
 
     readBootRom();
-    readGameRom("Tetris.gb");
+    readGameRom("Alleyway.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
@@ -104,10 +104,6 @@ void Bus::readBootRom() {
     }
 
     file.close();
-}
-
-void Bus::sendPpuWorkSignal() {
-    ppu->bufferScreen = true;
 }
 
 void Bus::reset() {

@@ -12,13 +12,14 @@ Ppu::Ppu(Bus *bus) {
     OBP0.raw = 0x00;
     OBP1.raw = 0x00;
 
+    for (uint8_t &i : vram) i = 0x00;
+    for (uint8_t &i : OAM)  i = 0x00;
+
     screen = new Screen(this);
 }
 
 void Ppu::reset() {
     screen->reset();
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(10ms);
     LCDC.raw = 0x00;
     STAT.raw = 0x00;
     SCY = 0x00;
@@ -30,11 +31,11 @@ void Ppu::reset() {
     OBP1.raw = 0x00;
 
     for (uint8_t &i : vram) i = 0x00;
+    for (uint8_t &i : OAM)  i = 0x00;
 }
 
 void Ppu::operator()() {
     std::thread screenThread(std::ref(*screen));
-    bufferScreen = false;
     screenThread.join();
 }
 
@@ -60,7 +61,7 @@ void Ppu::write(uint16_t addr, uint8_t data) {
     if (addr >= 0x8000 && addr <= 0x9FFF) vram[addr - 0x8000] = data;
     if (addr >= 0xFE00 && addr <= 0xFE9F) OAM[addr - 0xFE00] = data;
     if (addr == 0xFF40) LCDC.raw = data;
-    if (addr == 0xFF41) STAT.raw = data;
+    if (addr == 0xFF41) { STAT.raw = data; Logger::getInstance("PPU")->log(Logger::DEBUG, "STAT: %X", data); }
     if (addr == 0xFF42) SCY = data;
     if (addr == 0xFF43) SCX = data;
     if (addr == 0xFF44) Logger::getInstance("PPU")->log(Logger::WARNING, "LY register is read-only");
@@ -75,12 +76,10 @@ void Ppu::write(uint16_t addr, uint8_t data) {
 }
 
 void Ppu::startTransfer() {
-    uint16_t page = DMA & 0xFF00;
-    SharpSM83::PAUSE = true;
+    uint16_t page = DMA;
 
     for (uint8_t lAddr = 0x00; lAddr < 0xA0; lAddr++) {
-        OAM[lAddr] = mBus->read(page + lAddr);
+        OAM[lAddr] = mBus->read((page << 8) + lAddr);
     }
     SharpSM83::dmaCycles = true;
-    SharpSM83::PAUSE = false;
 }

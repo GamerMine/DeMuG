@@ -90,8 +90,6 @@ public:
 
     uint8_t vram[RAM_SIZE]{};
     uint8_t OAM[OAM_SIZE]{};
-
-    std::atomic<bool> bufferScreen;
 };
 
 #endif //EMU_GAMEBOY_PPU_H
