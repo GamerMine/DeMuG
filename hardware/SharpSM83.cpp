@@ -61,7 +61,7 @@ void SharpSM83::operator()() {
                         PC = 0x0040;
                         cycles += 3;
                     } else if (IE.lcd && IF.lcd) {
-                        logger->log(Logger::DEBUG, "Running LCD interrupt");
+                        //logger->log(Logger::DEBUG, "Running LCD interrupt");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.lcd = 0;

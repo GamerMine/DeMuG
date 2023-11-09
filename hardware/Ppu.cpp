@@ -44,7 +44,7 @@ uint8_t Ppu::read(uint16_t addr) const {
     if (addr >= 0x8000 && addr <= 0x9FFF) value = vram[addr - 0x8000];
     if (addr >= 0xFE00 && addr <= 0xFE9F) value = OAM[addr - 0xFE00];
     if (addr == 0xFF40) value = LCDC.raw;
-    if (addr == 0xFF41) value = STAT.raw;
+    if (addr == 0xFF41) { value = STAT.raw; Logger::getInstance("PPU")->log(Logger::DEBUG, "READ STAT : %X", STAT.raw); }
     if (addr == 0xFF42) value = SCY;
     if (addr == 0xFF43) value = SCX;
     if (addr == 0xFF44) value = LY;

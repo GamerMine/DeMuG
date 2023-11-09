@@ -214,7 +214,9 @@ void Screen::bufferScreen() {
     mPpu->LY = 0x00;
     for (uint8_t y = 0; y < DEFAULT_HEIGHT + 9; y++) { // 9 the number of vertical blanking scanlines
         std::array<Object, 10> objs{};
+        mPpu->STAT.lcdMode = 0b10;
         getObjectToRender(objs, y);
+        mPpu->STAT.lcdMode = 0b11;
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
                 // First drawn layer is the background
@@ -239,6 +241,7 @@ void Screen::bufferScreen() {
                 }
             }
         }
+        mPpu->STAT.lcdMode = 0b00;
         if (y == 144) SharpSM83::IF.vblank = 1;
         mPpu->STAT.LYCequalLY = (mPpu->LY == mPpu->LYC);
         if (mPpu->STAT.modeLYCequalLY && mPpu->STAT.LYCequalLY) SharpSM83::IF.lcd = 1;

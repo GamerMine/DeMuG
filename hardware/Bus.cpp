@@ -8,7 +8,7 @@ Bus::Bus() {
     disableBootRom = true;
 
     readBootRom();
-    readGameRom("Alleyway.gb");
+    readGameRom("Tetris.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
