@@ -39,6 +39,8 @@ private:
     uint8_t hram[HRAM_SIZE]{};
     inline static std::array<uint8_t, 32*1024> gameRom;
 
+    uint8_t JOYP;
+
     void readGameRom(const char *filename);
     void readBootRom();
 };

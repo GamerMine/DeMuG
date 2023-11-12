@@ -64,8 +64,9 @@ uint8_t Bus::read(uint16_t addr) {
         value = gameRom[addr];
     } // Game cartridge
     if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
-    if (addr >= 0xFE00 && addr <= 0xFE9F) value = ppu->read(addr); // OAM
     if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
+    if (addr >= 0xFE00 && addr <= 0xFE9F) value = ppu->read(addr); // OAM
+    if (addr == 0xFF00) value = JOYP; // Joypad register
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr); // PPU
     if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
 
