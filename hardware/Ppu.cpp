@@ -61,7 +61,7 @@ void Ppu::write(uint16_t addr, uint8_t data) {
     if (addr >= 0x8000 && addr <= 0x9FFF) vram[addr - 0x8000] = data;
     if (addr >= 0xFE00 && addr <= 0xFE9F) OAM[addr - 0xFE00] = data;
     if (addr == 0xFF40) LCDC.raw = data;
-    if (addr == 0xFF41) { STAT.raw = data; Logger::getInstance("PPU")->log(Logger::DEBUG, "STAT: %X", data); }
+    if (addr == 0xFF41) STAT.raw = data;
     if (addr == 0xFF42) SCY = data;
     if (addr == 0xFF43) SCX = data;
     if (addr == 0xFF44) Logger::getInstance("PPU")->log(Logger::WARNING, "LY register is read-only");

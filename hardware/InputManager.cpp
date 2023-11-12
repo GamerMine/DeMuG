@@ -8,14 +8,14 @@ InputManager::InputManager(class Bus *bus) {
     registerKey(KEY_SPACE);
     registerKey(KEY_N);
 
-    /*registerKey(BTN_A);      // A
+    registerKey(BTN_A);      // A
     registerKey(BTN_B);      // B
     registerKey(BTN_SELECT); // SELECT
     registerKey(BTN_START);  // START
     registerKey(DPAD_LEFT);  // LEFT
     registerKey(DPAD_RIGHT); // RIGHT
     registerKey(DPAD_DOWN);  // DOWN
-    registerKey(DPAD_UP);    // UP*/
+    registerKey(DPAD_UP);    // UP
 }
 
 void InputManager::operator()() {
@@ -39,12 +39,12 @@ void InputManager::registerKey(int key) {
     InputManager::registeredKeys.push_back(newKey);
 }
 
-/*void InputManager::unregisterKey(int key) {
+void InputManager::unregisterKey(int key) {
     std::vector<sKey> tmpRegisteredKeys(InputManager::registeredKeys);
     InputManager::registeredKeys.clear();
     for (sKey &v_key : tmpRegisteredKeys) if (key != v_key.key) InputManager::registeredKeys.push_back(v_key);
     tmpRegisteredKeys.clear();
-}*/
+}
 
 void InputManager::keyPressed(int key) {
     switch (key) {
@@ -61,23 +61,13 @@ void InputManager::keyPressed(int key) {
             break;
         }
         default: {
-            /*if (BTN_A) {
-
-            } else if (BTN_B) {
-
-            } else if (BTN_START) {
-
-            } else if (BTN_SELECT) {
-
-            } else if (DPAD_LEFT) {
-
-            } else if (DPAD_RIGHT) {
-
-            } else if (DPAD_UP) {
-
-            } else if (DPAD_DOWN) {
-
-            }*/
+            Bus::JOYP.selectButtons = !(BTN_A || BTN_B || BTN_SELECT || BTN_START);
+            Bus::JOYP.selectButtons = !(DPAD_DOWN || DPAD_LEFT || DPAD_RIGHT || DPAD_UP);
+            Bus::JOYP.aOrRight = !(BTN_A || DPAD_RIGHT);
+            Bus::JOYP.bOrLeft = !(BTN_B || DPAD_LEFT);
+            Bus::JOYP.selectOrUp = !(BTN_SELECT || DPAD_UP);
+            Bus::JOYP.startOrDown = !(BTN_START || DPAD_DOWN);
+            SharpSM83::IF.joypad = !Bus::JOYP.selectButtons || !Bus::JOYP.selectDpad;
             break;
         }
     }

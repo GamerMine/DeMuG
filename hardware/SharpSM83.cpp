@@ -70,6 +70,16 @@ void SharpSM83::operator()() {
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0048;
                         cycles += 3;
+                    } else if (IE.joypad && IF.joypad) {
+                        //logger->log(Logger::DEBUG, "Running LCD interrupt");
+                        IME = 0;
+                        interruptShouldBeEnabled = false;
+                        IF.joypad = 0;
+                        SP--;
+                        mBus->write(SP--, PC >> 8);
+                        mBus->write(SP, PC & 0xFF);
+                        PC = 0x0060;
+                        cycles += 3;
                     }
                 }
             }

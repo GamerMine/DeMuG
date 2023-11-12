@@ -25,6 +25,18 @@ public:
 
     void reset();
 
+    inline static union {
+        struct {
+            bool aOrRight : 1;
+            bool bOrLeft : 1;
+            bool selectOrUp : 1;
+            bool startOrDown : 1;
+            bool selectDpad : 1;
+            bool selectButtons : 1;
+            bool unused : 2;
+        };
+        uint8_t raw;
+    } JOYP;
 private:
     class SharpSM83 *cpu;
     class Ppu *ppu;
@@ -38,8 +50,6 @@ private:
     uint8_t ram[RAM_SIZE]{};
     uint8_t hram[HRAM_SIZE]{};
     inline static std::array<uint8_t, 32*1024> gameRom;
-
-    uint8_t JOYP;
 
     void readGameRom(const char *filename);
     void readBootRom();
