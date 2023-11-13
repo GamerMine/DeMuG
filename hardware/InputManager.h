@@ -10,8 +10,8 @@ class InputManager {
 public:
     inline static int BTN_A = KEY_A;
     inline static int BTN_B = KEY_Z;
-    inline static int BTN_SELECT = KEY_ENTER;
-    inline static int BTN_START = KEY_TAB;
+    inline static int BTN_SELECT = KEY_TAB;
+    inline static int BTN_START = KEY_ENTER;
     inline static int DPAD_LEFT = KEY_LEFT;
     inline static int DPAD_RIGHT = KEY_RIGHT;
     inline static int DPAD_DOWN = KEY_DOWN;

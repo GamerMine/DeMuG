@@ -47,6 +47,7 @@ void SharpSM83::operator()() {
                 DEBUG_INFO.N = flags.negative;
             }
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
+            //if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC--);
             cycles += opcodes[instr]();
             if (dmaCycles) {dmaCycles = false; cycles += 160;}
             {
@@ -79,6 +80,7 @@ void SharpSM83::operator()() {
                         mBus->write(SP--, PC >> 8);
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0060;
+                        ENABLE_DEBUG_PRINTS = true;
                         cycles += 3;
                     }
                 }

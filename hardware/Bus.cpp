@@ -6,7 +6,7 @@ Bus::Bus() {
     logger = Logger::getInstance("Bus");
     romName = nullptr;
     disableBootRom = true;
-    JOYP.raw = 0xFF;
+    JOYP.raw = 0x3F;
 
     readBootRom();
     readGameRom("Tetris.gb");
@@ -67,7 +67,7 @@ uint8_t Bus::read(uint16_t addr) {
     if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
     if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
     if (addr >= 0xFE00 && addr <= 0xFE9F) value = ppu->read(addr); // OAM
-    if (addr == 0xFF00) { value = JOYP.raw; JOYP.raw = 0xFF; } // Joypad register
+    if (addr == 0xFF00) { value = JOYP.raw & 0x0F; JOYP.raw = 0x3F; } // Joypad register
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr); // PPU
     if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
 

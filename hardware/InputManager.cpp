@@ -61,19 +61,23 @@ void InputManager::keyPressed(int key) {
             break;
         }
         default: {
-            Bus::JOYP.selectButtons = !(BTN_A || BTN_B || BTN_SELECT || BTN_START);
-            Bus::JOYP.selectButtons = !(DPAD_DOWN || DPAD_LEFT || DPAD_RIGHT || DPAD_UP);
-            Bus::JOYP.aOrRight = !(BTN_A || DPAD_RIGHT);
-            Bus::JOYP.bOrLeft = !(BTN_B || DPAD_LEFT);
-            Bus::JOYP.selectOrUp = !(BTN_SELECT || DPAD_UP);
-            Bus::JOYP.startOrDown = !(BTN_START || DPAD_DOWN);
+            Bus::JOYP.selectButtons = !(BTN_A == key || BTN_B == key || BTN_SELECT == key || BTN_START == key);
+            Bus::JOYP.selectDpad = !(DPAD_DOWN == key || DPAD_LEFT == key || DPAD_RIGHT == key || DPAD_UP == key);
+            Bus::JOYP.aOrRight = !(BTN_A == key || DPAD_RIGHT == key);
+            Bus::JOYP.bOrLeft = !(BTN_B == key || DPAD_LEFT == key);
+            Bus::JOYP.selectOrUp = !(BTN_SELECT == key || DPAD_UP == key);
+            Bus::JOYP.startOrDown = !(BTN_START == key || DPAD_DOWN == key);
             SharpSM83::IF.joypad = !Bus::JOYP.selectButtons || !Bus::JOYP.selectDpad;
+            Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP: %X", Bus::JOYP.raw);
             break;
         }
     }
 }
 
 void InputManager::keyReleased(int key) {
-    (void) key;
+    Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP: %X", Bus::JOYP.raw);
+    Bus::JOYP.selectButtons = 1;
+    Bus::JOYP.selectOrUp = (BTN_SELECT == key || DPAD_UP == key);
+    Bus::JOYP.startOrDown = (BTN_START == key || DPAD_DOWN == key);
 }
 
