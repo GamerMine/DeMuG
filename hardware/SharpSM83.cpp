@@ -47,7 +47,8 @@ void SharpSM83::operator()() {
                 DEBUG_INFO.N = flags.negative;
             }
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
-            //if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC--);
+            //if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC - 1);
+            if (PC - 1 == 0x0300 && ENABLE_DEBUG_PRINTS) PAUSE = true;
             cycles += opcodes[instr]();
             if (dmaCycles) {dmaCycles = false; cycles += 160;}
             {
@@ -60,9 +61,7 @@ void SharpSM83::operator()() {
                         mBus->write(SP--, PC >> 8);
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0040;
-                        cycles += 3;
                     } else if (IE.lcd && IF.lcd) {
-                        //logger->log(Logger::DEBUG, "Running LCD interrupt");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.lcd = 0;
@@ -70,9 +69,7 @@ void SharpSM83::operator()() {
                         mBus->write(SP--, PC >> 8);
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0048;
-                        cycles += 3;
                     } else if (IE.joypad && IF.joypad) {
-                        //logger->log(Logger::DEBUG, "Running LCD interrupt");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.joypad = 0;
@@ -80,8 +77,7 @@ void SharpSM83::operator()() {
                         mBus->write(SP--, PC >> 8);
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0060;
-                        ENABLE_DEBUG_PRINTS = true;
-                        cycles += 3;
+                        //ENABLE_DEBUG_PRINTS = true;
                     }
                 }
             }

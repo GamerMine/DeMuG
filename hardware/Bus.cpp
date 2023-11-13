@@ -34,6 +34,9 @@ void Bus::write(uint16_t addr, uint8_t data) {
     if (addr >= 0xC000 && addr <= 0xDFFF) { // WRAM
         ram[addr - 0xC000] = data;
     }
+    if (addr >= 0xE000 && addr <= 0xFDFF) { // Mirror of WRAM
+        ram[addr - 0xE000] = data;
+    }
     if (addr >= 0xFE00 && addr <= 0xFE9F) { // PPU OAM
         ppu->write(addr, data);
     }
@@ -66,8 +69,9 @@ uint8_t Bus::read(uint16_t addr) {
     } // Game cartridge
     if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
     if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
+    if (addr >= 0xE000 && addr <= 0xFDFF) value = ram[addr - 0xE000]; // Mirror of WRAM
     if (addr >= 0xFE00 && addr <= 0xFE9F) value = ppu->read(addr); // OAM
-    if (addr == 0xFF00) { value = JOYP.raw & 0x0F; JOYP.raw = 0x3F; } // Joypad register
+    if (addr == 0xFF00) value = JOYP.raw; // Joypad register
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr); // PPU
     if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
 

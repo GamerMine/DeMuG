@@ -21,8 +21,11 @@ const char *Colors::LOG_WHITE           = "\033[97m";
 std::map<const char *, Logger *> Logger::loggers;
 Logger::LOG_LEVEL Logger::currentLogLevel = Logger::DEBUG;
 
+char buffer[8192];
+
 Logger::Logger(const char *loggerName) {
     this->currentLoggerName = loggerName;
+    //setvbuf(stdout, buffer, _IOFBF, sizeof(buffer));
 }
 
 Logger::~Logger() {
