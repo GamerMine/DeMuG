@@ -8,7 +8,7 @@ SharpSM83::debugInfo SharpSM83::DEBUG_INFO = {};
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
 
-    PC = 0x0300;
+    PC = 0x0100;
     SP = 0x0000;
     flags.rawFlags = 0x00;
     interruptShouldBeEnabled = false;
@@ -54,6 +54,7 @@ void SharpSM83::operator()() {
             {
                 if (IME) {
                     if (IE.vblank && IF.vblank) {
+                        if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "STARTING VBLANK INTERRUPT");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.vblank = 0;
@@ -62,6 +63,7 @@ void SharpSM83::operator()() {
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0040;
                     } else if (IE.lcd && IF.lcd) {
+                        if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "STARTING LCD INTERRUPT");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.lcd = 0;
@@ -70,6 +72,7 @@ void SharpSM83::operator()() {
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0048;
                     } else if (IE.joypad && IF.joypad) {
+                        if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "STARTING JOYPAD INTERRUPT");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.joypad = 0;
@@ -77,7 +80,6 @@ void SharpSM83::operator()() {
                         mBus->write(SP--, PC >> 8);
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0060;
-                        //ENABLE_DEBUG_PRINTS = true;
                     }
                 }
             }
@@ -197,11 +199,11 @@ uint8_t SharpSM83::PREFIX() {
 uint8_t SharpSM83::JR(const bool *flag, bool invert) {
     uint8_t cycles;
     if (flag == nullptr) {
-        auto relAddr = (int8_t)mBus->read(PC++);
+        auto relAddr = static_cast<int8_t>(mBus->read(PC++));
         PC = PC + relAddr;
         cycles = 3;
     } else {
-        auto relAddr = (int8_t)mBus->read(PC++);
+        auto relAddr = static_cast<int8_t>(mBus->read(PC++));
         if (invert) {
             if (!*flag) {
                 PC = PC + relAddr;
