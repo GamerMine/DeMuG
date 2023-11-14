@@ -63,25 +63,42 @@ void InputManager::keyPressed(int key) {
         default: {
             Bus::JOYP.selectButtons = !(BTN_A == key || BTN_B == key || BTN_SELECT == key || BTN_START == key);
             Bus::JOYP.selectDpad = !(DPAD_DOWN == key || DPAD_LEFT == key || DPAD_RIGHT == key || DPAD_UP == key);
-            Bus::JOYP.aOrRight = !(BTN_A == key || DPAD_RIGHT == key);
-            Bus::JOYP.bOrLeft = !(BTN_B == key || DPAD_LEFT == key);
-            Bus::JOYP.selectOrUp = !(BTN_SELECT == key || DPAD_UP == key);
-            Bus::JOYP.startOrDown = !(BTN_START == key || DPAD_DOWN == key);
-            //SharpSM83::IF.joypad = !Bus::JOYP.selectButtons || !Bus::JOYP.selectDpad;
-            Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP: %X", Bus::JOYP.raw);
-            SharpSM83::ENABLE_DEBUG_PRINTS = false;
+
+            if (!Bus::JOYP.selectButtons) {
+                if (BTN_A == key) Bus::JOYP.aOrRight = 0;
+                if (BTN_B == key) Bus::JOYP.bOrLeft = 0;
+                if (BTN_SELECT == key) Bus::JOYP.selectOrUp = 0;
+                if (BTN_START == key) Bus::JOYP.startOrDown = 0;
+            }
+
+            if (!Bus::JOYP.selectDpad) {
+                if (DPAD_RIGHT == key) Bus::JOYP.aOrRight = 0;
+                if (DPAD_LEFT == key) Bus::JOYP.bOrLeft = 0;
+                if (DPAD_UP == key) Bus::JOYP.selectOrUp = 0;
+                if (DPAD_DOWN == key) Bus::JOYP.startOrDown = 0;
+            }
+            Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP = %X\t Key pressed = %i", Bus::JOYP.raw, key);
             break;
         }
     }
 }
 
 void InputManager::keyReleased(int key) {
-    Bus::JOYP.selectButtons = (BTN_A != key || BTN_B != key || BTN_SELECT != key || BTN_START != key);
-    Bus::JOYP.selectDpad = (DPAD_DOWN != key || DPAD_LEFT != key || DPAD_RIGHT != key || DPAD_UP != key);
-    Bus::JOYP.aOrRight = (BTN_A != key || DPAD_RIGHT != key);
-    Bus::JOYP.bOrLeft = (BTN_B != key || DPAD_LEFT != key);
-    Bus::JOYP.selectOrUp = (BTN_SELECT != key || DPAD_UP != key);
-    Bus::JOYP.startOrDown = (BTN_START != key || DPAD_DOWN != key);
-    Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP: %X", Bus::JOYP.raw);
+    if (!Bus::JOYP.selectButtons) {
+        Bus::JOYP.selectButtons = 1;
+        if (BTN_A == key) Bus::JOYP.aOrRight = 1;
+        if (BTN_B == key) Bus::JOYP.bOrLeft = 1;
+        if (BTN_SELECT == key) Bus::JOYP.selectOrUp = 1;
+        if (BTN_START == key) Bus::JOYP.startOrDown = 1;
+    }
+
+    if (!Bus::JOYP.selectDpad) {
+        Bus::JOYP.selectDpad = 1;
+        if (DPAD_RIGHT == key) Bus::JOYP.aOrRight = 1;
+        if (DPAD_LEFT == key) Bus::JOYP.bOrLeft = 1;
+        if (DPAD_UP == key) Bus::JOYP.selectOrUp = 1;
+        if (DPAD_DOWN == key) Bus::JOYP.startOrDown = 1;
+    }
+    Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP = %X\tKey released = %i", Bus::JOYP.raw, key);
 }
 

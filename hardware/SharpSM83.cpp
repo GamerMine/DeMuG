@@ -8,7 +8,7 @@ SharpSM83::debugInfo SharpSM83::DEBUG_INFO = {};
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
 
-    PC = 0x0000;
+    PC = 0x0300;
     SP = 0x0000;
     flags.rawFlags = 0x00;
     interruptShouldBeEnabled = false;
