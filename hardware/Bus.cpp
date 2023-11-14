@@ -5,11 +5,11 @@ bool Bus::GLOBAL_HALT = false;
 Bus::Bus() {
     logger = Logger::getInstance("Bus");
     romName = nullptr;
-    disableBootRom = true;
+    disableBootRom = false;
     JOYP.raw = 0x3F;
 
     readBootRom();
-    readGameRom("Tetris.gb");
+    readGameRom("Dr. Mario.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));

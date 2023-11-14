@@ -69,7 +69,7 @@ void InputManager::keyPressed(int key) {
             Bus::JOYP.startOrDown = !(BTN_START == key || DPAD_DOWN == key);
             //SharpSM83::IF.joypad = !Bus::JOYP.selectButtons || !Bus::JOYP.selectDpad;
             Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP: %X", Bus::JOYP.raw);
-            SharpSM83::ENABLE_DEBUG_PRINTS = true;
+            SharpSM83::ENABLE_DEBUG_PRINTS = false;
             break;
         }
     }

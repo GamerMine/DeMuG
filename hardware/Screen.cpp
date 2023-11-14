@@ -231,7 +231,7 @@ void Screen::bufferScreen() {
                 if (mPpu->LCDC.objEnable) {
                     for (Object &obj: objs) {
                         if (obj.isReal) {
-                            if (x >= (obj.Xpos - 8) && x <= obj.Xpos) {
+                            if (x >= (obj.Xpos - 8) && x <= obj.Xpos - 1) {
                                 screenPixelArray[y * DEFAULT_WIDTH + x] = getOBPPixelFromID(
                                         tilesData[obj.tileIndex][y - (obj.Ypos - 16)][x - (obj.Xpos - 8)],
                                         obj.dmgPalette);
