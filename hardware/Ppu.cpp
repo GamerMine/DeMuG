@@ -2,13 +2,13 @@
 
 Ppu::Ppu(Bus *bus) {
     mBus = bus;
-    LCDC.raw = 0x00;
-    STAT.raw = 0x00;
+    LCDC.raw = 0x91;
+    STAT.raw = 0x81;
     SCY = 0x00;
     SCX = 0x00;
-    LY = 0x00;
+    LY = 0x91;
     LYC = 0x00;
-    BGP.raw = 0x00;
+    BGP.raw = 0xFC;
     OBP0.raw = 0x00;
     OBP1.raw = 0x00;
 

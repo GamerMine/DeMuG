@@ -9,9 +9,17 @@ SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
 
     PC = 0x0100;
-    SP = 0x0000;
+    SP = 0xFFFE;
+    registers.A = 0x01;
+    registers.B = 0xFF;
+    registers.C = 0x13;
+    registers.D = 0x00;
+    registers.E = 0xC1;
+    registers.H = 0x84;
+    registers.L = 0x03;
     flags.rawFlags = 0x00;
     interruptShouldBeEnabled = false;
+    IF.raw = 0xE1;
     IME = false;
 
     logger = Logger::getInstance("Cpu");
@@ -47,14 +55,13 @@ void SharpSM83::operator()() {
                 DEBUG_INFO.N = flags.negative;
             }
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
-            if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC - 1);
-            if (PC - 1 == 0x0293 && ENABLE_DEBUG_PRINTS) PAUSE = true;
+            // /*if (ENABLE_DEBUG_PRINTS) */logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC - 1);
+            //if (PC - 1 == 0x0293 && ENABLE_DEBUG_PRINTS) PAUSE = true;
             cycles += opcodes[instr]();
             if (dmaCycles) {dmaCycles = false; cycles += 160;}
             {
                 if (IME) {
                     if (IE.vblank && IF.vblank) {
-                        if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "STARTING VBLANK INTERRUPT");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.vblank = 0;
@@ -63,7 +70,6 @@ void SharpSM83::operator()() {
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0040;
                     } else if (IE.lcd && IF.lcd) {
-                        if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "STARTING LCD INTERRUPT");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.lcd = 0;
@@ -72,7 +78,6 @@ void SharpSM83::operator()() {
                         mBus->write(SP, PC & 0xFF);
                         PC = 0x0048;
                     } else if (IE.joypad && IF.joypad) {
-                        if (ENABLE_DEBUG_PRINTS) logger->log(Logger::DEBUG, "STARTING JOYPAD INTERRUPT");
                         IME = 0;
                         interruptShouldBeEnabled = false;
                         IF.joypad = 0;
@@ -103,7 +108,6 @@ uint8_t SharpSM83::LD(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::LD(uint16_t *reg1, const uint16_t *reg2, bool addDataToSP) { // TODO: Support for addDataToSP
-    if (addDataToSP) logger->log(Logger::WARNING, "Using an unimplemented function of LD 'addDataToSP'");
     uint8_t cycles;
     if (reg1 == nullptr) {
         uint16_t addr = mBus->read(PC + 1) << 8 | mBus->read(PC);
@@ -118,8 +122,19 @@ uint8_t SharpSM83::LD(uint16_t *reg1, const uint16_t *reg2, bool addDataToSP) { 
         cycles = 3;
     }
     else {
-        *reg1 = *reg2;
-        cycles = 2;
+        if (addDataToSP) {
+            auto data = static_cast<int8_t>(mBus->read(PC++));
+            uint16_t addition = *reg2 + data;
+            *reg1 = *reg2 + data;
+            cycles = 3;
+            flags.zero = 0;
+            flags.negative = 0;
+            flags.halfCarry = *reg1 > 0xF;
+            flags.carry = addition > 0xFF;
+        } else {
+            *reg1 = *reg2;
+            cycles = 2;
+        }
     }
     return cycles;
 }
@@ -364,7 +379,9 @@ uint8_t SharpSM83::RLA() {
 
 uint8_t SharpSM83::POP(uint16_t *reg) {
     if (reg == nullptr) {
-        flags.rawFlags = mBus->read(SP++) << 4;
+        uint8_t data = mBus->read(SP++);
+        flags.rawFlags = data & 0xF0;
+        //if (data != 0x00) logger->log(Logger::DEBUG, "data = %X at SP = %X so flags = %X", data, SP - 1, flags.rawFlags);
         registers.A = mBus->read(SP++);
     } else {
         *reg = mBus->read(SP + 1) << 8 | mBus->read(SP);
@@ -584,8 +601,34 @@ uint8_t SharpSM83::SUB(uint16_t reg) {
     return 2;
 }
 
-uint8_t SharpSM83::SBC(uint8_t *reg1, uint8_t *reg2) {
-    logger->log(Logger::DEBUG, "Not implemented 10"); return 0;
+uint8_t SharpSM83::SBC(const uint8_t *reg) {
+    if (reg == nullptr) {
+        uint8_t data = mBus->read(PC++) + flags.carry;
+        flags.carry = data > registers.A;
+        registers.A = registers.A - data;
+        flags.halfCarry = registers.A > 0xF;
+    } else {
+        uint8_t data = *reg + flags.carry;
+        flags.carry = data > registers.A;
+        registers.A = registers.A - data;
+        flags.halfCarry = registers.A > 0xF;
+    }
+
+    flags.zero = 0;
+    flags.negative = 1;
+
+    return 1;
+}
+
+uint8_t SharpSM83::SBC(uint16_t reg) {
+    uint8_t data = mBus->read(reg) + flags.carry;
+    flags.carry = data > registers.A;
+    registers.A = registers.A - data;
+    flags.halfCarry = registers.A > 0xF;
+    flags.zero = 0;
+    flags.negative = 1;
+
+    return 2;
 }
 
 uint8_t SharpSM83::AND(const uint8_t *reg) {
@@ -833,7 +876,22 @@ uint8_t SharpSM83::RRC(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::RR(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented 30"); return 0;
+    if (reg == nullptr) {
+        uint8_t value = mBus->read(registers.HL);
+        mBus->write(registers.HL, (value >> 1) + (flags.carry << 6));
+        flags.zero = (value >> 1) + (flags.carry << 6) == 0x00;
+        flags.carry = value & 0x01;
+    } else {
+        uint8_t value = *reg;
+        *reg = (value >> 1) + (flags.carry << 6);
+        flags.zero = (value >> 1) + (flags.carry << 6) == 0x00;
+        flags.carry = value & 0x01;
+    }
+
+    flags.negative = 0;
+    flags.halfCarry = 0;
+
+    return 0;
 }
 
 uint8_t SharpSM83::SLA(uint8_t *reg) {

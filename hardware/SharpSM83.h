@@ -255,14 +255,14 @@ private:
             [this]() {return SUB(&registers.L);},
             [this]() {return SUB(registers.HL);},
             [this]() {return SUB(&registers.A);},
-            [this]() {return SBC(&registers.A, &registers.B);},
-            [this]() {return SBC(&registers.A, &registers.C);},
-            [this]() {return SBC(&registers.A, &registers.D);},
-            [this]() {return SBC(&registers.A, &registers.E);},
-            [this]() {return SBC(&registers.A, &registers.H);},
-            [this]() {return SBC(&registers.A, &registers.L);},
-            [this]() {return SBC(&registers.A, nullptr);},
-            [this]() {return SBC(&registers.A, &registers.A);},
+            [this]() {return SBC(&registers.B);},
+            [this]() {return SBC(&registers.C);},
+            [this]() {return SBC(&registers.D);},
+            [this]() {return SBC(&registers.E);},
+            [this]() {return SBC(&registers.H);},
+            [this]() {return SBC(&registers.L);},
+            [this]() {return SBC(registers.HL);},
+            [this]() {return SBC(&registers.A);},
             [this]() {return AND(&registers.B);},
             [this]() {return AND(&registers.C);},
             [this]() {return AND(&registers.D);},
@@ -325,7 +325,7 @@ private:
             [this]() {return NIMP();},
             [this]() {return CALL(&flags.carry);},
             [this]() {return NIMP();},
-            [this]() {return SBC(&registers.A, nullptr);},
+            [this]() {return SBC(nullptr);},
             [this]() {return RST(0x0018);},
             [this]() {return LDH(nullptr);},
             [this]() {return POP(&registers.HL);},
@@ -906,7 +906,8 @@ private:
     uint8_t ADC(uint16_t reg);
     uint8_t SUB(const uint8_t *reg);
     uint8_t SUB(uint16_t reg);
-    uint8_t SBC(uint8_t *reg1, uint8_t *reg2);
+    uint8_t SBC(const uint8_t *reg);
+    uint8_t SBC(uint16_t reg);
     uint8_t AND(const uint8_t *reg);
     uint8_t AND(uint16_t reg);
     uint8_t XOR(const uint8_t *reg);

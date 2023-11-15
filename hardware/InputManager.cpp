@@ -72,7 +72,7 @@ void InputManager::keyPressed(int key) {
             if (DPAD_LEFT == key)   JOY_DPAD.left = 0;
             if (DPAD_UP == key)     JOY_DPAD.up = 0;
             if (DPAD_DOWN == key)   JOY_DPAD.down = 0;
-            SharpSM83::ENABLE_DEBUG_PRINTS = true;
+            //SharpSM83::ENABLE_DEBUG_PRINTS = true;
             Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP = %X\t Key pressed = %i", Bus::JOYP.raw, key);
             break;
         }

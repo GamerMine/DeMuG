@@ -220,7 +220,8 @@ void Screen::bufferScreen() {
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
                 // First drawn layer is the background
-                screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(mPpu->SCY + y) * 32 * 8 +
+                //Logger::getInstance("Screen")->log(Logger::DEBUG, "SCY = %X", (mPpu->SCY - 143) % 256);
+                screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(/*(mPpu->SCY)*/ + y) * 32 * 8 +
                                                                              (mPpu->SCX + x)];
                 // Second drawn layer is the window
                 if (mPpu->LCDC.windowEnable) {
