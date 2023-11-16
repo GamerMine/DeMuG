@@ -36,6 +36,9 @@ public:
         };
         bool isReal;
     };
+
+    inline static bool VIEW_MEMORY = false;
+    inline static uint8_t MEMORY_PAGE = 0;
 private:
     class Ppu *mPpu;
 
@@ -57,6 +60,8 @@ private:
 
     void DrawInstructions(int x, int y);
     static void DrawFlags(int x, int y);
+    void DrawRegisters(int x, int y);
+    void DrawMemory(int x, int y, int page);
 
     void render();
     void bufferTilesData();

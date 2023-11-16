@@ -67,37 +67,48 @@ void Screen::operator()() {
 
 uint16_t tileDataBlock = 0x8000;
 void Screen::render() {
-    if (mPpu->LCDC.lcdEnable) {
-        BeginDrawing();
-        ClearBackground(DARKBLUE);
+    BeginDrawing();
+    ClearBackground(DARKBLUE);
+    if (mPpu->LCDC.lcdEnable && !VIEW_MEMORY) {
         DrawTexturePro(gameTexture,
-                       (Rectangle){0, 0, static_cast<float>(gameTexture.width), static_cast<float>(gameTexture.height)},
-                       (Rectangle){0, 0, static_cast<float>(gameTexture.width * 5), static_cast<float>(gameTexture.height * 5)},
-                       (Vector2){0, 0},
+                       (Rectangle) {0, 0, static_cast<float>(gameTexture.width),
+                                    static_cast<float>(gameTexture.height)},
+                       (Rectangle) {0, 0, static_cast<float>(gameTexture.width * 5),
+                                    static_cast<float>(gameTexture.height * 5)},
+                       (Vector2) {0, 0},
                        0,
                        RAYWHITE);
-        DrawTexturePro(tilesDataTexture,
-                       (Rectangle){0, 0, static_cast<float>(tilesDataTexture.width), static_cast<float>(tilesDataTexture.height)},
-                       (Rectangle){810, static_cast<float>(GetRenderHeight() - tilesDataTexture.height * 2 - 10), static_cast<float>(tilesDataTexture.width * 2), static_cast<float>(tilesDataTexture.height * 2)},
-                       (Vector2){0, 0},
-                       0,
-                       RAYWHITE);
-        DrawTexturePro(backgroundMapTexture,
-                       (Rectangle){0, 0, static_cast<float>(backgroundMapTexture.width), static_cast<float>(backgroundMapTexture.height)},
-                       (Rectangle){1090, 360, static_cast<float>(backgroundMapTexture.width / 1.5), static_cast<float>(backgroundMapTexture.height / 1.5)},
-                       (Vector2){0, 0},
-                       0,
-                       RAYWHITE);
-        DrawTexturePro(windowMapTexture,
-                       (Rectangle){0, 0, static_cast<float>(windowMapTexture.width), static_cast<float>(windowMapTexture.height)},
-                       (Rectangle){1090, 540, static_cast<float>(windowMapTexture.width / 1.5), static_cast<float>(windowMapTexture.height / 1.5)},
-                       (Vector2){0, 0},
-                       0,
-                       RAYWHITE);
-        DrawInstructions(820, 0);
-        DrawFlags(1100, 0);
-        EndDrawing();
     }
+    DrawTexturePro(tilesDataTexture,
+                   (Rectangle) {0, 0, static_cast<float>(tilesDataTexture.width),
+                                static_cast<float>(tilesDataTexture.height)},
+                   (Rectangle) {810, static_cast<float>(GetRenderHeight() - tilesDataTexture.height * 2 - 10),
+                                static_cast<float>(tilesDataTexture.width * 2),
+                                static_cast<float>(tilesDataTexture.height * 2)},
+                   (Vector2) {0, 0},
+                   0,
+                   RAYWHITE);
+    DrawTexturePro(backgroundMapTexture,
+                   (Rectangle) {0, 0, static_cast<float>(backgroundMapTexture.width),
+                                static_cast<float>(backgroundMapTexture.height)},
+                   (Rectangle) {1090, 360, static_cast<float>(backgroundMapTexture.width / 1.5),
+                                static_cast<float>(backgroundMapTexture.height / 1.5)},
+                   (Vector2) {0, 0},
+                   0,
+                   RAYWHITE);
+    DrawTexturePro(windowMapTexture,
+                   (Rectangle) {0, 0, static_cast<float>(windowMapTexture.width),
+                                static_cast<float>(windowMapTexture.height)},
+                   (Rectangle) {1090, 540, static_cast<float>(windowMapTexture.width / 1.5),
+                                static_cast<float>(windowMapTexture.height / 1.5)},
+                   (Vector2) {0, 0},
+                   0,
+                   RAYWHITE);
+    DrawInstructions(820, 0);
+    DrawFlags(1100, 0);
+    DrawRegisters(1100, 100);
+    if (VIEW_MEMORY) DrawMemory(0, 0, MEMORY_PAGE);
+    EndDrawing();
 }
 
 void Screen::DrawInstructions(int x, int y) {
@@ -143,6 +154,54 @@ void Screen::DrawFlags(int x, int y) {
     DrawText("C", x, (y + 1) * 32, 30, SharpSM83::DEBUG_INFO.C ? GREEN : RED);
     DrawText("N", x, (y + 2) * 32, 30, SharpSM83::DEBUG_INFO.N ? GREEN : RED);
     DrawText("HC", x, (y + 3) * 32, 30, SharpSM83::DEBUG_INFO.HC ? GREEN : RED);
+}
+
+void Screen::DrawRegisters(int x, int y) {
+    std::stringstream ss;
+    ss << " A = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regA;
+    DrawText(ss.str().c_str(), x, 0 * 32 + y, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << " B = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regB;
+    DrawText(ss.str().c_str(), x, 1 * 32 + y, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << " C = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regC;
+    DrawText(ss.str().c_str(), x, 2 * 32 + y, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << " D = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regD;
+    DrawText(ss.str().c_str(), x, 3 * 32 + y, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << " E = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regE;
+    DrawText(ss.str().c_str(), x, 4 * 32 + y, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << " H = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regH;
+    DrawText(ss.str().c_str(), x, 5 * 32 + y, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << " L = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regL;
+    DrawText(ss.str().c_str(), x, 6 * 32 + y, 30, WHITE);
+    ss.str("");
+    ss.clear();
+    ss << "SP = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regSP;
+    DrawText(ss.str().c_str(), x, 7 * 32 + y, 30, WHITE);
+}
+
+void Screen::DrawMemory(int x, int y, int page) {
+    std::stringstream ss;
+    for (uint8_t line = 0; line < 16; line++) {
+        ss << std::uppercase << std::hex << 0xC000 + line * 16 + page * 16 * 16 << ": ";
+        for (uint8_t value = 0; value < 16; value++) {
+            auto data = (uint16_t)mPpu->mBus->read(0xC000 + line * 16 + value + page * 16 * 16);
+            ss << std::uppercase << std::hex << (data < 0x10 ? "0" : "") << data << " ";
+        }
+        DrawText(ss.str().c_str(), x, line * 28 + y, 26, WHITE);
+        ss.str("");
+        ss.clear();
+    }
 }
 
 

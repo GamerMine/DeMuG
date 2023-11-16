@@ -41,10 +41,9 @@ void SharpSM83::reset() {
 }
 
 void SharpSM83::operator()() {
-    size_t cycles;
+    PAUSE = true;
     while (!Bus::GLOBAL_HALT) {
         if (!PAUSE || NEXT_INSTR) {
-            NEXT_INSTR = false;
             uint8_t instr = mBus->read(PC++);
             {
                 DEBUG_INFO.currentInstr = opcodeStr[instr];
@@ -53,12 +52,20 @@ void SharpSM83::operator()() {
                 DEBUG_INFO.C = flags.carry;
                 DEBUG_INFO.HC = flags.halfCarry;
                 DEBUG_INFO.N = flags.negative;
+                DEBUG_INFO.regA = registers.A;
+                DEBUG_INFO.regB = registers.B;
+                DEBUG_INFO.regC = registers.C;
+                DEBUG_INFO.regD = registers.D;
+                DEBUG_INFO.regE = registers.E;
+                DEBUG_INFO.regH = registers.H;
+                DEBUG_INFO.regL = registers.L;
+                DEBUG_INFO.regSP = SP;
             }
             if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             // /*if (ENABLE_DEBUG_PRINTS) */logger->log(Logger::DEBUG, "Executing instruction %s at %X", opcodeStr[instr], PC - 1);
-            //if (PC - 1 == 0x0293 && ENABLE_DEBUG_PRINTS) PAUSE = true;
-            cycles += opcodes[instr]();
-            if (dmaCycles) {dmaCycles = false; cycles += 160;}
+            //logger->log(Logger::DEBUG, "Executing %s at %X", opcodeStr[instr], PC - 1);
+            //if (PC - 1 == 0xC071) PAUSE = true;
+            opcodes[instr]();
             {
                 if (IME) {
                     if (IE.vblank && IF.vblank) {
@@ -88,6 +95,7 @@ void SharpSM83::operator()() {
                     }
                 }
             }
+            if (NEXT_INSTR) { using namespace std::chrono_literals; std::this_thread::sleep_for(100ms); }
         }
     }
 }
@@ -356,7 +364,7 @@ uint8_t SharpSM83::PUSH(const uint16_t *reg) {
     if (reg == nullptr) {
         SP--;
         mBus->write(SP--, registers.A);
-        mBus->write(SP, flags.rawFlags >> 4);
+        mBus->write(SP, flags.rawFlags);
     } else {
         SP--;
         mBus->write(SP--, *reg >> 8);
@@ -492,8 +500,9 @@ uint8_t SharpSM83::DEC(uint16_t reg) {
 }
 
 uint8_t SharpSM83::RLCA() {
-    flags.carry = registers.A >> 7;
+    uint8_t carry = registers.A >> 7;
     registers.A = (registers.A << 1) + flags.carry;
+    flags.carry = carry;
 
     flags.zero = 0;
     flags.negative = 0;
@@ -548,8 +557,8 @@ uint8_t SharpSM83::ADD(uint16_t *reg1, const uint16_t *reg2) {
         uint32_t value = *reg1 + *reg2;
         *reg1 = *reg1 + *reg2;
         flags.negative = 0;
-        flags.halfCarry = (value >> 8) > 0xF;
-        flags.carry = (value >> 8) > 0xFF;
+        flags.halfCarry = value > 0xFFF;
+        flags.carry = value > 0xFFFF;
         cycles = 2;
     }
 
@@ -712,14 +721,15 @@ uint8_t SharpSM83::RRCA() {
 }
 
 uint8_t SharpSM83::STOP() { // The STOP instruction seems to be resest after a key press
-    //PAUSE = true; // TODO skipping this instruction
-
+    // TODO skipping this instruction
+    logger->log(Logger::CRITICAL, "Not Implemented STOP");
     return 0;
 }
 
 uint8_t SharpSM83::RRA() {
-    flags.carry = registers.A & 0x01;
+    uint8_t carry = registers.A & 0x01;
     registers.A = (registers.A >> 1) + (flags.carry << 7);
+    flags.carry = carry;
 
     flags.zero = 0;
     flags.negative = 0;
@@ -878,13 +888,13 @@ uint8_t SharpSM83::RRC(uint8_t *reg) {
 uint8_t SharpSM83::RR(uint8_t *reg) {
     if (reg == nullptr) {
         uint8_t value = mBus->read(registers.HL);
-        mBus->write(registers.HL, (value >> 1) + (flags.carry << 6));
-        flags.zero = (value >> 1) + (flags.carry << 6) == 0x00;
+        mBus->write(registers.HL, (value >> 1) + (flags.carry << 7));
+        flags.zero = (value >> 1) + (flags.carry << 7) == 0x00;
         flags.carry = value & 0x01;
     } else {
         uint8_t value = *reg;
-        *reg = (value >> 1) + (flags.carry << 6);
-        flags.zero = (value >> 1) + (flags.carry << 6) == 0x00;
+        *reg = (value >> 1) + (flags.carry << 7);
+        flags.zero = (value >> 1) + (flags.carry << 7) == 0x00;
         flags.carry = value & 0x01;
     }
 
@@ -949,6 +959,7 @@ uint8_t SharpSM83::SRL(uint8_t *reg) {
         value = mBus->read(registers.HL);
         flags.carry = value & 0x01;
         mBus->write(registers.HL, value >> 1);
+        value >>= 1;
         cycles = 4;
     } else {
         flags.carry = *reg & 0x01;
@@ -957,7 +968,7 @@ uint8_t SharpSM83::SRL(uint8_t *reg) {
         cycles = 2;
     }
 
-    flags.zero = *reg == 0x00;
+    flags.zero = value == 0x00;
     flags.negative = 0;
     flags.halfCarry = 0;
 

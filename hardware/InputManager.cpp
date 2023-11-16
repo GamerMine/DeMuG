@@ -9,6 +9,9 @@ InputManager::InputManager(class Bus *bus) {
     registerKey(KEY_R);
     registerKey(KEY_SPACE);
     registerKey(KEY_N);
+    registerKey(KEY_M);
+    registerKey(KEY_KP_6);
+    registerKey(KEY_KP_4);
 
     registerKey(BTN_A);      // A
     registerKey(BTN_B);      // B
@@ -62,6 +65,18 @@ void InputManager::keyPressed(int key) {
             SharpSM83::NEXT_INSTR = true;
             break;
         }
+        case KEY_M: {
+            Screen::VIEW_MEMORY = !Screen::VIEW_MEMORY;
+            break;
+        }
+        case KEY_KP_6: {
+            Screen::MEMORY_PAGE++;
+            break;
+        }
+        case KEY_KP_4: {
+            Screen::MEMORY_PAGE--;
+            break;
+        }
         default: {
             if (BTN_A == key)       JOY_BTN.A = 0;
             if (BTN_B == key)       JOY_BTN.B = 0;
@@ -72,8 +87,7 @@ void InputManager::keyPressed(int key) {
             if (DPAD_LEFT == key)   JOY_DPAD.left = 0;
             if (DPAD_UP == key)     JOY_DPAD.up = 0;
             if (DPAD_DOWN == key)   JOY_DPAD.down = 0;
-            //SharpSM83::ENABLE_DEBUG_PRINTS = true;
-            Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP = %X\t Key pressed = %i", Bus::JOYP.raw, key);
+
             break;
         }
     }
@@ -89,6 +103,7 @@ void InputManager::keyReleased(int key) {
     if (DPAD_LEFT == key)   JOY_DPAD.left = 1;
     if (DPAD_UP == key)     JOY_DPAD.up = 1;
     if (DPAD_DOWN == key)   JOY_DPAD.down = 1;
-    Logger::getInstance("InputManager")->log(Logger::DEBUG, "JOYP = %X\tKey released = %i", Bus::JOYP.raw, key);
+
+    if (KEY_N == key) SharpSM83::NEXT_INSTR = false;
 }
 

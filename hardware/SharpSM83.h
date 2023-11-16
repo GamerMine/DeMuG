@@ -49,6 +49,14 @@ public:
         bool C;
         bool HC;
         bool N;
+        uint16_t regA;
+        uint16_t regB;
+        uint16_t regC;
+        uint16_t regD;
+        uint16_t regE;
+        uint16_t regH;
+        uint16_t regL;
+        uint16_t regSP;
         ~debugInfo();
     };
 
@@ -207,9 +215,9 @@ private:
             [this]() {return LD(&registers.H, &registers.L);},
             [this]() {return LD(&registers.H, registers.HL);},
             [this]() {return LD(&registers.H, &registers.A);},
+            [this]() {return LD(&registers.L, &registers.B);},
             [this]() {return LD(&registers.L, &registers.C);},
             [this]() {return LD(&registers.L, &registers.D);},
-            [this]() {return LD(&registers.L, &registers.B);},
             [this]() {return LD(&registers.L, &registers.E);},
             [this]() {return LD(&registers.L, &registers.H);},
             [this]() {return LD(&registers.L, &registers.L);},
