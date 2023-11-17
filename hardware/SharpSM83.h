@@ -70,14 +70,14 @@ public:
 private:
     union {
         struct {
-            bool unused1;
-            bool unused2;
-            bool unused3;
-            bool unused4;
-            bool carry;
-            bool halfCarry;
-            bool negative;
-            bool zero;
+            bool unused1;   // Bit 0
+            bool unused2;   // Bit 1
+            bool unused3;   // Bit 2
+            bool unused4;   // Bit 3
+            bool carry;     // Bit 4
+            bool halfCarry; // Bit 5
+            bool negative;  // Bit 6
+            bool zero;      // Bit 7
         };
         uint8_t rawFlags;
     } flags{};

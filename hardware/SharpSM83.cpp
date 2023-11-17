@@ -26,7 +26,7 @@ SharpSM83::SharpSM83(class Bus *bus) {
 }
 
 void SharpSM83::reset() {
-    PC = 0x0000;
+    PC = 0x0100;
     SP = 0x0000;
     registers.A = 0;
     registers.B = 0;
