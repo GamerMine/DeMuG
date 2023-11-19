@@ -143,7 +143,7 @@ uint8_t SharpSM83::LD(uint16_t *reg1, const uint16_t *reg2, bool addDataToSP) { 
     }
     else if (reg2 == nullptr) {
         *reg1 = mBus->read(PC + 1) << 8 | mBus->read(PC);
-        PC = PC + 2;
+        PC += 2;
         cycles = 3;
     }
     else {
@@ -708,9 +708,9 @@ uint8_t SharpSM83::OR(const uint8_t *reg) {
 }
 
 uint8_t SharpSM83::OR(uint16_t reg) {
-    registers.A |= mBus->read(reg);
+    registers.A = registers.A | mBus->read(registers.HL);
 
-    flags.zero = registers.A == 0x00;
+    flags.zero = (registers.A == 0x00);
     flags.negative = 0;
     flags.halfCarry = 0;
     flags.carry = 0;
@@ -961,7 +961,26 @@ uint8_t SharpSM83::SLA(uint8_t *reg) {
 }
 
 uint8_t SharpSM83::SRA(uint8_t *reg) {
-    logger->log(Logger::DEBUG, "Not implemented 32"); return 0;
+    uint8_t cycles;
+    uint8_t value;
+    if (reg == nullptr) {
+        value = mBus->read(registers.HL);
+        flags.carry = value & 0x01;
+        value = value >> 1;
+        mBus->write(registers.HL, value);
+        cycles = 4;
+    } else {
+        flags.carry = *reg & 0x01;
+        *reg = *reg >> 1;
+        value = *reg;
+        cycles = 2;
+    }
+
+    flags.zero = value == 0x00;
+    flags.negative = 0;
+    flags.halfCarry = 0;
+
+    return cycles;
 }
 
 uint8_t SharpSM83::SWAP(uint8_t *reg) {
