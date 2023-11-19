@@ -1,3 +1,19 @@
+/*
+ *  ____
+ * /\  _`\                                       /'\_/`\  __
+ * \ \ \L\_\     __      ___ ___      __   _ __ /\      \/\_\    ___      __
+ *  \ \ \L_L   /'__`\  /' __` __`\  /'__`\/\`'__\ \ \__\ \/\ \ /' _ `\  /'__`\
+ *   \ \ \/, \/\ \L\.\_/\ \/\ \/\ \/\  __/\ \ \/ \ \ \_/\ \ \ \/\ \/\ \/\  __/
+ *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
+ *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
+ *
+ * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ *
+ * This Source Code From is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
+ */
+
 #include "Screen.h"
 
 Screen::Screen(class Ppu *ppu) {
@@ -279,12 +295,20 @@ void Screen::bufferScreen() {
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
                 // First drawn layer is the background
-                //Logger::getInstance("Screen")->log(Logger::DEBUG, "SCY = %X", (mPpu->SCY - 143) % 256);
-                screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(/*(mPpu->SCY)*/ + y) * 32 * 8 +
-                                                                             (mPpu->SCX + x)];
+                if (mPpu->LCDC.tileMapArea) {
+                    screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[(/*(mPpu->SCY % DEFAULT_HEIGHT) +*/ y) * 32 * 8 +
+                                                                                  (mPpu->SCX + x)];
+                } else {
+                    screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(/*(mPpu->SCY % DEFAULT_HEIGHT) +*/ y) * 32 * 8 +
+                                                                                      (mPpu->SCX + x)];
+                }
                 // Second drawn layer is the window
                 if (mPpu->LCDC.windowEnable) {
-                    screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[y * 32 * 8 + x];
+                    if (mPpu->LCDC.tilemapArea) {
+                        screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[y * 32 * 8 + x];
+                    } else {
+                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[y * 32 * 8 + x];
+                    }
                 }
 
                 // Third draw layer is the objects

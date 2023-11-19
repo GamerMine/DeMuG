@@ -1,3 +1,19 @@
+/*
+ *  ____
+ * /\  _`\                                       /'\_/`\  __
+ * \ \ \L\_\     __      ___ ___      __   _ __ /\      \/\_\    ___      __
+ *  \ \ \L_L   /'__`\  /' __` __`\  /'__`\/\`'__\ \ \__\ \/\ \ /' _ `\  /'__`\
+ *   \ \ \/, \/\ \L\.\_/\ \/\ \/\ \/\  __/\ \ \/ \ \ \_/\ \ \ \/\ \/\ \/\  __/
+ *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
+ *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
+ *
+ * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ *
+ * This Source Code From is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
+ */
+
 #ifndef EMU_GAMEBOY_SHARPSM83_H
 #define EMU_GAMEBOY_SHARPSM83_H
 
@@ -17,7 +33,7 @@ public:
     void reset();
     void operator()();
 
-    union {
+    inline static union {
         struct {
             bool vblank : 1;
             bool lcd    : 1;
@@ -68,7 +84,7 @@ public:
     inline static bool ENABLE_DEBUG_PRINTS = false;
 
 private:
-    union {
+    inline static union {
         struct {
             bool unused1;   // Bit 0
             bool unused2;   // Bit 1
@@ -82,7 +98,7 @@ private:
         uint8_t rawFlags;
     } flags{};
 
-    union {
+    inline static union {
         union {
             struct {
                 uint8_t C;
@@ -98,275 +114,277 @@ private:
                 uint16_t BC;
                 uint16_t DE;
                 uint16_t HL;
+                uint16_t unused2;
             };
         };
         uint8_t rawRegisters[8];
     } registers{};
 
-    uint16_t PC, SP;
-    bool interruptShouldBeEnabled, IME; // Interrupt master enable flag
+    inline static uint16_t PC;
+    inline static uint16_t SP;
+    inline static bool interruptShouldBeEnabled, IME; // Interrupt master enable flag
     Bus *mBus;
     static Logger *logger;
 
 private:
     using opcodeFunc = std::function<uint8_t()>;
     opcodeFunc opcodes[256] = {
-            [this]() {return NOP();},
-            [this]() {return LD(&registers.BC, nullptr);},
-            [this]() {return LD(registers.BC, &registers.A);},
-            [this]() {return INC(&registers.BC);},
-            [this]() {return INC(&registers.B);},
-            [this]() {return DEC(&registers.B);},
-            [this]() {return LD(&registers.B, nullptr);},
-            [this]() {return RLCA();},
-            [this]() {return LD(nullptr, &SP);},
-            [this]() {return ADD(&registers.HL, &registers.BC);},
-            [this]() {return LD(&registers.A, registers.BC);},
-            [this]() {return DEC(&registers.BC);},
-            [this]() {return INC(&registers.C);},
-            [this]() {return DEC(&registers.C);},
-            [this]() {return LD(&registers.C, nullptr);},
-            [this]() {return RRCA();},
-            [this]() {return STOP();},
-            [this]() {return LD(&registers.DE, nullptr);},
-            [this]() {return LD(registers.DE, &registers.A);},
-            [this]() {return INC(&registers.DE);},
-            [this]() {return INC(&registers.D);},
-            [this]() {return DEC(&registers.D);},
-            [this]() {return LD(&registers.D, nullptr);},
-            [this]() {return RLA();},
-            [this]() {return JR(nullptr);},
-            [this]() {return ADD(&registers.HL, &registers.DE);},
-            [this]() {return LD(&registers.A, registers.DE);},
-            [this]() {return DEC(&registers.DE);},
-            [this]() {return INC(&registers.E);},
-            [this]() {return DEC(&registers.E);},
-            [this]() {return LD(&registers.E, nullptr);},
-            [this]() {return RRA();},
-            [this]() {return JR(&flags.zero, true);},
-            [this]() {return LD(&registers.HL, nullptr);},
-            [this]() {return LD(registers.HL, &registers.A, true, false);},
-            [this]() {return INC(&registers.HL);},
-            [this]() {return INC(&registers.H);},
-            [this]() {return DEC(&registers.H);},
-            [this]() {return LD(&registers.H, nullptr);},
-            [this]() {return DAA();},
-            [this]() {return JR(&flags.zero);},
-            [this]() {return ADD(&registers.HL, &registers.HL);},
-            [this]() {return LD(&registers.A, registers.HL, true, false);},
-            [this]() {return DEC(&registers.HL);},
-            [this]() {return INC(&registers.L);},
-            [this]() {return DEC(&registers.L);},
-            [this]() {return LD(&registers.L, nullptr);},
-            [this]() {return CPL();},
-            [this]() {return JR(&flags.carry, true);},
-            [this]() {return LD(&SP, nullptr);},
-            [this]() {return LD(registers.HL, &registers.A, false, true);},
-            [this]() {return INC(&SP);},
-            [this]() {return INC(registers.HL);},
-            [this]() {return DEC(registers.HL);},
-            [this]() {return LD(registers.HL, nullptr);},
-            [this]() {return SCF();},
-            [this]() {return JR(&flags.carry);},
-            [this]() {return ADD(&registers.HL, &SP);},
-            [this]() {return LD(&registers.A, registers.HL, false, true);},
-            [this]() {return DEC(&SP);},
-            [this]() {return INC(&registers.A);},
-            [this]() {return DEC(&registers.A);},
-            [this]() {return LD(&registers.A, nullptr);},
-            [this]() {return CCF();},
-            [this]() {return LD(&registers.B, &registers.B);},
-            [this]() {return LD(&registers.B, &registers.C);},
-            [this]() {return LD(&registers.B, &registers.D);},
-            [this]() {return LD(&registers.B, &registers.E);},
-            [this]() {return LD(&registers.B, &registers.H);},
-            [this]() {return LD(&registers.B, &registers.L);},
-            [this]() {return LD(&registers.B, registers.HL);},
-            [this]() {return LD(&registers.B, &registers.A);},
-            [this]() {return LD(&registers.C, &registers.B);},
-            [this]() {return LD(&registers.C, &registers.C);},
-            [this]() {return LD(&registers.C, &registers.D);},
-            [this]() {return LD(&registers.C, &registers.E);},
-            [this]() {return LD(&registers.C, &registers.H);},
-            [this]() {return LD(&registers.C, &registers.L);},
-            [this]() {return LD(&registers.C, registers.HL);},
-            [this]() {return LD(&registers.C, &registers.A);},
-            [this]() {return LD(&registers.D, &registers.B);},
-            [this]() {return LD(&registers.D, &registers.C);},
-            [this]() {return LD(&registers.D, &registers.D);},
-            [this]() {return LD(&registers.D, &registers.E);},
-            [this]() {return LD(&registers.D, &registers.H);},
-            [this]() {return LD(&registers.D, &registers.L);},
-            [this]() {return LD(&registers.D, registers.HL);},
-            [this]() {return LD(&registers.D, &registers.A);},
-            [this]() {return LD(&registers.E, &registers.B);},
-            [this]() {return LD(&registers.E, &registers.C);},
-            [this]() {return LD(&registers.E, &registers.D);},
-            [this]() {return LD(&registers.E, &registers.E);},
-            [this]() {return LD(&registers.E, &registers.H);},
-            [this]() {return LD(&registers.E, &registers.L);},
-            [this]() {return LD(&registers.E, registers.HL);},
-            [this]() {return LD(&registers.E, &registers.A);},
-            [this]() {return LD(&registers.H, &registers.B);},
-            [this]() {return LD(&registers.H, &registers.C);},
-            [this]() {return LD(&registers.H, &registers.D);},
-            [this]() {return LD(&registers.H, &registers.E);},
-            [this]() {return LD(&registers.H, &registers.H);},
-            [this]() {return LD(&registers.H, &registers.L);},
-            [this]() {return LD(&registers.H, registers.HL);},
-            [this]() {return LD(&registers.H, &registers.A);},
-            [this]() {return LD(&registers.L, &registers.B);},
-            [this]() {return LD(&registers.L, &registers.C);},
-            [this]() {return LD(&registers.L, &registers.D);},
-            [this]() {return LD(&registers.L, &registers.E);},
-            [this]() {return LD(&registers.L, &registers.H);},
-            [this]() {return LD(&registers.L, &registers.L);},
-            [this]() {return LD(&registers.L, registers.HL);},
-            [this]() {return LD(&registers.L, &registers.A);},
-            [this]() {return LD(registers.HL, &registers.B);},
-            [this]() {return LD(registers.HL, &registers.C);},
-            [this]() {return LD(registers.HL, &registers.D);},
-            [this]() {return LD(registers.HL, &registers.E);},
-            [this]() {return LD(registers.HL, &registers.H);},
-            [this]() {return LD(registers.HL, &registers.L);},
-            [this]() {return HALT();},
-            [this]() {return LD(registers.HL, &registers.A);},
-            [this]() {return LD(&registers.A, &registers.B);},
-            [this]() {return LD(&registers.A, &registers.C);},
-            [this]() {return LD(&registers.A, &registers.D);},
-            [this]() {return LD(&registers.A, &registers.E);},
-            [this]() {return LD(&registers.A, &registers.H);},
-            [this]() {return LD(&registers.A, &registers.L);},
-            [this]() {return LD(&registers.A, registers.HL);},
-            [this]() {return LD(&registers.A, &registers.A);},
-            [this]() {return ADD(&registers.B);},
-            [this]() {return ADD(&registers.C);},
-            [this]() {return ADD(&registers.D);},
-            [this]() {return ADD(&registers.E);},
-            [this]() {return ADD(&registers.H);},
-            [this]() {return ADD(&registers.L);},
-            [this]() {return ADD(registers.HL);},
-            [this]() {return ADD(&registers.A);},
-            [this]() {return ADC(&registers.B);},
-            [this]() {return ADC(&registers.C);},
-            [this]() {return ADC(&registers.D);},
-            [this]() {return ADC(&registers.E);},
-            [this]() {return ADC(&registers.H);},
-            [this]() {return ADC(&registers.L);},
-            [this]() {return ADC(registers.HL);},
-            [this]() {return ADC(&registers.A);},
-            [this]() {return SUB(&registers.B);},
-            [this]() {return SUB(&registers.C);},
-            [this]() {return SUB(&registers.D);},
-            [this]() {return SUB(&registers.E);},
-            [this]() {return SUB(&registers.H);},
-            [this]() {return SUB(&registers.L);},
-            [this]() {return SUB(registers.HL);},
-            [this]() {return SUB(&registers.A);},
-            [this]() {return SBC(&registers.B);},
-            [this]() {return SBC(&registers.C);},
-            [this]() {return SBC(&registers.D);},
-            [this]() {return SBC(&registers.E);},
-            [this]() {return SBC(&registers.H);},
-            [this]() {return SBC(&registers.L);},
-            [this]() {return SBC(registers.HL);},
-            [this]() {return SBC(&registers.A);},
-            [this]() {return AND(&registers.B);},
-            [this]() {return AND(&registers.C);},
-            [this]() {return AND(&registers.D);},
-            [this]() {return AND(&registers.E);},
-            [this]() {return AND(&registers.H);},
-            [this]() {return AND(&registers.L);},
-            [this]() {return AND(registers.HL);},
-            [this]() {return AND(&registers.A);},
-            [this]() {return XOR(&registers.B);},
-            [this]() {return XOR(&registers.C);},
-            [this]() {return XOR(&registers.D);},
-            [this]() {return XOR(&registers.E);},
-            [this]() {return XOR(&registers.H);},
-            [this]() {return XOR(&registers.L);},
-            [this]() {return XOR(registers.HL);},
-            [this]() {return XOR(&registers.A);},
-            [this]() {return OR(&registers.B);},
-            [this]() {return OR(&registers.C);},
-            [this]() {return OR(&registers.D);},
-            [this]() {return OR(&registers.E);},
-            [this]() {return OR(&registers.H);},
-            [this]() {return OR(&registers.L);},
-            [this]() {return OR(registers.HL);},
-            [this]() {return OR(&registers.A);},
-            [this]() {return CP(&registers.B);},
-            [this]() {return CP(&registers.C);},
-            [this]() {return CP(&registers.D);},
-            [this]() {return CP(&registers.E);},
-            [this]() {return CP(&registers.H);},
-            [this]() {return CP(&registers.L);},
-            [this]() {return CP(registers.HL);},
-            [this]() {return CP(&registers.A);},
-            [this]() {return RET(&flags.zero, true);},
-            [this]() {return POP(&registers.BC);},
-            [this]() {return JP(&flags.zero, true);},
-            [this]() {return JP(nullptr, false);},
-            [this]() {return CALL(&flags.zero, true);},
-            [this]() {return PUSH(&registers.BC);},
-            [this]() {return ADD(nullptr);},
-            [this]() {return RST(0x0000);},
-            [this]() {return RET(&flags.zero);},
-            [this]() {return RET(nullptr);},
-            [this]() {return JP(&flags.zero);},
-            [this]() {return PREFIX();},
-            [this]() {return CALL(&flags.zero);},
-            [this]() {return CALL(nullptr);},
-            [this]() {return ADC(nullptr);},
-            [this]() {return RST(0x0008);},
-            [this]() {return RET(&flags.carry, true);},
-            [this]() {return POP(&registers.DE);},
-            [this]() {return JP(&flags.carry, true);},
-            [this]() {return NIMP();},
-            [this]() {return CALL(&flags.carry, true);},
-            [this]() {return PUSH(&registers.DE);},
-            [this]() {return SUB(nullptr);},
-            [this]() {return RST(0x0010);},
-            [this]() {return RET(&flags.carry);},
-            [this]() {return RETI();},
-            [this]() {return JP(&flags.carry);},
-            [this]() {return NIMP();},
-            [this]() {return CALL(&flags.carry);},
-            [this]() {return NIMP();},
-            [this]() {return SBC(nullptr);},
-            [this]() {return RST(0x0018);},
-            [this]() {return LDH(nullptr);},
-            [this]() {return POP(&registers.HL);},
-            [this]() {return LD(registers.C, &registers.A);},
-            [this]() {return NIMP();},
-            [this]() {return NIMP();},
-            [this]() {return PUSH(&registers.HL);},
-            [this]() {return AND(nullptr);},
-            [this]() {return RST(0x0020);},
-            [this]() {return ADD(&SP, nullptr);},
-            [this]() {return JP(&registers.HL);},
-            [this]() {return LD(nullptr);},
-            [this]() {return NIMP();},
-            [this]() {return NIMP();},
-            [this]() {return NIMP();},
-            [this]() {return XOR(nullptr);},
-            [this]() {return RST(0x0028);},
-            [this]() {return LDH(&registers.A);},
-            [this]() {return POP(nullptr);},
-            [this]() {return LD(&registers.A, registers.C);},
-            [this]() {return DI();},
-            [this]() {return NIMP();},
-            [this]() {return PUSH(nullptr);},
-            [this]() {return OR(nullptr);},
-            [this]() {return RST(0x0030);},
-            [this]() {return LD(&registers.HL, &SP, true);},
-            [this]() {return LD(&SP, &registers.HL);},
-            [this]() {return LD(&registers.A);},
-            [this]() {return EI();},
-            [this]() {return NIMP();},
-            [this]() {return NIMP();},
-            [this]() {return CP(nullptr);},
-            [this]() {return RST(0x0038);},
+            /*00*/[this]() {return NOP();},                               // OK
+            /*01*/[this]() {return LD(&registers.BC, nullptr);},          // OK
+            /*02*/[this]() {return LD(registers.BC, &registers.A);},      // OK
+            /*03*/[this]() {return INC(&registers.BC);},                  // OK
+            /*04*/[this]() {return INC(&registers.B);},
+            /*05*/[this]() {return DEC(&registers.B);},
+            /*06*/[this]() {return LD(&registers.B, nullptr);},           // OK
+            /*07*/[this]() {return RLCA();},
+            /*08*/[this]() {return LD(nullptr, &SP);},                    // OK
+            /*09*/[this]() {return ADD(&registers.HL, &registers.BC);},
+            /*0A*/[this]() {return LD(&registers.A, registers.BC);},      // OK
+            /*0B*/[this]() {return DEC(&registers.BC);},                  // OK
+            /*0C*/[this]() {return INC(&registers.C);},
+            /*0D*/[this]() {return DEC(&registers.C);},
+            /*0E*/[this]() {return LD(&registers.C, nullptr);},           // OK
+            /*0F*/[this]() {return RRCA();},
+            /*10*/[this]() {return STOP();},
+            /*11*/[this]() {return LD(&registers.DE, nullptr);},          // OK
+            /*12*/[this]() {return LD(registers.DE, &registers.A);},      // OK
+            /*13*/[this]() {return INC(&registers.DE);},                  // OK
+            /*14*/[this]() {return INC(&registers.D);},
+            /*15*/[this]() {return DEC(&registers.D);},
+            /*16*/[this]() {return LD(&registers.D, nullptr);},           // OK
+            /*17*/[this]() {return RLA();},
+            /*18*/[this]() {return JR(nullptr);},                         // OK
+            /*19*/[this]() {return ADD(&registers.HL, &registers.DE);},
+            /*1A*/[this]() {return LD(&registers.A, registers.DE);},      // OK
+            /*1B*/[this]() {return DEC(&registers.DE);},                  // OK
+            /*1C*/[this]() {return INC(&registers.E);},
+            /*1D*/[this]() {return DEC(&registers.E);},
+            /*1E*/[this]() {return LD(&registers.E, nullptr);},           // OK
+            /*1F*/[this]() {return RRA();},
+            /*20*/[this]() {bool inverted = !flags.zero; return JR(&inverted);},
+            /*21*/[this]() {return LD(&registers.HL, nullptr);},          // OK
+            /*22*/[this]() {return LD(registers.HL, &registers.A, true, false);}, // OK
+            /*23*/[this]() {return INC(&registers.HL);},                  // OK
+            /*24*/[this]() {return INC(&registers.H);},
+            /*25*/[this]() {return DEC(&registers.H);},
+            /*26*/[this]() {return LD(&registers.H, nullptr);},           // OK
+            /*27*/[this]() {return DAA();},
+            /*28*/[this]() {return JR(&flags.zero);},
+            /*29*/[this]() {return ADD(&registers.HL, &registers.HL);},
+            /*2A*/[this]() {return LD(&registers.A, registers.HL, true, false);}, // OK
+            /*2B*/[this]() {return DEC(&registers.HL);},                  // OK
+            /*2C*/[this]() {return INC(&registers.L);},
+            /*2D*/[this]() {return DEC(&registers.L);},
+            /*2E*/[this]() {return LD(&registers.L, nullptr);},           // OK
+            /*2F*/[this]() {return CPL();},
+            /*30*/[this]() {bool inverted = !flags.carry; return JR(&inverted);},
+            /*31*/[this]() {return LD(&SP, nullptr);},                     // OK
+            /*32*/[this]() {return LD(registers.HL, &registers.A, false, true);}, // OK
+            /*33*/[this]() {return INC(&SP);},                             // OK
+            /*34*/[this]() {return INC(registers.HL);},
+            /*35*/[this]() {return DEC(registers.HL);},
+            /*36*/[this]() {return LD(registers.HL, nullptr);},            // OK
+            /*37*/[this]() {return SCF();},
+            /*38*/[this]() {return JR(&flags.carry);},
+            /*39*/[this]() {return ADD(&registers.HL, &SP);},
+            /*3A*/[this]() {return LD(&registers.A, registers.HL, false, true);}, // OK
+            /*3B*/[this]() {return DEC(&SP);},                            // OK
+            /*3C*/[this]() {return INC(&registers.A);},
+            /*3D*/[this]() {return DEC(&registers.A);},
+            /*3E*/[this]() {return LD(&registers.A, nullptr);},           // OK
+            /*3F*/[this]() {return CCF();},
+            /*40*/[this]() {return LD(&registers.B, &registers.B);},      // OK
+            /*41*/[this]() {return LD(&registers.B, &registers.C);},      // OK
+            /*42*/[this]() {return LD(&registers.B, &registers.D);},      // OK
+            /*43*/[this]() {return LD(&registers.B, &registers.E);},      // OK
+            /*44*/[this]() {return LD(&registers.B, &registers.H);},      // OK
+            /*45*/[this]() {return LD(&registers.B, &registers.L);},      // OK
+            /*46*/[this]() {return LD(&registers.B, registers.HL);},      // OK
+            /*47*/[this]() {return LD(&registers.B, &registers.A);},      // OK
+            /*48*/[this]() {return LD(&registers.C, &registers.B);},      // OK
+            /*49*/[this]() {return LD(&registers.C, &registers.C);},      // OK
+            /*4A*/[this]() {return LD(&registers.C, &registers.D);},      // OK
+            /*4B*/[this]() {return LD(&registers.C, &registers.E);},      // OK
+            /*4C*/[this]() {return LD(&registers.C, &registers.H);},      // OK
+            /*4D*/[this]() {return LD(&registers.C, &registers.L);},      // OK
+            /*4E*/[this]() {return LD(&registers.C, registers.HL);},      // OK
+            /*4F*/[this]() {return LD(&registers.C, &registers.A);},      // OK
+            /*50*/[this]() {return LD(&registers.D, &registers.B);},      // OK
+            /*51*/[this]() {return LD(&registers.D, &registers.C);},      // OK
+            /*52*/[this]() {return LD(&registers.D, &registers.D);},      // OK
+            /*53*/[this]() {return LD(&registers.D, &registers.E);},      // OK
+            /*54*/[this]() {return LD(&registers.D, &registers.H);},      // OK
+            /*55*/[this]() {return LD(&registers.D, &registers.L);},      // OK
+            /*56*/[this]() {return LD(&registers.D, registers.HL);},      // OK
+            /*57*/[this]() {return LD(&registers.D, &registers.A);},      // OK
+            /*58*/[this]() {return LD(&registers.E, &registers.B);},      // OK
+            /*59*/[this]() {return LD(&registers.E, &registers.C);},      // OK
+            /*5A*/[this]() {return LD(&registers.E, &registers.D);},      // OK
+            /*5B*/[this]() {return LD(&registers.E, &registers.E);},      // OK
+            /*5C*/[this]() {return LD(&registers.E, &registers.H);},      // OK
+            /*5D*/[this]() {return LD(&registers.E, &registers.L);},      // OK
+            /*5E*/[this]() {return LD(&registers.E, registers.HL);},      // OK
+            /*5F*/[this]() {return LD(&registers.E, &registers.A);},      // OK
+            /*60*/[this]() {return LD(&registers.H, &registers.B);},      // OK
+            /*61*/[this]() {return LD(&registers.H, &registers.C);},      // OK
+            /*62*/[this]() {return LD(&registers.H, &registers.D);},      // OK
+            /*63*/[this]() {return LD(&registers.H, &registers.E);},      // OK
+            /*64*/[this]() {return LD(&registers.H, &registers.H);},      // OK
+            /*65*/[this]() {return LD(&registers.H, &registers.L);},      // OK
+            /*66*/[this]() {return LD(&registers.H, registers.HL);},      // OK
+            /*67*/[this]() {return LD(&registers.H, &registers.A);},      // OK
+            /*68*/[this]() {return LD(&registers.L, &registers.B);},      // OK
+            /*69*/[this]() {return LD(&registers.L, &registers.C);},      // OK
+            /*6A*/[this]() {return LD(&registers.L, &registers.D);},      // OK
+            /*6B*/[this]() {return LD(&registers.L, &registers.E);},      // OK
+            /*6C*/[this]() {return LD(&registers.L, &registers.H);},      // OK
+            /*6D*/[this]() {return LD(&registers.L, &registers.L);},      // OK
+            /*6E*/[this]() {return LD(&registers.L, registers.HL);},      // OK
+            /*6F*/[this]() {return LD(&registers.L, &registers.A);},      // OK
+            /*70*/[this]() {return LD(registers.HL, &registers.B);},      // OK
+            /*71*/[this]() {return LD(registers.HL, &registers.C);},      // OK
+            /*72*/[this]() {return LD(registers.HL, &registers.D);},      // OK
+            /*73*/[this]() {return LD(registers.HL, &registers.E);},      // OK
+            /*74*/[this]() {return LD(registers.HL, &registers.H);},      // OK
+            /*75*/[this]() {return LD(registers.HL, &registers.L);},      // OK
+            /*76*/[this]() {return HALT();},
+            /*77*/[this]() {return LD(registers.HL, &registers.A);},      // OK
+            /*78*/[this]() {return LD(&registers.A, &registers.B);},      // OK
+            /*79*/[this]() {return LD(&registers.A, &registers.C);},      // OK
+            /*7A*/[this]() {return LD(&registers.A, &registers.D);},      // OK
+            /*7B*/[this]() {return LD(&registers.A, &registers.E);},      // OK
+            /*7C*/[this]() {return LD(&registers.A, &registers.H);},      // OK
+            /*7D*/[this]() {return LD(&registers.A, &registers.L);},      // OK
+            /*7E*/[this]() {return LD(&registers.A, registers.HL);},      // OK
+            /*7F*/[this]() {return LD(&registers.A, &registers.A);},      // OK
+            /*80*/[this]() {return ADD(&registers.B);},
+            /*81*/[this]() {return ADD(&registers.C);},
+            /*82*/[this]() {return ADD(&registers.D);},
+            /*83*/[this]() {return ADD(&registers.E);},
+            /*84*/[this]() {return ADD(&registers.H);},
+            /*85*/[this]() {return ADD(&registers.L);},
+            /*86*/[this]() {return ADD(registers.HL);},
+            /*87*/[this]() {return ADD(&registers.A);},
+            /*88*/[this]() {return ADC(&registers.B);},
+            /*89*/[this]() {return ADC(&registers.C);},
+            /*8A*/[this]() {return ADC(&registers.D);},
+            /*8B*/[this]() {return ADC(&registers.E);},
+            /*8C*/[this]() {return ADC(&registers.H);},
+            /*8D*/[this]() {return ADC(&registers.L);},
+            /*8E*/[this]() {return ADC(registers.HL);},
+            /*8F*/[this]() {return ADC(&registers.A);},
+            /*90*/[this]() {return SUB(&registers.B);},
+            /*91*/[this]() {return SUB(&registers.C);},
+            /*92*/[this]() {return SUB(&registers.D);},
+            /*93*/[this]() {return SUB(&registers.E);},
+            /*94*/[this]() {return SUB(&registers.H);},
+            /*95*/[this]() {return SUB(&registers.L);},
+            /*96*/[this]() {return SUB(registers.HL);},
+            /*97*/[this]() {return SUB(&registers.A);},
+            /*98*/[this]() {return SBC(&registers.B);},
+            /*99*/[this]() {return SBC(&registers.C);},
+            /*9A*/[this]() {return SBC(&registers.D);},
+            /*9B*/[this]() {return SBC(&registers.E);},
+            /*9C*/[this]() {return SBC(&registers.H);},
+            /*9D*/[this]() {return SBC(&registers.L);},
+            /*9E*/[this]() {return SBC(registers.HL);},
+            /*9F*/[this]() {return SBC(&registers.A);},
+            /*A0*/[this]() {return AND(&registers.B);},
+            /*A1*/[this]() {return AND(&registers.C);},
+            /*A2*/[this]() {return AND(&registers.D);},
+            /*A3*/[this]() {return AND(&registers.E);},
+            /*A4*/[this]() {return AND(&registers.H);},
+            /*A5*/[this]() {return AND(&registers.L);},
+            /*A6*/[this]() {return AND(registers.HL);},
+            /*A7*/[this]() {return AND(&registers.A);},
+            /*A8*/[this]() {return XOR(&registers.B);},
+            /*A9*/[this]() {return XOR(&registers.C);},
+            /*AA*/[this]() {return XOR(&registers.D);},
+            /*AB*/[this]() {return XOR(&registers.E);},
+            /*AC*/[this]() {return XOR(&registers.H);},
+            /*AD*/[this]() {return XOR(&registers.L);},
+            /*AE*/[this]() {return XOR(registers.HL);},
+            /*AF*/[this]() {return XOR(&registers.A);},
+            /*B0*/[this]() {return OR(&registers.B);},
+            /*B1*/[this]() {return OR(&registers.C);},
+            /*B2*/[this]() {return OR(&registers.D);},
+            /*B3*/[this]() {return OR(&registers.E);},
+            /*B4*/[this]() {return OR(&registers.H);},
+            /*B5*/[this]() {return OR(&registers.L);},
+            /*B6*/[this]() {return OR(registers.HL);},
+            /*B7*/[this]() {return OR(&registers.A);},
+            /*B8*/[this]() {return CP(&registers.B);},
+            /*B9*/[this]() {return CP(&registers.C);},
+            /*BA*/[this]() {return CP(&registers.D);},
+            /*BB*/[this]() {return CP(&registers.E);},
+            /*BC*/[this]() {return CP(&registers.H);},
+            /*BD*/[this]() {return CP(&registers.L);},
+            /*BE*/[this]() {return CP(registers.HL);},
+            /*BF*/[this]() {return CP(&registers.A);},
+            /*C0*/[this]() {bool inverted = !flags.zero; return RET(&inverted);},
+            /*C1*/[this]() {return POP(&registers.BC);},                  // OK
+            /*C2*/[this]() {bool inverted = !flags.zero; return JP(&inverted);},
+            /*C3*/[this]() {return JP(nullptr, false);},                  // OK
+            /*C4*/[this]() {bool inverted = !flags.zero; return CALL(&inverted);},
+            /*C5*/[this]() {return PUSH(&registers.BC);},                 // OK
+            /*C6*/[this]() {return ADD(nullptr);},
+            /*C7*/[this]() {return RST(0x0000);},                         // OK
+            /*C8*/[this]() {return RET(&flags.zero);},
+            /*C9*/[this]() {return RET(nullptr);},                        // OK
+            /*CA*/[this]() {return JP(&flags.zero);},
+            /*CB*/[this]() {return PREFIX();},
+            /*CC*/[this]() {return CALL(&flags.zero);},
+            /*CD*/[this]() {return CALL(nullptr);},                       // OK
+            /*CE*/[this]() {return ADC(nullptr);},
+            /*CF*/[this]() {return RST(0x0008);},                         // OK
+            /*D0*/[this]() {bool inverted = !flags.carry; return RET(&inverted);},
+            /*D1*/[this]() {return POP(&registers.DE);},                  // OK
+            /*D2*/[this]() {bool inverted = !flags.carry; return JP(&inverted);},
+            /*D3*/[this]() {return NIMP();},
+            /*D4*/[this]() {bool inverted = !flags.carry; return CALL(&inverted);},
+            /*D5*/[this]() {return PUSH(&registers.DE);},                 // OK
+            /*D6*/[this]() {return SUB(nullptr);},
+            /*D7*/[this]() {return RST(0x0010);},                         // OK
+            /*D8*/[this]() {return RET(&flags.carry);},
+            /*D9*/[this]() {return RETI();},                              // OK
+            /*DA*/[this]() {return JP(&flags.carry);},
+            /*DB*/[this]() {return NIMP();},
+            /*DC*/[this]() {return CALL(&flags.carry);},
+            /*DD*/[this]() {return NIMP();},
+            /*DE*/[this]() {return SBC(nullptr);},
+            /*DF*/[this]() {return RST(0x0018);},                         // OK
+            /*E0*/[this]() {return LDH(nullptr);},                        // OK
+            /*E1*/[this]() {return POP(&registers.HL);},                  // OK
+            /*E2*/[this]() {return LD(registers.C, &registers.A);},       // OK
+            /*E3*/[this]() {return NIMP();},
+            /*E4*/[this]() {return NIMP();},
+            /*E5*/[this]() {return PUSH(&registers.HL);},                 // OK
+            /*E6*/[this]() {return AND(nullptr);},
+            /*E7*/[this]() {return RST(0x0020);},                         // OK
+            /*E8*/[this]() {return ADD(&SP, nullptr);},
+            /*E9*/[this]() {return JP(&registers.HL);},
+            /*EA*/[this]() {return LD(nullptr);},                         // OK
+            /*EB*/[this]() {return NIMP();},
+            /*EC*/[this]() {return NIMP();},
+            /*ED*/[this]() {return NIMP();},
+            /*EE*/[this]() {return XOR(nullptr);},
+            /*EF*/[this]() {return RST(0x0028);},                         // OK
+            /*F0*/[this]() {return LDH(&registers.A);},                   // OK
+            /*F1*/[this]() {return POP(nullptr);},                        // OK
+            /*F2*/[this]() {return LD(&registers.A, registers.C);},       // OK
+            /*F3*/[this]() {return DI();},
+            /*F4*/[this]() {return NIMP();},
+            /*F5*/[this]() {return PUSH(nullptr);},                       // OK
+            /*F6*/[this]() {return OR(nullptr);},
+            /*F7*/[this]() {return RST(0x0030);},                         // OK
+            /*F8*/[this]() {return LD(&registers.HL, &SP, true);},
+            /*F9*/[this]() {return LD(&SP, &registers.HL);},              // OK
+            /*FA*/[this]() {return LD(&registers.A);},                    // OK
+            /*FB*/[this]() {return EI();},
+            /*FC*/[this]() {return NIMP();},
+            /*FD*/[this]() {return NIMP();},
+            /*FE*/[this]() {return CP(nullptr);},
+            /*FF*/[this]() {return RST(0x0038);},                         // OK
     };
 
     opcodeFunc pfxOpcodes[256] = {
@@ -927,18 +945,18 @@ private:
     uint8_t RRCA();
     uint8_t STOP();
     uint8_t RLA();
-    uint8_t JR(const bool *flag, bool invert = false);
+    uint8_t JR(const bool *flag);
     uint8_t RRA();
     uint8_t DAA();
     uint8_t CPL();
     uint8_t SCF();
     uint8_t CCF();
     uint8_t HALT();
-    uint8_t RET(const bool *flag, bool invert = false);
+    uint8_t RET(const bool *flag);
     uint8_t POP(uint16_t *reg);
-    uint8_t JP(const bool *flag, bool invert = false);
+    uint8_t JP(const bool *flag, bool unused = false);
     uint8_t JP(const uint16_t *reg);
-    uint8_t CALL(const bool *flag, bool invert = false);
+    uint8_t CALL(const bool *flag);
     uint8_t PUSH(const uint16_t *reg);
     uint8_t RST(uint16_t addr);
     uint8_t PREFIX();
