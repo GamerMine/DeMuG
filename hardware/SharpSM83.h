@@ -96,7 +96,7 @@ private:
             bool zero;      // Bit 7
         };
         uint8_t rawFlags;
-    } flags{};
+    } flags {};
 
     inline static union {
         union {

@@ -24,7 +24,7 @@ Bus::Bus() {
     disableBootRom = true;
 
     readBootRom();
-    readGameRom("01-special.gb");
+    readGameRom("02-interrupts.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
@@ -39,7 +39,6 @@ Bus::Bus() {
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {
-    //logger->log(Logger::DEBUG, "%sWRITE: %X at %X", Colors::LOG_BLUE, data, addr);
     if (addr <= 0x00FF && !disableBootRom) { // DMG BOOT ROM
         // We should not write into the boot rom (Read Only)
         logger->log(Logger::WARNING, "Trying to write in an unauthorized area: 0x%X", addr);
@@ -97,8 +96,6 @@ uint8_t Bus::read(uint16_t addr) {
     } // Joypad register
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr); // PPU
     if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
-
-    // logger->log(Logger::DEBUG, "%sREAD: %X at %X", Colors::LOG_DARK_YELLOW, value, addr);
 
     return value;
 }

@@ -296,10 +296,10 @@ void Screen::bufferScreen() {
             if (y < DEFAULT_HEIGHT) {
                 // First drawn layer is the background
                 if (mPpu->LCDC.tileMapArea) {
-                    screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[(/*(mPpu->SCY % DEFAULT_HEIGHT) +*/ y) * 32 * 8 +
+                    screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[((mPpu->SCY % DEFAULT_HEIGHT) + y) * 32 * 8 +
                                                                                   (mPpu->SCX + x)];
                 } else {
-                    screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(/*(mPpu->SCY % DEFAULT_HEIGHT) +*/ y) * 32 * 8 +
+                    screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[((mPpu->SCY % DEFAULT_HEIGHT) + y) * 32 * 8 +
                                                                                       (mPpu->SCX + x)];
                 }
                 // Second drawn layer is the window
