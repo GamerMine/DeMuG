@@ -24,7 +24,7 @@ Bus::Bus() {
     disableBootRom = true;
 
     readBootRom();
-    readGameRom("11-op a,(hl).gb");
+    readGameRom("01-special.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
