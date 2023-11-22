@@ -61,7 +61,7 @@ void SharpSM83::operator()() {
     PAUSE = true;
     while (!Bus::GLOBAL_HALT) {
         if (!PAUSE || NEXT_INSTR) {
-
+            if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             {
                 DEBUG_INFO.Z = flags.zero;
                 DEBUG_INFO.C = flags.carry;

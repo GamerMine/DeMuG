@@ -338,7 +338,7 @@ void Screen::getObjectToRender(std::array<Object, 10> &out, uint8_t currentY) {
     uint8_t objCount = 0;
     for (auto &obj : objects) {
         if (obj.Ypos >= 16 && obj.Ypos < 160 && obj.isReal) { // The Ypos is actually stored as currentY coord + 16, since we cannot draw out of the screen, do not get them
-            if (currentY >= obj.Ypos - 16 && currentY <= obj.Ypos - (mPpu->LCDC.objSize ? 0 : 8)) {
+            if (currentY >= obj.Ypos - 16 && currentY < obj.Ypos - (mPpu->LCDC.objSize ? 0 : 8)) {
                 out[objCount] = obj;
                 objCount++;
             }

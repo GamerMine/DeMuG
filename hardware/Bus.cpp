@@ -24,7 +24,7 @@ Bus::Bus() {
     disableBootRom = true;
 
     readBootRom();
-    readGameRom("02-interrupts.gb");
+    readGameRom("Tetris.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
@@ -72,7 +72,7 @@ void Bus::write(uint16_t addr, uint8_t data) {
         SharpSM83::IF.raw = data;
     }
     if (addr == 0xFFFF) { // Writing to Interrupt Enable
-        cpu->IE.raw = data;
+        SharpSM83::IE.raw = data;
     }
 }
 
