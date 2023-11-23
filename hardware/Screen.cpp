@@ -16,6 +16,9 @@
 
 #include "Screen.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma ide diagnostic ignored "ConstantParameter"
 Screen::Screen(class Ppu *ppu) {
     mPpu = ppu;
 }
@@ -59,6 +62,7 @@ void Screen::operator()() {
         // Render buffering
         // ----------------------------------------------------------------
         setTileData();
+        setTileDataObj();
         setObjects();
         generateBackgroundTileMap();
         generateWindowTileMap();
@@ -225,7 +229,7 @@ void Screen::bufferTilesData() {
     for (uint8_t tile = 0; tile < 0xFF; tile++) {
         for (uint8_t y = 0; y < 8; y++){
             for (uint8_t x = 0; x < 8; x++) {
-                uint8_t pixelID = tilesData[tile][y][x];
+                uint8_t pixelID = tilesDataNormal[tile][y][x];
                 tilesDataPixelArray[(tile / 16 * 8 + y) * 128 + (tile % 16 * 8 + x)] = getBGPPixelFromID(pixelID);
             }
         }
@@ -242,7 +246,22 @@ void Screen::setTileData() {
             uint8_t secondByte = mPpu->read((currentTileBlock + (tile % 128) * 16) + 1 + byte*2);
             for (uint8_t pixel = 0; pixel < 8; pixel++) {
                 uint8_t pixelID = ((firstByte & 0x1 << (7-pixel)) >> (7-pixel)) | ((secondByte & 0x1 << (7-pixel)) >> (7-pixel) << 1);
-                tilesData[tile][byte][pixel] = pixelID;
+                tilesDataNormal[tile][byte][pixel] = pixelID;
+            }
+        }
+    }
+}
+
+void Screen::setTileDataObj() {
+    tileDataBlock = 0x8000;
+    for (uint8_t tile = 0x00; tile < 0xFF; tile++) { // There are 255 tilesDataPixelArray
+        uint16_t currentTileBlock = tile < 0x80 ? tileDataBlock : 0x8800;
+        for (uint8_t byte = 0; byte < 8; byte++) { // Each tile is 16 bytes long, but 8 because one line is 2 bytes long
+            uint8_t firstByte = mPpu->read((currentTileBlock + (tile % 128) * 16) + byte*2);
+            uint8_t secondByte = mPpu->read((currentTileBlock + (tile % 128) * 16) + 1 + byte*2);
+            for (uint8_t pixel = 0; pixel < 8; pixel++) {
+                uint8_t pixelID = ((firstByte & 0x1 << (7-pixel)) >> (7-pixel)) | ((secondByte & 0x1 << (7-pixel)) >> (7-pixel) << 1);
+                tileDataObj[tile][byte][pixel] = pixelID;
             }
         }
     }
@@ -264,7 +283,7 @@ void Screen::generateBackgroundTileMap() {
     for (uint16_t value = 0; value < 1024; value++) {
         for (uint8_t y = 0; y < 8; y++) {
             for (uint8_t x = 0; x < 8; x++) {
-                uint8_t pixelID = tilesData[mPpu->read(0x9800 + value)][y][x];
+                uint8_t pixelID = tilesDataNormal[mPpu->read(0x9800 + value)][y][x];
                 backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = getBGPPixelFromID(
                         pixelID);
             }
@@ -277,7 +296,7 @@ void Screen::generateWindowTileMap() {
     for (uint16_t value = 0; value < 1024; value++) {
         for (uint8_t y = 0; y < 8; y++) {
             for (uint8_t x = 0; x < 8; x++) {
-                uint8_t pixelID = tilesData[mPpu->read(0x9C00 + value)][y][x];
+                uint8_t pixelID = tilesDataNormal[mPpu->read(0x9C00 + value)][y][x];
                 windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = getBGPPixelFromID(pixelID);
             }
         }
@@ -295,20 +314,13 @@ void Screen::bufferScreen() {
         for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
             if (y < DEFAULT_HEIGHT) {
                 // First drawn layer is the background
-                if (mPpu->LCDC.tileMapArea) {
-                    screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[((mPpu->SCY % DEFAULT_HEIGHT) + y) * 32 * 8 +
-                                                                                  (mPpu->SCX + x)];
-                } else {
-                    screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[((mPpu->SCY % DEFAULT_HEIGHT) + y) * 32 * 8 +
-                                                                                      (mPpu->SCX + x)];
-                }
+                if (mPpu->LCDC.tileMapArea) screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[((mPpu->SCY + y) % 254) * 32 * 8 + (mPpu->SCX + x)];
+                else                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[((mPpu->SCY + y) % 254) * 32 * 8 + (mPpu->SCX + x)];
+
                 // Second drawn layer is the window
                 if (mPpu->LCDC.windowEnable) {
-                    if (mPpu->LCDC.tilemapArea) {
-                        screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[y * 32 * 8 + x];
-                    } else {
-                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[y * 32 * 8 + x];
-                    }
+                    if (mPpu->LCDC.tilemapArea) screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[y * 32 * 8 + x];
+                    else                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[y * 32 * 8 + x];
                 }
 
                 // Third draw layer is the objects
@@ -316,8 +328,15 @@ void Screen::bufferScreen() {
                     for (Object &obj: objs) {
                         if (obj.isReal) {
                             if (x >= (obj.Xpos - 8) && x <= obj.Xpos - 1) {
-                                uint8_t pixelID = tilesData[obj.tileIndex][y - (obj.Ypos - 16)][x - (obj.Xpos - 8)];
-                                if (pixelID != 0x00) {
+                                uint8_t pixelID;
+                                if (obj.xFlip) {
+                                    pixelID = tileDataObj[obj.tileIndex][y - (obj.Ypos - 16)][abs(7 - (x - (obj.Xpos - 8)))];
+                                } else if(obj.yFlip) {
+                                    pixelID = tileDataObj[obj.tileIndex][abs(7 - (y - (obj.Ypos - 16)))][x - (obj.Xpos - 8)];
+                                } else {
+                                    pixelID = tileDataObj[obj.tileIndex][y - (obj.Ypos - 16)][x - (obj.Xpos - 8)];
+                                }
+                                if (pixelID != 0x00 && obj.priority == 0x00) {
                                     screenPixelArray[y * DEFAULT_WIDTH + x] = getOBPPixelFromID(
                                             pixelID,
                                             obj.dmgPalette);
@@ -431,3 +450,5 @@ void Screen::reset() {
     backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
     windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
 }
+
+#pragma clang diagnostic pop

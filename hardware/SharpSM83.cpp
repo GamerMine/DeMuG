@@ -820,7 +820,7 @@ uint8_t SharpSM83::CCF() {
 uint8_t SharpSM83::HALT() {
     if (IME) {
         bool isInterrupted = false;
-        while (!isInterrupted) {
+        while (!isInterrupted && !Bus::GLOBAL_HALT) {
             isInterrupted = checkInterrupts();
         }
     } else {
@@ -828,7 +828,7 @@ uint8_t SharpSM83::HALT() {
             haltBug = true;
         } else {
             bool isInterrupted = false;
-            while (!isInterrupted) {
+            while (!isInterrupted && !Bus::GLOBAL_HALT) {
                 isInterrupted = checkInterrupts(false);
             }
         }

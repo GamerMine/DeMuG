@@ -24,7 +24,7 @@ Bus::Bus() {
     disableBootRom = true;
 
     readBootRom();
-    readGameRom("Tetris.gb");
+    readGameRom("Dr. Mario.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));

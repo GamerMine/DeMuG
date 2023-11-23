@@ -69,7 +69,8 @@ private:
     Pixel *backgroundMapPixelArray{};
     Pixel *windowMapPixelArray{};
 
-    uint8_t tilesData[0xFF][8][8]{};
+    uint8_t tileDataObj[0xFF][8][8]{};
+    uint8_t tilesDataNormal[0xFF][8][8]{};
     std::array<Object, 40> objects {};
 
     Texture2D gameTexture{}, tilesDataTexture{}, backgroundMapTexture{}, windowMapTexture{};
@@ -82,6 +83,7 @@ private:
     void render();
     void bufferTilesData();
     void setTileData();
+    void setTileDataObj();
     void setObjects();
     void generateBackgroundTileMap();
     void generateWindowTileMap();
