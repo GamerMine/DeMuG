@@ -32,10 +32,13 @@ Bus::Bus() {
     std::thread cpuThread(std::ref(*cpu));
     inputManager = new InputManager(this);
     std::thread inputsThread(std::ref(*inputManager));
+    timer = new Timer(this);
+    std::thread timerThread(std::ref(*timer));
 
     cpuThread.join();
     ppuThread.join();
     inputsThread.join();
+    timerThread.join();
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {
@@ -57,6 +60,9 @@ void Bus::write(uint16_t addr, uint8_t data) {
     }
     if (addr == 0xFF00) {
         JOYP.raw = data;
+    }
+    if (addr == 0xFF04) {
+        Timer::DIV = 0x00;
     }
     if (addr >= 0xFF40 && addr <= 0xFF49) { // PPU Registers
         ppu->write(addr, data);
@@ -94,6 +100,7 @@ uint8_t Bus::read(uint16_t addr) {
         else if (!JOYP.selectDpad) value = InputManager::JOY_DPAD.raw;
         else value = 0x0F;
     } // Joypad register
+    if (addr == 0xFF04) value = Timer::DIV; // DIV register (Timer)
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr); // PPU
     if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
 

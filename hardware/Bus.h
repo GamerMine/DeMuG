@@ -29,6 +29,7 @@
 #include "Ppu.h"
 #include "Screen.h"
 #include "SharpSM83.h"
+#include "Timer.h"
 
 class Bus {
 public:
@@ -57,6 +58,7 @@ private:
     class SharpSM83 *cpu;
     class Ppu *ppu;
     class InputManager *inputManager;
+    class Timer *timer;
     Logger *logger;
 
     const char *romName;

@@ -12,6 +12,7 @@ set(SOURCE_FILES
         hardware/Ppu.cpp
         hardware/Screen.cpp
         hardware/SharpSM83.cpp
+        hardware/Timer.cpp
         main.cpp
 )
 
@@ -22,6 +23,7 @@ set(HEADER_FILES
         hardware/Ppu.h
         hardware/Screen.h
         hardware/SharpSM83.h
+        hardware/Timer.h
 )
 
 add_subdirectory(lib/raylib)
