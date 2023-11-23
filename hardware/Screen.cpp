@@ -316,9 +316,12 @@ void Screen::bufferScreen() {
                     for (Object &obj: objs) {
                         if (obj.isReal) {
                             if (x >= (obj.Xpos - 8) && x <= obj.Xpos - 1) {
-                                screenPixelArray[y * DEFAULT_WIDTH + x] = getOBPPixelFromID(
-                                        tilesData[obj.tileIndex][y - (obj.Ypos - 16)][x - (obj.Xpos - 8)],
-                                        obj.dmgPalette);
+                                uint8_t pixelID = tilesData[obj.tileIndex][y - (obj.Ypos - 16)][x - (obj.Xpos - 8)];
+                                if (pixelID != 0x00) {
+                                    screenPixelArray[y * DEFAULT_WIDTH + x] = getOBPPixelFromID(
+                                            pixelID,
+                                            obj.dmgPalette);
+                                }
                             }
                         }
                     }

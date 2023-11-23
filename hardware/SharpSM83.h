@@ -125,6 +125,10 @@ private:
     inline static bool interruptShouldBeEnabled, IME; // Interrupt master enable flag
     Bus *mBus;
     static Logger *logger;
+    bool haltBug;
+    uint8_t haltInstr;
+
+    bool checkInterrupts(bool executeHandler = true);
 
 private:
     using opcodeFunc = std::function<uint8_t()>;

@@ -37,6 +37,7 @@ SharpSM83::SharpSM83(class Bus *bus) {
     interruptShouldBeEnabled = false;
     IF.raw = 0xE1;
     IME = false;
+    haltBug = false;
 
     logger = Logger::getInstance("Cpu");
 }
@@ -55,6 +56,7 @@ void SharpSM83::reset() {
     interruptShouldBeEnabled = false;
     IF.raw = 0xE1;
     IME = false;
+    haltBug = false;
 }
 
 void SharpSM83::operator()() {
@@ -79,42 +81,68 @@ void SharpSM83::operator()() {
                 DEBUG_INFO.currentAddr = PC;
             }
 
-            uint8_t instr = mBus->read(PC++);
+            uint8_t instr;
+            if (haltInstr != 0x00) {
+                instr = haltInstr;
+                haltInstr = 0x00;
+            } else {
+                instr = mBus->read(PC++);
+            }
+
+            if (haltBug) {
+                haltInstr = instr;
+                haltBug = false;
+            }
             opcodes[instr]();
             //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
 
             {
                 if (IME) {
-                    if (IE.vblank && IF.vblank) {
-                        IME = 0;
-                        interruptShouldBeEnabled = false;
-                        IF.vblank = 0;
-                        SP--;
-                        mBus->write(SP--, PC >> 8);
-                        mBus->write(SP, PC & 0xFF);
-                        PC = 0x0040;
-                    } else if (IE.lcd && IF.lcd) {
-                        IME = 0;
-                        interruptShouldBeEnabled = false;
-                        IF.lcd = 0;
-                        SP--;
-                        mBus->write(SP--, PC >> 8);
-                        mBus->write(SP, PC & 0xFF);
-                        PC = 0x0048;
-                    } else if (IE.joypad && IF.joypad) {
-                        IME = 0;
-                        interruptShouldBeEnabled = false;
-                        IF.joypad = 0;
-                        SP--;
-                        mBus->write(SP--, PC >> 8);
-                        mBus->write(SP, PC & 0xFF);
-                        PC = 0x0060;
-                    }
+                    checkInterrupts();
                 }
             }
             if (NEXT_INSTR) { using namespace std::chrono_literals; std::this_thread::sleep_for(100ms); }
         }
     }
+}
+
+bool SharpSM83::checkInterrupts(bool executeHandler) {
+    if (IE.vblank && IF.vblank) {
+        if (executeHandler) {
+            IME = 0;
+            interruptShouldBeEnabled = false;
+            IF.vblank = 0;
+            SP--;
+            mBus->write(SP--, PC >> 8);
+            mBus->write(SP, PC & 0xFF);
+            PC = 0x0040;
+        }
+        return true;
+    } else if (IE.lcd && IF.lcd) {
+        if (executeHandler) {
+            IME = 0;
+            interruptShouldBeEnabled = false;
+            IF.lcd = 0;
+            SP--;
+            mBus->write(SP--, PC >> 8);
+            mBus->write(SP, PC & 0xFF);
+            PC = 0x0048;
+        }
+        return true;
+    } else if (IE.joypad && IF.joypad) {
+        if (executeHandler) {
+            IME = 0;
+            interruptShouldBeEnabled = false;
+            IF.joypad = 0;
+            SP--;
+            mBus->write(SP--, PC >> 8);
+            mBus->write(SP, PC & 0xFF);
+            PC = 0x0060;
+        }
+        return true;
+    }
+
+    return false;
 }
 
 uint8_t SharpSM83::NOP() {
@@ -790,7 +818,23 @@ uint8_t SharpSM83::CCF() {
 }
 
 uint8_t SharpSM83::HALT() {
-    PAUSE = true; logger->log(Logger::DEBUG, "Not implemented 21"); return 0; // TODO: Implements HALT
+    if (IME) {
+        bool isInterrupted = false;
+        while (!isInterrupted) {
+            isInterrupted = checkInterrupts();
+        }
+    } else {
+        if (IE.raw != 0x00 && IF.raw != 0x00) {
+            haltBug = true;
+        } else {
+            bool isInterrupted = false;
+            while (!isInterrupted) {
+                isInterrupted = checkInterrupts(false);
+            }
+        }
+    }
+
+    return 0;
 }
 
 uint8_t SharpSM83::JP(const bool *flag, bool unused) {
