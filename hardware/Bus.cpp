@@ -24,7 +24,7 @@ Bus::Bus() {
     disableBootRom = true;
 
     readBootRom();
-    readGameRom("Dr. Mario.gb");
+    readGameRom("Tetris.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
@@ -46,51 +46,27 @@ void Bus::write(uint16_t addr, uint8_t data) {
         // We should not write into the boot rom (Read Only)
         logger->log(Logger::WARNING, "Trying to write in an unauthorized area: 0x%X", addr);
     }
-    if (addr >= 0x8000 && addr <= 0x9FFF) { // VRAM
-        ppu->write(addr, data);
-    }
-    if (addr >= 0xC000 && addr <= 0xDFFF) { // WRAM
-        ram[addr - 0xC000] = data;
-    }
-    if (addr >= 0xE000 && addr <= 0xFDFF) { // Mirror of WRAM
-        ram[addr - 0xE000] = data;
-    }
-    if (addr >= 0xFE00 && addr <= 0xFE9F) { // PPU OAM
-        ppu->write(addr, data);
-    }
-    if (addr == 0xFF00) {
-        JOYP.raw = data;
-    }
-    if (addr == 0xFF04) {
-        Timer::DIV = 0x00;
-    }
-    if (addr >= 0xFF40 && addr <= 0xFF49) { // PPU Registers
-        ppu->write(addr, data);
-    }
+    if (addr >= 0x8000 && addr <= 0x9FFF) ppu->write(addr, data); // VRAM
+    if (addr >= 0xC000 && addr <= 0xDFFF) ram[addr - 0xC000] = data; // WRAM
+    if (addr >= 0xE000 && addr <= 0xFDFF) ram[addr - 0xE000] = data; // Mirror of WRAM
+    if (addr >= 0xFE00 && addr <= 0xFE9F) ppu->write(addr, data); // PPU OAM
+    if (addr == 0xFF00) JOYP.raw = data; // JOYP Register
+    if (addr == 0xFF04) Timer::DIV = 0x00; // DIV Register (Timer)
+    if (addr >= 0xFF40 && addr <= 0xFF49) ppu->write(addr, data); // PPU Registers
     if (addr == 0xFF50 && data != 0x00) {
         logger->log(Logger::DEBUG, "Boot rom disconnected from the bus");
         disableBootRom = true;
     }
-    if (addr >= 0xFF80 && addr <= 0xFFFE) { // HRAM
-        hram[addr - 0xFF80] = data;
-    }
-    if (addr == 0xFF0F) { // Writing to Interrupt Flags
-        SharpSM83::IF.raw = data;
-    }
-    if (addr == 0xFFFF) { // Writing to Interrupt Enable
-        SharpSM83::IE.raw = data;
-    }
+    if (addr >= 0xFF80 && addr <= 0xFFFE) hram[addr - 0xFF80] = data; // HRAM
+    if (addr == 0xFF0F) SharpSM83::IF.raw = data; // Writing to Interrupt Flags
+    if (addr == 0xFFFF) SharpSM83::IE.raw = data; // Writing to Interrupt Enable
 }
 
 uint8_t Bus::read(uint16_t addr) {
     uint8_t value = 0xFF;
     if (addr <= 0x00FF && !disableBootRom) value = bootRom[addr]; // DMG BOOT ROM if mapped
-    if (addr <= 0x00FF && disableBootRom) {
-        value = gameRom[addr];
-    } // Game cartridge if boot rom is unmapped
-    if (addr >= 0x0100 && addr <= 0x7FFF && romName != nullptr) {
-        value = gameRom[addr];
-    } // Game cartridge
+    if (addr <= 0x00FF && disableBootRom) value = gameRom[addr]; // Game cartridge if boot rom is unmapped
+    if (addr >= 0x0100 && addr <= 0x7FFF && romName != nullptr) value = gameRom[addr]; // Game cartridge
     if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
     if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
     if (addr >= 0xE000 && addr <= 0xFDFF) value = ram[addr - 0xE000]; // Mirror of WRAM

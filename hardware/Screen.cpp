@@ -226,7 +226,7 @@ void Screen::DrawMemory(int x, int y, int page) {
 
 
 void Screen::bufferTilesData() {
-    for (uint8_t tile = 0; tile < 0xFF; tile++) {
+    for (uint16_t tile = 0; tile < 0x100; tile++) {
         for (uint8_t y = 0; y < 8; y++){
             for (uint8_t x = 0; x < 8; x++) {
                 uint8_t pixelID = tilesDataNormal[tile][y][x];
@@ -239,7 +239,7 @@ void Screen::bufferTilesData() {
 
 void Screen::setTileData() {
     tileDataBlock = mPpu->LCDC.tileDataArea ? 0x8000 : 0x9000;
-    for (uint8_t tile = 0x00; tile < 0xFF; tile++) { // There are 255 tilesDataPixelArray
+    for (uint16_t tile = 0x00; tile < 0x100; tile++) { // There are 255 tilesDataPixelArray
         uint16_t currentTileBlock = tile < 0x80 ? tileDataBlock : 0x8800;
         for (uint8_t byte = 0; byte < 8; byte++) { // Each tile is 16 bytes long, but 8 because one line is 2 bytes long
             uint8_t firstByte = mPpu->read((currentTileBlock + (tile % 128) * 16) + byte*2);
@@ -284,8 +284,7 @@ void Screen::generateBackgroundTileMap() {
         for (uint8_t y = 0; y < 8; y++) {
             for (uint8_t x = 0; x < 8; x++) {
                 uint8_t pixelID = tilesDataNormal[mPpu->read(0x9800 + value)][y][x];
-                backgroundMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = getBGPPixelFromID(
-                        pixelID);
+                backgroundMapPixelArray[((value / 32) * 8 + y) * 32 * 8 + (value % 32 * 8 + x)] = getBGPPixelFromID(pixelID);
             }
         }
     }

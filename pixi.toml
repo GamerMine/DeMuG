@@ -1,0 +1,24 @@
+[project]
+name = "Emu_GameBoy"
+version = "0.1.0"
+description = "GameBoy Emulator for Linux & Windows"
+authors = ["GamerMine <maxime-sav@outlook.fr>"]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+repository = "https://github.com/GamerMine/Emu_GameBoy.git"
+
+[tasks]
+configure = {cmd = [
+    "cmake",
+    "-G",
+    "Ninja",
+    "-S",
+    ".",
+    "-B",
+    ".build"
+]}
+
+build = {cmd = ["ninja", "-C", ".build"], depends_on = ["configure"]}
+start = {cmd = ".build/Emu_GameBoy", depends_on = ["build"]}
+
+[dependencies]
