@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -335,10 +335,16 @@ void Screen::bufferScreen() {
                                 } else {
                                     pixelID = tileDataObj[obj.tileIndex][y - (obj.Ypos - 16)][x - (obj.Xpos - 8)];
                                 }
-                                if (pixelID != 0x00 && obj.priority == 0x00) {
-                                    screenPixelArray[y * DEFAULT_WIDTH + x] = getOBPPixelFromID(
-                                            pixelID,
-                                            obj.dmgPalette);
+
+                                if (pixelID != 0x00) {
+                                    if (obj.priority) {
+                                        screenPixelArray[y * DEFAULT_WIDTH + x] = getBGPPixelFromID(
+                                                pixelID);
+                                    } else {
+                                        screenPixelArray[y * DEFAULT_WIDTH + x] = getOBPPixelFromID(
+                                                pixelID,
+                                                obj.dmgPalette);
+                                    }
                                 }
                             }
                         }

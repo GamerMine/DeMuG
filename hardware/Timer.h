@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,10 +27,23 @@ public:
 
     void operator()();
 
-    inline static uint8_t DIV;
+    inline static uint8_t DIV; // 0xFF04: Divider register
+    inline static uint8_t TIMA; // 0xFF05: Timer counter
+    inline static uint8_t TMA; // 0xFF06: Timer modulo
+
+    inline static union {
+        struct {
+            bool clockSelect : 2;
+            bool enable : 1;
+            bool unused : 5;
+        };
+        uint8_t raw;
+    } TAC{}; // 0xFF07: Timer Control
 
 private:
     class Bus *mBus;
+
+    inline static std::array<uint, 4> clockSpeed = {4096, 262144, 65536, 16384};
 };
 
 

@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@ Bus::Bus() {
     disableBootRom = true;
 
     readBootRom();
-    readGameRom("Tetris.gb");
+    readGameRom("ie_push.gb");
 
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
@@ -52,13 +52,19 @@ void Bus::write(uint16_t addr, uint8_t data) {
     if (addr >= 0xFE00 && addr <= 0xFE9F) ppu->write(addr, data); // PPU OAM
     if (addr == 0xFF00) JOYP.raw = data; // JOYP Register
     if (addr == 0xFF04) Timer::DIV = 0x00; // DIV Register (Timer)
+    if (addr == 0xFF05) Timer::TIMA = data; // TIMA Register (Timer)
+    if (addr == 0xFF06) Timer::TMA = data; // TMA Register (Timer)
+    if (addr == 0xFF07) {
+        Timer::TAC.raw = data & 0b111; // TAC Register (Timer)
+        //if (data == 0x05) SharpSM83::PAUSE = true;
+    }
+    if (addr == 0xFF0F) SharpSM83::IF.raw = data; // Writing to Interrupt Flags
     if (addr >= 0xFF40 && addr <= 0xFF49) ppu->write(addr, data); // PPU Registers
     if (addr == 0xFF50 && data != 0x00) {
         logger->log(Logger::DEBUG, "Boot rom disconnected from the bus");
         disableBootRom = true;
     }
     if (addr >= 0xFF80 && addr <= 0xFFFE) hram[addr - 0xFF80] = data; // HRAM
-    if (addr == 0xFF0F) SharpSM83::IF.raw = data; // Writing to Interrupt Flags
     if (addr == 0xFFFF) SharpSM83::IE.raw = data; // Writing to Interrupt Enable
 }
 
@@ -77,8 +83,13 @@ uint8_t Bus::read(uint16_t addr) {
         else value = 0x0F;
     } // Joypad register
     if (addr == 0xFF04) value = Timer::DIV; // DIV register (Timer)
+    if (addr == 0xFF05) value = Timer::TIMA; // TIMA Register (Timer)
+    if (addr == 0xFF06) value = Timer::TMA; // TMA Register (Timer)
+    if (addr == 0xFF07) value = Timer::TAC.raw & 0x03; // TAC Register (Timer)
+    if (addr == 0xFF0F) value = SharpSM83::IF.raw; // Interrupt Flag
     if (addr >= 0xFF40 && addr <= 0xFF45) value = ppu->read(addr); // PPU
     if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
+    if (addr == 0xFFFF) value = SharpSM83::IE.raw;
 
     return value;
 }

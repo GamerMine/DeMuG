@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -122,7 +122,8 @@ private:
 
     inline static uint16_t PC;
     inline static uint16_t SP;
-    inline static bool interruptShouldBeEnabled, IME; // Interrupt master enable flag
+    inline static bool IME; // Interrupt master enable flag
+    inline static uint8_t interruptShouldBeEnabled;
     Bus *mBus;
     static Logger *logger;
     bool haltBug;

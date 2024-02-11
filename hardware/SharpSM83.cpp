@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ SharpSM83::SharpSM83(class Bus *bus) {
     registers.H = 0x84;
     registers.L = 0x03;
     flags.rawFlags = 0x00;
-    interruptShouldBeEnabled = false;
+    interruptShouldBeEnabled = 0;
     IF.raw = 0xE1;
     IME = false;
     haltBug = false;
@@ -53,7 +53,7 @@ void SharpSM83::reset() {
     registers.H = 0x84;
     registers.L = 0x03;
     flags.rawFlags = 0x00;
-    interruptShouldBeEnabled = false;
+    interruptShouldBeEnabled = 0;
     IF.raw = 0xE1;
     IME = false;
     haltBug = false;
@@ -63,7 +63,7 @@ void SharpSM83::operator()() {
     PAUSE = true;
     while (!Bus::GLOBAL_HALT) {
         if (!PAUSE || NEXT_INSTR) {
-            if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
+            //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
             {
                 DEBUG_INFO.Z = flags.zero;
                 DEBUG_INFO.C = flags.carry;
@@ -94,7 +94,8 @@ void SharpSM83::operator()() {
                 haltBug = false;
             }
             opcodes[instr]();
-            //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
+            if ( interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
+            if (interruptShouldBeEnabled == 3) { IME = true; } else {IME = false;}
 
             {
                 if (IME) {
@@ -110,7 +111,7 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
     if (IE.vblank && IF.vblank) {
         if (executeHandler) {
             IME = 0;
-            interruptShouldBeEnabled = false;
+            interruptShouldBeEnabled = 0;
             IF.vblank = 0;
             SP--;
             mBus->write(SP--, PC >> 8);
@@ -121,7 +122,7 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
     } else if (IE.lcd && IF.lcd) {
         if (executeHandler) {
             IME = 0;
-            interruptShouldBeEnabled = false;
+            interruptShouldBeEnabled = 0;
             IF.lcd = 0;
             SP--;
             mBus->write(SP--, PC >> 8);
@@ -129,10 +130,20 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
             PC = 0x0048;
         }
         return true;
+    } else if (IE.timer && IF.timer) {
+        if (executeHandler) {
+            IME = 0;
+            interruptShouldBeEnabled = 0;
+            IF.timer = 0;
+            SP--;
+            mBus->write(SP--, PC >> 8);
+            mBus->write(SP, PC & 0xFF);
+            PC = 0x0050;
+        }
     } else if (IE.joypad && IF.joypad) {
         if (executeHandler) {
             IME = 0;
-            interruptShouldBeEnabled = false;
+            interruptShouldBeEnabled = 0;
             IF.joypad = 0;
             SP--;
             mBus->write(SP--, PC >> 8);
@@ -870,20 +881,20 @@ uint8_t SharpSM83::RST(uint16_t addr) {
 uint8_t SharpSM83::RETI() {
     PC = mBus->read(SP + 1) << 8 | mBus->read(SP);
     SP += 2;
-    interruptShouldBeEnabled = true;
+    interruptShouldBeEnabled = 3;
     IME = true;
 
     return 4;
 }
 
 uint8_t SharpSM83::DI() {
-    interruptShouldBeEnabled = false;
+    interruptShouldBeEnabled = 0;
 
     return 1;
 }
 
 uint8_t SharpSM83::EI() {
-    interruptShouldBeEnabled = true;
+    interruptShouldBeEnabled = 1;
 
     return 1;
 }
