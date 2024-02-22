@@ -31,7 +31,7 @@ void SerialIO::operator()() {
         currentTime = GetTime();
         if (currentTime - lastTime >= 1.0 / 8192) { // Internal clock is 8192Hz
             lastTime = currentTime;
-            if (SC.transferEnable) {
+            if (SC.transferEnable && SC.clockSelect) {
                 SB <<= 1;
                 SB |= 0x01;
                 if (SB == 0xFF) {

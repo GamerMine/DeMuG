@@ -35,7 +35,7 @@ Bus::Bus() {
     std::thread serialThread(std::ref(*serial));
 
     readBootRom();
-    readGameRom("Alleyway.gb");
+    readGameRom("Dr. Mario.gb");
 
     cpuThread.join();
     ppuThread.join();
