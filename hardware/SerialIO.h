@@ -7,44 +7,41 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2024-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#ifndef EMU_GAMEBOY_TIMER_H
-#define EMU_GAMEBOY_TIMER_H
+#ifndef EMU_GAMEBOY_SERIALIO_H
+#define EMU_GAMEBOY_SERIALIO_H
 
-#include <raylib.h>
+
+#include <cstdint>
 
 #include "Bus.h"
 
-class Timer {
+class SerialIO {
 public:
-    explicit Timer(class Bus *bus);
+    explicit SerialIO(class Bus *bus);
 
     void operator()();
 
-    inline static uint8_t DIV; // 0xFF04: Divider register
-    inline static uint8_t TIMA; // 0xFF05: Timer counter
-    inline static uint8_t TMA; // 0xFF06: Timer modulo
+    inline static uint8_t SB; // 0xFF01: Serial transfer data
 
     inline static union {
         struct {
-            bool clockSelect : 2;
-            bool enable : 1;
-            bool unused : 5;
+            bool clockSelect : 1; // 1 = Transfer requested or in progress
+            bool unused : 6;
+            bool transferEnable : 1; // 0 = External (slave) or 1 = internal (master) clock
         };
         uint8_t raw;
-    } TAC{}; // 0xFF07: Timer Control
+    } SC{}; // 0xFF02: Serial transfer control
 
 private:
     class Bus *mBus;
-
-    inline static std::array<uint, 4> clockSpeed = {4096, 262144, 65536, 16384};
 };
 
 
-#endif //EMU_GAMEBOY_TIMER_H
+#endif //EMU_GAMEBOY_SERIALIO_H

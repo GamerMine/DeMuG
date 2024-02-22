@@ -140,6 +140,16 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
             mBus->write(SP, PC & 0xFF);
             PC = 0x0050;
         }
+    } else if (IE.serial && IF.serial) {
+        if (executeHandler) {
+            IME = 0;
+            interruptShouldBeEnabled = 0;
+            IF.serial = 0;
+            SP--;
+            mBus->write(SP--, PC >> 8);
+            mBus->write(SP, PC & 0xFF);
+            PC = 0x0058;
+        }
     } else if (IE.joypad && IF.joypad) {
         if (executeHandler) {
             IME = 0;

@@ -30,6 +30,7 @@
 #include "Screen.h"
 #include "SharpSM83.h"
 #include "Timer.h"
+#include "SerialIO.h"
 #include "../debug/Debug.h"
 
 class Bus {
@@ -61,6 +62,7 @@ private:
     class Ppu *ppu;
     class InputManager *inputManager;
     class Timer *timer;
+    class SerialIO * serial;
     Logger *logger;
 
     const char *romName;

@@ -10,6 +10,7 @@ set(SOURCE_FILES
         hardware/InputManager.cpp
         hardware/Ppu.cpp
         hardware/Screen.cpp
+        hardware/SerialIO.cpp
         hardware/SharpSM83.cpp
         hardware/Timer.cpp
         logging/Logger.cpp
@@ -22,6 +23,7 @@ set(HEADER_FILES
         hardware/InputManager.h
         hardware/Ppu.h
         hardware/Screen.h
+        hardware/SerialIO.h
         hardware/SharpSM83.h
         hardware/Timer.h
         logging/Logger.h

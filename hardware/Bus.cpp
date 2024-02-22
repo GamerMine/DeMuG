@@ -31,6 +31,8 @@ Bus::Bus() {
     std::thread inputsThread(std::ref(*inputManager));
     timer = new Timer(this);
     std::thread timerThread(std::ref(*timer));
+    serial = new SerialIO(this);
+    std::thread serialThread(std::ref(*serial));
 
     readBootRom();
     readGameRom("Alleyway.gb");
@@ -39,6 +41,7 @@ Bus::Bus() {
     ppuThread.join();
     inputsThread.join();
     timerThread.join();
+    serialThread.join();
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {
@@ -48,6 +51,11 @@ void Bus::write(uint16_t addr, uint8_t data) {
     else if (addr >= 0xE000 && addr <= 0xFDFF) ram[addr - 0xE000] = data; // Mirror of WRAM
     else if (addr >= 0xFE00 && addr <= 0xFE9F) ppu->write(addr, data); // PPU OAM
     else if (addr == 0xFF00) JOYP.raw = data; // JOYP Register
+    else if (addr == 0xFF01) SerialIO::SB = data; // SB Register (Serial Transfer)
+    else if (addr == 0xFF02) {  // SC Register (Serial Transfer)
+        if (SerialIO::SC.transferEnable && !(data >> 7)) SharpSM83::IF.serial = 1;
+        SerialIO::SC.raw = data;
+    }
     else if (addr == 0xFF04) Timer::DIV = 0x00; // DIV Register (Timer)
     else if (addr == 0xFF05) Timer::TIMA = data; // TIMA Register (Timer)
     else if (addr == 0xFF06) Timer::TMA = data; // TMA Register (Timer)
@@ -72,11 +80,13 @@ uint8_t Bus::read(uint16_t addr) {
     else if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
     else if (addr >= 0xE000 && addr <= 0xFDFF) value = ram[addr - 0xE000]; // Mirror of WRAM
     else if (addr >= 0xFE00 && addr <= 0xFE9F) value = ppu->read(addr); // OAM
-    else if (addr == 0xFF00) {
+    else if (addr == 0xFF00) { // Joypad register
         if (!JOYP.selectButtons) value = InputManager::JOY_BTN.raw;
         else if (!JOYP.selectDpad) value = InputManager::JOY_DPAD.raw;
         else value = 0x0F;
-    } // Joypad register
+    }
+    else if (addr == 0xFF01) value = SerialIO::SB; // SB register (Serial Transfer)
+    else if (addr == 0xFF02) value = SerialIO::SC.raw; // SC register (Serial Transfer)
     else if (addr == 0xFF04) value = Timer::DIV; // DIV register (Timer)
     else if (addr == 0xFF05) value = Timer::TIMA; // TIMA Register (Timer)
     else if (addr == 0xFF06) value = Timer::TMA; // TMA Register (Timer)
