@@ -317,9 +317,9 @@ void Screen::bufferScreen() {
                 else                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[((mPpu->SCY + y) % 254) * 32 * 8 + (mPpu->SCX + x)];
 
                 // Second drawn layer is the window
-                if (mPpu->LCDC.windowEnable) {
-                    if (mPpu->LCDC.tilemapArea) screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[y * 32 * 8 + x];
-                    else                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[y * 32 * 8 + x];
+                if (mPpu->LCDC.windowEnable && x >= mPpu->WX - 7 && y >= mPpu->WY) {
+                    if (mPpu->LCDC.tilemapArea) screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[(y - mPpu->WY) * 32 * 8 + (x - (mPpu->WX - 7))];
+                    else                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(y - mPpu->WY) * 32 * 8 + (x - (mPpu->WX - 7))];
                 }
 
                 // Third draw layer is the objects

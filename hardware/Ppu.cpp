@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,8 @@ Ppu::Ppu(Bus *bus) {
     STAT.raw = 0x81;
     SCY = 0x00;
     SCX = 0x00;
+    WX = 0x00;
+    WY = 0x00;
     LY = 0x91;
     LYC = 0x00;
     BGP.raw = 0xFC;
@@ -40,6 +42,8 @@ void Ppu::reset() {
     STAT.raw = 0x00;
     SCY = 0x00;
     SCX = 0x00;
+    WY = 0x00;
+    WX = 0x00;
     LY = 0x00;
     LYC = 0x00;
     BGP.raw = 0x00;
@@ -69,6 +73,8 @@ uint8_t Ppu::read(uint16_t addr) const {
     if (addr == 0xFF47) value = BGP.raw;
     if (addr == 0xFF48) value = OBP0.raw;
     if (addr == 0xFF49) value = OBP1.raw;
+    if (addr == 0xFF4A) value = WY;
+    if (addr == 0xFF4B) value = WX;
 
     return value;
 }
@@ -89,6 +95,8 @@ void Ppu::write(uint16_t addr, uint8_t data) {
     if (addr == 0xFF47) BGP.raw = data;
     if (addr == 0xFF48) OBP0.raw = data;
     if (addr == 0xFF49) OBP1.raw = data;
+    if (addr == 0xFF4A) WY = data;
+    if (addr == 0xFF4B) WX = data;
 }
 
 void Ppu::startTransfer() {

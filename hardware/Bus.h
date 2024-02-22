@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,6 +30,7 @@
 #include "Screen.h"
 #include "SharpSM83.h"
 #include "Timer.h"
+#include "../debug/Debug.h"
 
 class Bus {
 public:
@@ -54,6 +55,7 @@ public:
         };
         uint8_t raw;
     } JOYP;
+
 private:
     class SharpSM83 *cpu;
     class Ppu *ppu;

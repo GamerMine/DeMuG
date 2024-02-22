@@ -8,22 +8,23 @@ set(PROJECT_VERSION 1.0.0)
 set(SOURCE_FILES
         hardware/Bus.cpp
         hardware/InputManager.cpp
-        logging/Logger.cpp
         hardware/Ppu.cpp
         hardware/Screen.cpp
         hardware/SharpSM83.cpp
         hardware/Timer.cpp
+        logging/Logger.cpp
         main.cpp
 )
 
 set(HEADER_FILES
+        debug/Debug.h
         hardware/Bus.h
         hardware/InputManager.h
-        logging/Logger.h
         hardware/Ppu.h
         hardware/Screen.h
         hardware/SharpSM83.h
         hardware/Timer.h
+        logging/Logger.h
 )
 
 add_subdirectory(lib/raylib)
