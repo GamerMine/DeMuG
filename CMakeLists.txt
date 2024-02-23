@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(PROJECT_VERSION 1.0.0)
 
 set(SOURCE_FILES
+        hardware/Apu.cpp
         hardware/Bus.cpp
         hardware/InputManager.cpp
         hardware/Ppu.cpp
@@ -19,6 +20,11 @@ set(SOURCE_FILES
 
 set(HEADER_FILES
         debug/Debug.h
+        hardware/Apu.h
+        hardware/audio/SC1PulseSweep.h
+        hardware/audio/SC2Pulse.h
+        hardware/audio/SC3Wave.h
+        hardware/audio/SC4Noise.h
         hardware/Bus.h
         hardware/InputManager.h
         hardware/Ppu.h

@@ -23,6 +23,8 @@ Bus::Bus() {
     romName = nullptr;
     disableBootRom = true;
 
+    apu = new Apu(this);
+    std::thread apuThread(std::ref(*apu));
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
     cpu = new SharpSM83(this);
@@ -37,6 +39,7 @@ Bus::Bus() {
     readBootRom();
     readGameRom("Dr. Mario.gb");
 
+    apuThread.join();
     cpuThread.join();
     ppuThread.join();
     inputsThread.join();

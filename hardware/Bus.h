@@ -25,6 +25,7 @@
 #include <array>
 #include <fstream>
 
+#include "Apu.h"
 #include "InputManager.h"
 #include "Ppu.h"
 #include "Screen.h"
@@ -58,6 +59,7 @@ public:
     } JOYP;
 
 private:
+    class Apu *apu;
     class SharpSM83 *cpu;
     class Ppu *ppu;
     class InputManager *inputManager;
