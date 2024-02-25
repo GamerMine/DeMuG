@@ -17,4 +17,55 @@
 #ifndef EMU_GAMEBOY_SC4NOISE_H
 #define EMU_GAMEBOY_SC4NOISE_H
 
+#include <cstdint>
+
+class SC4Noise {
+public:
+    SC4Noise() {
+        NR41.raw = 0xFF;
+        NR42.raw = 0x00;
+        NR43.raw = 0x00;
+        NR44.raw = 0xBF;
+
+        audioStream = LoadAudioStream(44100, 16, 2);
+    }
+
+    inline static union {
+        struct {
+            uint8_t initialLengthTimer : 6;
+            uint8_t unused : 2;
+        };
+        uint8_t raw;
+    } NR41{}; // 0xFF20: Channel 4 length timer
+
+    inline static union {
+        struct {
+            bool sweepPace : 3;
+            bool envDir : 1;
+            bool initialVolume : 4;
+        };
+        uint8_t raw;
+    } NR42{}; // 0xFF21: Channel 4 volume & envelope
+
+    inline static union {
+        struct {
+            bool clockDivider : 3;
+            bool LFSRWidth : 1;
+            bool clockShift : 4;
+        };
+        uint8_t raw;
+    } NR43{}; // 0xFF22: Channel 4 frequency & randomness
+
+    inline static union {
+        struct {
+            uint8_t unused : 6;
+            uint8_t lengthEnable : 1;
+            uint8_t trigger : 1;
+        };
+        uint8_t raw;
+    } NR44{}; // 0xFF23: Channel 4 control
+
+    AudioStream audioStream{};
+};
+
 #endif //EMU_GAMEBOY_SC4NOISE_H

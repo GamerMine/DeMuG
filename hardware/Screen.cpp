@@ -16,9 +16,6 @@
 
 #include "Screen.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma ide diagnostic ignored "ConstantParameter"
 Screen::Screen(class Ppu *ppu) {
     mPpu = ppu;
 }
@@ -455,5 +452,3 @@ void Screen::reset() {
     backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
     windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
 }
-
-#pragma clang diagnostic pop

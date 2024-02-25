@@ -37,7 +37,7 @@ set(HEADER_FILES
 
 add_subdirectory(lib/raylib)
 add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
-target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra -fno-rtti)
+target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
 if (UNIX OR LINUX)
     target_link_libraries(Emu_GameBoy pthread raylib)
 elseif (WIN32)

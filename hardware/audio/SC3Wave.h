@@ -17,4 +17,52 @@
 #ifndef EMU_GAMEBOY_SC3WAVE_H
 #define EMU_GAMEBOY_SC3WAVE_H
 
+#include <cstdint>
+
+class SC3Wave {
+public:
+    SC3Wave() {
+        NR30.raw = 0x7F;
+        NR31 = 0xFF;
+        NR32.raw = 0x9F;
+        NR33 = 0xFF;
+        NR34.raw = 0xBF;
+
+        audioStream = LoadAudioStream(44100, 16, 2);
+    }
+
+    inline static union {
+        struct {
+            uint8_t unused : 7;
+            uint8_t DACOnOff : 1;
+        };
+        uint8_t raw;
+    } NR30{}; // 0xFF1A: Channel 3 DAC enable
+
+    inline static uint8_t NR31{}; // 0xFF1B: Channel 3 length timer
+
+    inline static union {
+        struct {
+            bool unused : 5;
+            bool outputLevel : 2;
+            bool unused2 : 1;
+        };
+        uint8_t raw;
+    } NR32{}; // 0xFF1C: Channel 3 output level
+
+    inline static uint8_t NR33{}; // 0xFF1D: Channel 3 period low
+
+    inline static union {
+        struct {
+            uint8_t periodHigh : 3;
+            uint8_t unused : 3;
+            uint8_t lengthEnable : 1;
+            uint8_t trigger : 1;
+        };
+        uint8_t raw;
+    } NR34{}; // 0xFF1E: Channel 3 period high & control
+
+    AudioStream audioStream{};
+};
+
 #endif //EMU_GAMEBOY_SC3WAVE_H

@@ -21,7 +21,12 @@
 #include <cstdint>
 #include <raylib.h>
 
+#include "audio/SC1PulseSweep.h"
+#include "audio/SC2Pulse.h"
+#include "audio/SC3Wave.h"
+#include "audio/SC4Noise.h"
 #include "Bus.h"
+#include "../logging/Logger.h"
 
 class Apu {
 public:
@@ -66,12 +71,23 @@ public:
         uint8_t raw;
     } NR50{}; // 0xFF24: Master volume & VIN panning
 
+    void write(uint16_t addr, uint8_t data);
+    uint8_t read(uint16_t addr);
+    void tick();
+
 private:
     class Bus *mBus;
+    Logger *logger;
 
-    static void pulseWaveCallback(void *buffer, unsigned int frames);
+    uint8_t rate;
+    uint8_t waveRAM[16]{}; // 0xFF30-0xFF3F: Waveform pattern RAM
 
-    AudioStream channel1;
+    SC1PulseSweep *pulseSweep;
+    SC2Pulse *pulse;
+    SC3Wave *wave;
+    SC4Noise *noise;
+
+    static void resetRegisters();
 };
 
 

@@ -37,7 +37,7 @@ Bus::Bus() {
     std::thread serialThread(std::ref(*serial));
 
     readBootRom();
-    readGameRom("Dr. Mario.gb");
+    readGameRom("dmg_sound/rom_singles/02-len ctr.gb");
 
     apuThread.join();
     cpuThread.join();
@@ -64,6 +64,7 @@ void Bus::write(uint16_t addr, uint8_t data) {
     else if (addr == 0xFF06) Timer::TMA = data; // TMA Register (Timer)
     else if (addr == 0xFF07) Timer::TAC.raw = data & 0b111; // TAC Register (Timer)
     else if (addr == 0xFF0F) SharpSM83::IF.raw = data; // Writing to Interrupt Flags
+    else if (addr >= 0xFF10 && addr <= 0xFF3F) apu->write(addr, data); // Writing to APU
     else if (addr >= 0xFF40 && addr <= 0xFF4B) ppu->write(addr, data); // PPU Registers
     else if (addr == 0xFF50 && data != 0x00) {
         logger->log(Logger::DEBUG, "Boot rom disconnected from the bus");
@@ -95,6 +96,7 @@ uint8_t Bus::read(uint16_t addr) {
     else if (addr == 0xFF06) value = Timer::TMA; // TMA Register (Timer)
     else if (addr == 0xFF07) value = Timer::TAC.raw & 0x03; // TAC Register (Timer)
     else if (addr == 0xFF0F) value = SharpSM83::IF.raw; // Interrupt Flag
+    else if (addr >= 0xFF10 && addr <= 0xFF3F) value = apu->read(addr); // APU
     else if (addr >= 0xFF40 && addr <= 0xFF4B) value = ppu->read(addr); // PPU
     else if (addr >= 0xFF80 && addr <= 0xFFFE) value = hram[addr - 0xFF80]; // HRAM
     else if (addr == 0xFFFF) value = SharpSM83::IE.raw;
@@ -103,12 +105,17 @@ uint8_t Bus::read(uint16_t addr) {
     return value;
 }
 
+void Bus::tickApu() {
+    apu->tick();
+}
+
 void Bus::readGameRom(const char *filename) {
     logger->log(Logger::DEBUG, "Reading game : %s", filename);
     std::ifstream file(filename, std::ios::binary);
 
     if (!file.good()) {
         logger->log(Logger::CRITICAL, "File not found: %s", filename);
+        exit(Debug::GAME_NOT_FOUND_EXIT_CODE);
         return;
     }
     romName = filename;

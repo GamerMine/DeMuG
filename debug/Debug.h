@@ -32,6 +32,8 @@ public:
         uint8_t newLicenseCode;
     } CARTRIDGE_INFO;
 
+    inline static int GAME_NOT_FOUND_EXIT_CODE = 1;
+
     static void printRomHeaderData() {
         Logger *logger = Logger::getInstance("Debug");
 
