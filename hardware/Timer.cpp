@@ -51,7 +51,12 @@ void Timer::operator()() {
 
         if (currentTime - lastTimeDiv >= 1.0 / 16384) {
             lastTimeDiv = currentTime;
+            uint8_t oldDIV = DIV;
             DIV++;
+
+            if (((oldDIV >> 3) & 0x01) && !((DIV >> 3) & 0x01)) {
+                mBus->tickApu();
+            }
         }
     }
 }
