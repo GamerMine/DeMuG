@@ -43,7 +43,7 @@ public:
     void write(uint16_t addr, uint8_t data);
     uint8_t read(uint16_t addr);
     void tickApu();
-    void tickTimer(uint8_t mCycle);
+    void tick(uint8_t mCycle);
 
     void reset();
 

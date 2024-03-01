@@ -21,7 +21,7 @@ bool Bus::GLOBAL_HALT = false;
 Bus::Bus() {
     logger = Logger::getInstance("Bus");
     romName = nullptr;
-    disableBootRom = true;
+    disableBootRom = false;
 
     apu = new Apu(this);
     std::thread apuThread(std::ref(*apu));
@@ -37,7 +37,7 @@ Bus::Bus() {
     std::thread serialThread(std::ref(*serial));
 
     readBootRom();
-    readGameRom("dmg_sound/rom_singles/03-trigger.gb");
+    readGameRom("Tetris.gb");
 
     apuThread.join();
     cpuThread.join();
@@ -109,8 +109,9 @@ void Bus::tickApu() {
     apu->tick();
 }
 
-void Bus::tickTimer(uint8_t mCycle) {
+void Bus::tick(uint8_t mCycle) {
     timer->tick(mCycle);
+    ppu->tick(mCycle);
 }
 
 void Bus::readGameRom(const char *filename) {

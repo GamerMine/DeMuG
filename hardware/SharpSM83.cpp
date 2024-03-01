@@ -24,7 +24,7 @@ SharpSM83::debugInfo SharpSM83::DEBUG_INFO = {};
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
 
-    PC = 0x0100;
+    PC = 0x0000;
     SP = 0xFFFE;
     registers.A = 0x01;
     registers.B = 0xFF;
@@ -93,15 +93,13 @@ void SharpSM83::operator()() {
                 haltInstr = instr;
                 haltBug = false;
             }
-            mBus->tickTimer(opcodes[instr]());
+            mBus->tick(opcodes[instr]());
             if ( interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
             if (interruptShouldBeEnabled == 3) { IME = true; } else {IME = false;}
 
-            {
-                if (IME) {
-                    checkInterrupts();
-                }
-            }
+            if (IME) checkInterrupts();
+
+
             if (NEXT_INSTR) { using namespace std::chrono_literals; std::this_thread::sleep_for(100ms); }
         }
     }

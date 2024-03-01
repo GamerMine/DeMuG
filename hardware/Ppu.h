@@ -33,8 +33,9 @@ public:
 
     void operator()();
     void reset();
+    void tick(uint8_t mCycle) const;
 
-    uint8_t read(uint16_t addr) const;
+    [[nodiscard]] uint8_t read(uint16_t addr) const;
     void write(uint16_t addr, uint8_t data);
 
 private:

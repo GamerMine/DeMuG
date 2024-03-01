@@ -55,8 +55,15 @@ public:
 
     inline static bool VIEW_MEMORY = false;
     inline static uint8_t MEMORY_PAGE = 0;
+
+    void tick(uint8_t mCycle);
+
 private:
     class Ppu *mPpu;
+
+    uint8_t xPos;
+    uint8_t yPos;
+    uint16_t dots;
 
     struct Pixel {
         uint8_t r;
@@ -88,7 +95,6 @@ private:
     void setObjects();
     void generateBackgroundTileMap();
     void generateWindowTileMap();
-    void bufferScreen();
     void getObjectToRender(std::array<Object, 10> &out, uint8_t currentY);
     [[nodiscard]] Screen::Pixel getBGPPixelFromID(uint8_t pixelID) const;
     [[nodiscard]] Screen::Pixel getOBPPixelFromID(uint8_t pixelID, bool palette) const;

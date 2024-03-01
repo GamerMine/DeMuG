@@ -18,8 +18,12 @@
 
 Screen::Screen(class Ppu *ppu) {
     mPpu = ppu;
+    xPos = 0x00;
+    yPos = 0x00;
+    dots = 0x0000;
 }
 
+static bool updateBuffer = true;
 void Screen::operator()() {
     InitWindow(1280, 720, WINDOW_NAME);
     SetWindowMonitor(0);
@@ -69,7 +73,8 @@ void Screen::operator()() {
         // ----------------------------------------------------------------
         if (currentTime - lastTime >= 1.0 / FRAMERATE) {
             lastTime = currentTime;
-            bufferScreen();
+            UpdateTexture(gameTexture, screenPixelArray);
+            updateBuffer = true;
             render();
         }
     }
@@ -301,62 +306,96 @@ void Screen::generateWindowTileMap() {
     UpdateTexture(windowMapTexture, windowMapPixelArray);
 }
 
-void Screen::bufferScreen() {
-    mPpu->LY = 0x00;
-    for (uint8_t y = 0; y < DEFAULT_HEIGHT + 9; y++) { // 9 the number of vertical blanking scanlines
-        std::array<Object, 10> objs{};
-        mPpu->STAT.lcdMode = 0b10;
-        getObjectToRender(objs, y);
-        mPpu->STAT.lcdMode = 0b11;
-        for (uint8_t x = 0; x < DEFAULT_WIDTH; x++) {
-            if (y < DEFAULT_HEIGHT) {
-                // First drawn layer is the background
-                if (mPpu->LCDC.tileMapArea) screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[((mPpu->SCY + y) % 254) * 32 * 8 + (mPpu->SCX + x)];
-                else                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[((mPpu->SCY + y) % 254) * 32 * 8 + (mPpu->SCX + x)];
+void Screen::tick(uint8_t mCycle) {
+    if (updateBuffer) {
+        for (uint8_t i = 0; i < mCycle * 4; i++) { // NOTE: 4 is correct only on normal speed
+            if (dots == 4) {
+                mPpu->LY = yPos;
+                mPpu->STAT.LYCequalLY = (mPpu->LY == mPpu->LYC);
+                if (mPpu->STAT.modeLYCequalLY && mPpu->STAT.LYCequalLY) SharpSM83::IF.lcd = 1;
+                if (yPos == 144 && (mPpu->STAT.lcdMode == 0b01)) { SharpSM83::IF.vblank = 1; }
+            }
 
-                // Second drawn layer is the window
-                if (mPpu->LCDC.windowEnable && x >= mPpu->WX - 7 && y >= mPpu->WY) {
-                    if (mPpu->LCDC.tilemapArea) screenPixelArray[y * DEFAULT_WIDTH + x] = windowMapPixelArray[(y - mPpu->WY) * 32 * 8 + (x - (mPpu->WX - 7))];
-                    else                        screenPixelArray[y * DEFAULT_WIDTH + x] = backgroundMapPixelArray[(y - mPpu->WY) * 32 * 8 + (x - (mPpu->WX - 7))];
-                }
+            if (dots < 80) {
+                dots++;
+                mPpu->STAT.lcdMode = 0b10;
+            }
+            else {
+                if (xPos < DEFAULT_WIDTH && yPos < DEFAULT_HEIGHT) {
+                    mPpu->STAT.lcdMode = 0b11;
+                    std::array<Object, 10> objs{};
+                    getObjectToRender(objs, yPos);
 
-                // Third draw layer is the objects
-                if (mPpu->LCDC.objEnable) {
-                    for (Object &obj: objs) {
-                        if (obj.isReal) {
-                            if (x >= (obj.Xpos - 8) && x <= obj.Xpos - 1) {
-                                uint8_t pixelID;
-                                if (obj.xFlip) {
-                                    pixelID = tileDataObj[obj.tileIndex][y - (obj.Ypos - 16)][abs(7 - (x - (obj.Xpos - 8)))];
-                                } else if(obj.yFlip) {
-                                    pixelID = tileDataObj[obj.tileIndex][abs(7 - (y - (obj.Ypos - 16)))][x - (obj.Xpos - 8)];
-                                } else {
-                                    pixelID = tileDataObj[obj.tileIndex][y - (obj.Ypos - 16)][x - (obj.Xpos - 8)];
-                                }
+                    // First drawn layer is the background
+                    if (mPpu->LCDC.tileMapArea)
+                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = windowMapPixelArray[
+                                ((mPpu->SCY + yPos) % 254) * 32 * 8 + (mPpu->SCX + xPos)];
+                    else
+                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = backgroundMapPixelArray[
+                                ((mPpu->SCY + yPos) % 254) * 32 * 8 + (mPpu->SCX + xPos)];
 
-                                if (pixelID != 0x00) {
-                                    if (obj.priority) {
-                                        screenPixelArray[y * DEFAULT_WIDTH + x] = getBGPPixelFromID(
-                                                pixelID);
+                    // Second drawn layer is the window
+                    if (mPpu->LCDC.windowEnable && xPos >= mPpu->WX - 7 && yPos >= mPpu->WY) {
+                        if (mPpu->LCDC.tilemapArea)
+                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = windowMapPixelArray[
+                                    (yPos - mPpu->WY) * 32 * 8 +
+                                    (xPos - (mPpu->WX - 7))];
+                        else
+                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = backgroundMapPixelArray[
+                                    (yPos - mPpu->WY) * 32 * 8 + (xPos - (mPpu->WX - 7))];
+                    }
+
+                    // Third draw layer is the objects
+                    if (mPpu->LCDC.objEnable) {
+                        for (Object &obj: objs) {
+                            if (obj.isReal) {
+                                if (xPos >= (obj.Xpos - 8) && xPos <= obj.Xpos - 1) {
+                                    uint8_t pixelID;
+                                    if (obj.xFlip) {
+                                        pixelID = tileDataObj[obj.tileIndex][yPos - (obj.Ypos - 16)][abs(
+                                                7 - (xPos - (obj.Xpos - 8)))];
+                                    } else if (obj.yFlip) {
+                                        pixelID = tileDataObj[obj.tileIndex][abs(7 - (yPos - (obj.Ypos - 16)))][xPos -
+                                                                                                                (obj.Xpos -
+                                                                                                                 8)];
                                     } else {
-                                        screenPixelArray[y * DEFAULT_WIDTH + x] = getOBPPixelFromID(
-                                                pixelID,
-                                                obj.dmgPalette);
+                                        pixelID = tileDataObj[obj.tileIndex][yPos - (obj.Ypos - 16)][xPos -
+                                                                                                     (obj.Xpos - 8)];
+                                    }
+
+                                    if (pixelID != 0x00) {
+                                        if (obj.priority) {
+                                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBGPPixelFromID(
+                                                    pixelID);
+                                        } else {
+                                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getOBPPixelFromID(
+                                                    pixelID,
+                                                    obj.dmgPalette);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                } else {
+                    if (yPos >= DEFAULT_HEIGHT) { mPpu->STAT.lcdMode = 0b01; }
+                    else mPpu->STAT.lcdMode = 0b00;
+                }
+                xPos++;
+                dots++;
+
+                if (dots == 456) {
+                    dots = 0x00;
+                    yPos++;
+                    xPos = 0x00;
+                }
+                if (yPos >= DEFAULT_HEIGHT + 9) {
+                    yPos = 0x00;
+                    updateBuffer = false;
                 }
             }
         }
-        mPpu->STAT.lcdMode = 0b00;
-        if (y == 144) SharpSM83::IF.vblank = 1;
-        mPpu->STAT.LYCequalLY = (mPpu->LY == mPpu->LYC);
-        if (mPpu->STAT.modeLYCequalLY && mPpu->STAT.LYCequalLY) SharpSM83::IF.lcd = 1;
-        mPpu->LY = mPpu->LY + 1;
     }
-    UpdateTexture(gameTexture, screenPixelArray);
 }
 
 void Screen::getObjectToRender(std::array<Object, 10> &out, uint8_t currentY) {

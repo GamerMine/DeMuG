@@ -107,3 +107,7 @@ void Ppu::startTransfer() {
     }
     SharpSM83::dmaCycles = true;
 }
+
+void Ppu::tick(uint8_t mCycle) const {
+    screen->tick(mCycle);
+}
