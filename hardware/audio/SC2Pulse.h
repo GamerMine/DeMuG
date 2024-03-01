@@ -59,6 +59,8 @@ public:
         uint8_t raw;
     } NR24{}; // 0xFF14: Channel 1 period high & control
 
+    inline static bool DAC;
+
     AudioStream audioStream{};
 };
 

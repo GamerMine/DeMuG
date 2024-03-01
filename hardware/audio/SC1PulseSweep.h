@@ -78,6 +78,8 @@ public:
         uint8_t raw;
     } NR14{}; // 0xFF14: Channel 1 period high & control
 
+    inline static bool DAC;
+
 private:
     inline static std::array<float, 4> dutyCycles = {0.125f, 0.25f, 0.50f, 0.75f};
 

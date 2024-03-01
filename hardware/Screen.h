@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -79,6 +79,7 @@ private:
     static void DrawFlags(int x, int y);
     void DrawRegisters(int x, int y);
     void DrawMemory(int x, int y, int page);
+    void DrawCartridgeData(int x, int y);
 
     void render();
     void bufferTilesData();
@@ -89,8 +90,8 @@ private:
     void generateWindowTileMap();
     void bufferScreen();
     void getObjectToRender(std::array<Object, 10> &out, uint8_t currentY);
-    Screen::Pixel getBGPPixelFromID(uint8_t pixelID) const;
-    Screen::Pixel getOBPPixelFromID(uint8_t pixelID, bool palette) const;
+    [[nodiscard]] Screen::Pixel getBGPPixelFromID(uint8_t pixelID) const;
+    [[nodiscard]] Screen::Pixel getOBPPixelFromID(uint8_t pixelID, bool palette) const;
 
 };
 

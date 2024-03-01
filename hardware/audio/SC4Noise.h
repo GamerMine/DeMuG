@@ -65,6 +65,8 @@ public:
         uint8_t raw;
     } NR44{}; // 0xFF23: Channel 4 control
 
+    inline static bool DAC;
+
     AudioStream audioStream{};
 };
 

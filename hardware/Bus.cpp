@@ -37,7 +37,7 @@ Bus::Bus() {
     std::thread serialThread(std::ref(*serial));
 
     readBootRom();
-    readGameRom("dmg_sound/rom_singles/02-len ctr.gb");
+    readGameRom("dmg_sound/rom_singles/03-trigger.gb");
 
     apuThread.join();
     cpuThread.join();
@@ -107,6 +107,10 @@ uint8_t Bus::read(uint16_t addr) {
 
 void Bus::tickApu() {
     apu->tick();
+}
+
+void Bus::tickTimer(uint8_t mCycle) {
+    timer->tick(mCycle);
 }
 
 void Bus::readGameRom(const char *filename) {

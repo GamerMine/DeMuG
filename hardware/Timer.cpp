@@ -26,7 +26,6 @@ Timer::Timer(class Bus *bus) {
 
 void Timer::operator()() {
     double currentTime;
-    double lastTimeDiv;
     double lastTimeTima;
     bool timaOverflow = false;
 
@@ -48,15 +47,16 @@ void Timer::operator()() {
                 } else { TIMA++; }
             }
         }
+    }
+}
 
-        if (currentTime - lastTimeDiv >= 1.0 / 16384) {
-            lastTimeDiv = currentTime;
-            uint8_t oldDIV = DIV;
-            DIV++;
+void Timer::tick(uint8_t mCycle) {
+    for (uint8_t i = 0; i < mCycle * 4; i++) {
+        uint16_t oldDIV = DIV;
+        DIV++;
 
-            if (((oldDIV >> 3) & 0x01) && !((DIV >> 3) & 0x01)) {
-                mBus->tickApu();
-            }
+        if (((oldDIV >> 12) & 0x01) && !((DIV >> 12) & 0x01)) {
+            mBus->tickApu();
         }
     }
 }

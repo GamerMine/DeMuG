@@ -26,8 +26,9 @@ public:
     explicit Timer(class Bus *bus);
 
     void operator()();
+    void tick(uint8_t mCycle);
 
-    inline static uint8_t DIV; // 0xFF04: Divider register
+    inline static uint16_t DIV; // 0xFF04: Divider register
     inline static uint8_t TIMA; // 0xFF05: Timer counter
     inline static uint8_t TMA; // 0xFF06: Timer modulo
 
