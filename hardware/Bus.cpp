@@ -23,28 +23,22 @@ Bus::Bus() {
     romName = nullptr;
     disableBootRom = false;
 
-    apu = new Apu(this);
-    std::thread apuThread(std::ref(*apu));
     ppu = new Ppu(this);
     std::thread ppuThread(std::ref(*ppu));
+    apu = new Apu(this);
     cpu = new SharpSM83(this);
     std::thread cpuThread(std::ref(*cpu));
     inputManager = new InputManager(this);
-    std::thread inputsThread(std::ref(*inputManager));
     timer = new Timer(this);
-    std::thread timerThread(std::ref(*timer));
     serial = new SerialIO(this);
-    std::thread serialThread(std::ref(*serial));
 
     readBootRom();
-    readGameRom("Tetris.gb");
+    readGameRom("dmg_sound/rom_singles/03-trigger.gb");
 
-    apuThread.join();
-    cpuThread.join();
     ppuThread.join();
-    inputsThread.join();
-    timerThread.join();
-    serialThread.join();
+    cpuThread.join();
+
+    apu->closeConnection();
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {
@@ -91,7 +85,7 @@ uint8_t Bus::read(uint16_t addr) {
     }
     else if (addr == 0xFF01) value = SerialIO::SB; // SB register (Serial Transfer)
     else if (addr == 0xFF02) value = SerialIO::SC.raw; // SC register (Serial Transfer)
-    else if (addr == 0xFF04) value = Timer::DIV; // DIV register (Timer)
+    else if (addr == 0xFF04) value = Timer::DIV >> 8; // DIV register (Timer)
     else if (addr == 0xFF05) value = Timer::TIMA; // TIMA Register (Timer)
     else if (addr == 0xFF06) value = Timer::TMA; // TMA Register (Timer)
     else if (addr == 0xFF07) value = Timer::TAC.raw & 0x03; // TAC Register (Timer)
@@ -112,6 +106,8 @@ void Bus::tickApu() {
 void Bus::tick(uint8_t mCycle) {
     timer->tick(mCycle);
     ppu->tick(mCycle);
+    inputManager->tick();
+    serial->tick();
 }
 
 void Bus::readGameRom(const char *filename) {

@@ -300,7 +300,7 @@ private:
             /*A3*/[this]() {return AND(&registers.E);},
             /*A4*/[this]() {return AND(&registers.H);},
             /*A5*/[this]() {return AND(&registers.L);},
-            /*A6*/[this]() {return AND(registers.HL);},
+            /*A6*/[this]() {return AND();},
             /*A7*/[this]() {return AND(&registers.A);},
             /*A8*/[this]() {return XOR(&registers.B);},
             /*A9*/[this]() {return XOR(&registers.C);},
@@ -308,7 +308,7 @@ private:
             /*AB*/[this]() {return XOR(&registers.E);},
             /*AC*/[this]() {return XOR(&registers.H);},
             /*AD*/[this]() {return XOR(&registers.L);},
-            /*AE*/[this]() {return XOR(registers.HL);},
+            /*AE*/[this]() {return XOR();},
             /*AF*/[this]() {return XOR(&registers.A);},
             /*B0*/[this]() {return OR(&registers.B);},
             /*B1*/[this]() {return OR(&registers.C);},
@@ -316,7 +316,7 @@ private:
             /*B3*/[this]() {return OR(&registers.E);},
             /*B4*/[this]() {return OR(&registers.H);},
             /*B5*/[this]() {return OR(&registers.L);},
-            /*B6*/[this]() {return OR(registers.HL);},
+            /*B6*/[this]() {return OR();},
             /*B7*/[this]() {return OR(&registers.A);},
             /*B8*/[this]() {return CP(&registers.B);},
             /*B9*/[this]() {return CP(&registers.C);},
@@ -940,11 +940,11 @@ private:
     uint8_t SBC(const uint8_t *reg);
     uint8_t SBC(uint16_t reg);
     uint8_t AND(const uint8_t *reg);
-    uint8_t AND(uint16_t reg);
+    uint8_t AND();
     uint8_t XOR(const uint8_t *reg);
-    uint8_t XOR(uint16_t reg);
+    uint8_t XOR();
     uint8_t OR(const uint8_t *reg);
-    uint8_t OR(uint16_t reg);
+    uint8_t OR();
     uint8_t CP(const uint8_t *reg);
     uint8_t CP(uint16_t reg);
     uint8_t RRCA();

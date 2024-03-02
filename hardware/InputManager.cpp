@@ -7,7 +7,7 @@
  *    \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *     \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
  *
- * Copyright (c) 2023-2023 GamerMine <maxime-sav@outlook.fr>
+ * Copyright (c) 2023-2024 GamerMine <maxime-sav@outlook.fr>
  *
  * This Source Code From is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,18 +39,16 @@ InputManager::InputManager(class Bus *bus) {
     registerKey(DPAD_UP);    // UP
 }
 
-void InputManager::operator()() {
-    while (!Bus::GLOBAL_HALT) {
-        for (sKey &key : InputManager::registeredKeys) {
-            key.newStatus = IsKeyDown(key.key);
-            if (key.newStatus != key.oldStatus) {
-                if (key.newStatus) {
-                    keyPressed(key.key);
-                } else {
-                    keyReleased(key.key);
-                }
-                key.oldStatus = key.newStatus;
+void InputManager::tick() {
+    for (sKey &key : InputManager::registeredKeys) {
+        key.newStatus = IsKeyDown(key.key);
+        if (key.newStatus != key.oldStatus) {
+            if (key.newStatus) {
+                keyPressed(key.key);
+            } else {
+                keyReleased(key.key);
             }
+            key.oldStatus = key.newStatus;
         }
     }
 }

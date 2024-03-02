@@ -35,6 +35,7 @@ public:
         audioStream = LoadAudioStream(44100, 16, 2);
 
         SetAudioStreamCallback(audioStream, pulseWaveCallback);
+        SetAudioStreamVolume(audioStream, 0.01f);
     }
 
     AudioStream audioStream{};
@@ -85,7 +86,7 @@ private:
 
     static inline float sineIdx = 0.0f;
     static void pulseWaveCallback(void *buffer, unsigned int frameCount) {
-        uint16_t frequency = 4194304 / (4 * 2 * (2048 - ((NR14.periodHigh << 8) | NR13)));
+        float frequency = 131072.0f / (2048.0f - ((NR14.periodHigh << 8) | NR13));
         float incr = frequency / 44100.0f;
         auto *d = (short *)buffer;
         auto dutyCycle = dutyCycles[NR11.waveDuty];

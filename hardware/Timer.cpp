@@ -22,32 +22,7 @@ Timer::Timer(class Bus *bus) {
     TIMA = 0x00;
     TMA = 0x00;
     TAC.raw = 0xF8;
-}
-
-void Timer::operator()() {
-    double currentTime;
-    double lastTimeTima;
-    bool timaOverflow = false;
-
-    while(!Bus::GLOBAL_HALT) {
-        currentTime = GetTime();
-
-        if(timaOverflow) {
-            timaOverflow = false;
-            SharpSM83::IF.timer = 1;
-            TIMA = TMA;
-        }
-
-        if (TAC.enable) {
-            if (currentTime - lastTimeTima >= 1.0 / clockSpeed[TAC.clockSelect]) {
-                lastTimeTima = currentTime;
-                if (TIMA == 0xFF) {
-                    TIMA = 0x00;
-                    timaOverflow = true;
-                } else { TIMA++; }
-            }
-        }
-    }
+    internalCounter = 0x00;
 }
 
 void Timer::tick(uint8_t mCycle) {
@@ -57,6 +32,18 @@ void Timer::tick(uint8_t mCycle) {
 
         if (((oldDIV >> 12) & 0x01) && !((DIV >> 12) & 0x01)) {
             mBus->tickApu();
+        }
+    }
+
+    if (TAC.enable) {
+        for (uint8_t i = 0; i < mCycle; i++) {
+            internalCounter++;
+            if (internalCounter == 257) internalCounter = 0;
+            if (internalCounter % clockSpeed[TAC.clockSelect]) TIMA++;
+            if (TIMA == 0xFF) {
+                SharpSM83::IF.timer = 1;
+                TIMA = TMA;
+            } else { TIMA++; }
         }
     }
 }

@@ -25,7 +25,6 @@ class Timer {
 public:
     explicit Timer(class Bus *bus);
 
-    void operator()();
     void tick(uint8_t mCycle);
 
     inline static uint16_t DIV; // 0xFF04: Divider register
@@ -44,7 +43,8 @@ public:
 private:
     class Bus *mBus;
 
-    inline static std::array<uint, 4> clockSpeed = {4096, 262144, 65536, 16384};
+    uint16_t internalCounter;
+    inline static std::array<uint, 4> clockSpeed = {256, 4, 16, 64};
 };
 
 

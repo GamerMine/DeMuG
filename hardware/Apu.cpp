@@ -24,6 +24,8 @@ Apu::Apu(class Bus *bus) {
     logger = Logger::getInstance("Apu");
     rate = 0;
 
+    InitAudioDevice();
+
     pulseSweep = new SC1PulseSweep();
     pulse = new SC2Pulse();
     wave = new SC3Wave();
@@ -32,18 +34,6 @@ Apu::Apu(class Bus *bus) {
     NR50.raw = 0x77;
     NR51.raw = 0xF3;
     NR52.raw = 0xF1;
-
-    InitAudioDevice();
-
-    SetAudioStreamVolume(pulseSweep->audioStream, 0.01f);
-}
-
-void Apu::operator()() {
-    while (!Bus::GLOBAL_HALT) {
-
-    }
-
-    CloseAudioDevice();
 }
 
 void Apu::write(uint16_t addr, uint8_t data) {
@@ -221,4 +211,8 @@ void Apu::resetRegisters() {
     NR50.raw = 0x00;
     NR51.raw = 0x00;
     NR52.raw = 0x00;
+}
+
+void Apu::closeConnection() {
+    CloseAudioDevice();
 }

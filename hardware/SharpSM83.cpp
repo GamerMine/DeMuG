@@ -101,7 +101,7 @@ void SharpSM83::operator()() {
 
 
             if (NEXT_INSTR) { using namespace std::chrono_literals; std::this_thread::sleep_for(100ms); }
-        }
+        } else {mBus->tick(0);}
     }
 }
 
@@ -733,7 +733,7 @@ uint8_t SharpSM83::AND(const uint8_t *reg) {
     return cycles;
 }
 
-uint8_t SharpSM83::AND(uint16_t reg) {
+uint8_t SharpSM83::AND() {
     registers.A &= mBus->read(registers.HL);
 
     flags.zero = (registers.A == 0x00);
@@ -744,7 +744,7 @@ uint8_t SharpSM83::AND(uint16_t reg) {
     return 2;
 }
 
-uint8_t SharpSM83::XOR(uint16_t reg) {
+uint8_t SharpSM83::XOR() {
     registers.A ^= mBus->read(registers.HL);
 
     flags.zero = (registers.A == 0x00);
@@ -773,7 +773,7 @@ uint8_t SharpSM83::OR(const uint8_t *reg) {
     return cycles;
 }
 
-uint8_t SharpSM83::OR(uint16_t reg) {
+uint8_t SharpSM83::OR() {
     registers.A |= mBus->read(registers.HL);
 
     flags.zero = (registers.A == 0x00);
@@ -858,6 +858,7 @@ uint8_t SharpSM83::HALT() {
     if (IME) {
         bool isInterrupted = false;
         while (!isInterrupted && !Bus::GLOBAL_HALT) {
+            mBus->tick(1);
             isInterrupted = checkInterrupts();
         }
     } else {
@@ -875,6 +876,7 @@ uint8_t SharpSM83::HALT() {
 }
 
 uint8_t SharpSM83::JP(const bool *flag, bool unused) {
+    (void) unused;
     uint8_t cycles;
     if (flag == nullptr) {
         PC = mBus->read(PC + 1) << 8 | mBus->read(PC);

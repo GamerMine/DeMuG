@@ -26,7 +26,7 @@ class SerialIO {
 public:
     explicit SerialIO(class Bus *bus);
 
-    void operator()();
+    void tick();
 
     inline static uint8_t SB; // 0xFF01: Serial transfer data
 
@@ -41,6 +41,9 @@ public:
 
 private:
     class Bus *mBus;
+
+    double currentTime;
+    double lastTime;
 };
 
 
