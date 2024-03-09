@@ -23,7 +23,6 @@ Screen::Screen(class Ppu *ppu) {
     dots = 0x0000;
 }
 
-static bool updateBuffer = true;
 void Screen::operator()() {
     InitWindow(1280, 720, WINDOW_NAME);
     SetWindowMonitor(0);
@@ -74,7 +73,6 @@ void Screen::operator()() {
         if (currentTime - lastTime >= 1.0 / FRAMERATE) {
             lastTime = currentTime;
             UpdateTexture(gameTexture, screenPixelArray);
-            updateBuffer = true;
             render();
         }
     }
@@ -307,92 +305,91 @@ void Screen::generateWindowTileMap() {
 }
 
 void Screen::tick(uint8_t mCycle) {
-    if (updateBuffer) {
-        for (uint8_t i = 0; i < mCycle * 4; i++) { // NOTE: 4 is correct only on normal speed
-            if (dots == 4) {
-                mPpu->LY = yPos;
-                mPpu->STAT.LYCequalLY = (mPpu->LY == mPpu->LYC);
-                if (mPpu->STAT.modeLYCequalLY && mPpu->STAT.LYCequalLY) SharpSM83::IF.lcd = 1;
-                if (yPos == 144 && (mPpu->STAT.lcdMode == 0b01)) { SharpSM83::IF.vblank = 1; }
-            }
 
-            if (dots < 80) {
-                dots++;
-                mPpu->STAT.lcdMode = 0b10;
-            }
-            else {
-                if (xPos < DEFAULT_WIDTH && yPos < DEFAULT_HEIGHT) {
-                    mPpu->STAT.lcdMode = 0b11;
-                    std::array<Object, 10> objs{};
-                    getObjectToRender(objs, yPos);
+    for (uint8_t i = 0; i < mCycle * 4; i++) { // NOTE: 4 is correct only on normal speed
+        if (dots == 4) {
+            mPpu->LY = yPos;
+            mPpu->STAT.LYCequalLY = (mPpu->LY == mPpu->LYC);
+            if (mPpu->STAT.modeLYCequalLY && mPpu->STAT.LYCequalLY) SharpSM83::IF.lcd = 1;
+            if (yPos == 144 && (mPpu->STAT.lcdMode == 0b01)) { SharpSM83::IF.vblank = 1; }
+        }
 
-                    // First drawn layer is the background
-                    if (mPpu->LCDC.tileMapArea)
+        if (dots < 80) {
+            dots++;
+            mPpu->STAT.lcdMode = 0b10;
+        }
+        else {
+            if (xPos < DEFAULT_WIDTH && yPos < DEFAULT_HEIGHT) {
+                mPpu->STAT.lcdMode = 0b11;
+                std::array<Object, 10> objs{};
+                getObjectToRender(objs, yPos);
+
+                // First drawn layer is the background
+                if (mPpu->LCDC.tileMapArea)
+                    screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = windowMapPixelArray[
+                            ((mPpu->SCY + yPos) % 254) * 32 * 8 + (mPpu->SCX + xPos)];
+                else
+                    screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = backgroundMapPixelArray[
+                            ((mPpu->SCY + yPos) % 254) * 32 * 8 + (mPpu->SCX + xPos)];
+
+                // Second drawn layer is the window
+                if (mPpu->LCDC.windowEnable && xPos >= mPpu->WX - 7 && yPos >= mPpu->WY) {
+                    if (mPpu->LCDC.tilemapArea)
                         screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = windowMapPixelArray[
-                                ((mPpu->SCY + yPos) % 254) * 32 * 8 + (mPpu->SCX + xPos)];
+                                (yPos - mPpu->WY) * 32 * 8 +
+                                (xPos - (mPpu->WX - 7))];
                     else
                         screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = backgroundMapPixelArray[
-                                ((mPpu->SCY + yPos) % 254) * 32 * 8 + (mPpu->SCX + xPos)];
+                                (yPos - mPpu->WY) * 32 * 8 + (xPos - (mPpu->WX - 7))];
+                }
 
-                    // Second drawn layer is the window
-                    if (mPpu->LCDC.windowEnable && xPos >= mPpu->WX - 7 && yPos >= mPpu->WY) {
-                        if (mPpu->LCDC.tilemapArea)
-                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = windowMapPixelArray[
-                                    (yPos - mPpu->WY) * 32 * 8 +
-                                    (xPos - (mPpu->WX - 7))];
-                        else
-                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = backgroundMapPixelArray[
-                                    (yPos - mPpu->WY) * 32 * 8 + (xPos - (mPpu->WX - 7))];
-                    }
+                // Third draw layer is the objects
+                if (mPpu->LCDC.objEnable) {
+                    for (Object &obj: objs) {
+                        if (obj.isReal) {
+                            if (xPos >= (obj.Xpos - 8) && xPos <= obj.Xpos - 1) {
+                                uint8_t pixelID;
+                                if (obj.xFlip) {
+                                    pixelID = tileDataObj[obj.tileIndex][yPos - (obj.Ypos - 16)][abs(
+                                            7 - (xPos - (obj.Xpos - 8)))];
+                                } else if (obj.yFlip) {
+                                    pixelID = tileDataObj[obj.tileIndex][abs(7 - (yPos - (obj.Ypos - 16)))][xPos -
+                                                                                                            (obj.Xpos -
+                                                                                                             8)];
+                                } else {
+                                    pixelID = tileDataObj[obj.tileIndex][yPos - (obj.Ypos - 16)][xPos -
+                                                                                                 (obj.Xpos - 8)];
+                                }
 
-                    // Third draw layer is the objects
-                    if (mPpu->LCDC.objEnable) {
-                        for (Object &obj: objs) {
-                            if (obj.isReal) {
-                                if (xPos >= (obj.Xpos - 8) && xPos <= obj.Xpos - 1) {
-                                    uint8_t pixelID;
-                                    if (obj.xFlip) {
-                                        pixelID = tileDataObj[obj.tileIndex][yPos - (obj.Ypos - 16)][abs(
-                                                7 - (xPos - (obj.Xpos - 8)))];
-                                    } else if (obj.yFlip) {
-                                        pixelID = tileDataObj[obj.tileIndex][abs(7 - (yPos - (obj.Ypos - 16)))][xPos -
-                                                                                                                (obj.Xpos -
-                                                                                                                 8)];
+                                if (pixelID != 0x00) {
+                                    if (obj.priority) {
+                                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBGPPixelFromID(
+                                                pixelID);
                                     } else {
-                                        pixelID = tileDataObj[obj.tileIndex][yPos - (obj.Ypos - 16)][xPos -
-                                                                                                     (obj.Xpos - 8)];
-                                    }
-
-                                    if (pixelID != 0x00) {
-                                        if (obj.priority) {
-                                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBGPPixelFromID(
-                                                    pixelID);
-                                        } else {
-                                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getOBPPixelFromID(
-                                                    pixelID,
-                                                    obj.dmgPalette);
-                                        }
+                                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getOBPPixelFromID(
+                                                pixelID,
+                                                obj.dmgPalette);
                                     }
                                 }
                             }
                         }
                     }
-                } else {
-                    if (yPos >= DEFAULT_HEIGHT) { mPpu->STAT.lcdMode = 0b01; }
-                    else mPpu->STAT.lcdMode = 0b00;
                 }
-                xPos++;
-                dots++;
+            } else {
+                if (yPos >= DEFAULT_HEIGHT) { mPpu->STAT.lcdMode = 0b01; }
+                else mPpu->STAT.lcdMode = 0b00;
+            }
+            xPos++;
+            dots++;
 
-                if (dots == 456) {
-                    dots = 0x00;
-                    yPos++;
-                    xPos = 0x00;
-                }
-                if (yPos >= DEFAULT_HEIGHT + 9) {
-                    yPos = 0x00;
-                    updateBuffer = false;
-                }
+            if (dots == 456) {
+                dots = 0x00;
+                yPos++;
+                xPos = 0x00;
+            }
+            if (yPos >= DEFAULT_HEIGHT + 9) {
+                yPos = 0x00;
+                verticalBlank = true;
             }
         }
     }

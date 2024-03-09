@@ -20,7 +20,6 @@ bool Bus::GLOBAL_HALT = false;
 
 Bus::Bus() {
     logger = Logger::getInstance("Bus");
-    romName = nullptr;
     disableBootRom = false;
 
     ppu = new Ppu(this);
@@ -33,7 +32,8 @@ Bus::Bus() {
     serial = new SerialIO(this);
 
     readBootRom();
-    readGameRom("dmg_sound/rom_singles/03-trigger.gb");
+    //readGameRom("pocket.gb");
+    cartridge = CartridgeHelper::readGameRom("Tetris.gb");
 
     ppuThread.join();
     cpuThread.join();
@@ -72,8 +72,8 @@ void Bus::write(uint16_t addr, uint8_t data) {
 uint8_t Bus::read(uint16_t addr) {
     uint8_t value = 0xFF;
     if (addr <= 0x00FF && !disableBootRom) value = bootRom[addr]; // DMG BOOT ROM if mapped
-    else if (addr <= 0x00FF && disableBootRom) value = gameRom[addr]; // Game cartridge if boot rom is unmapped
-    else if (addr >= 0x0100 && addr <= 0x7FFF && romName != nullptr) value = gameRom[addr]; // Game cartridge
+    else if (addr <= 0x00FF && disableBootRom) value = cartridge->read(addr); // Game cartridge if boot rom is unmapped
+    else if (addr >= 0x0100 && addr <= 0x7FFF) value = cartridge->read(addr); // Game cartridge
     else if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
     else if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
     else if (addr >= 0xE000 && addr <= 0xFDFF) value = ram[addr - 0xE000]; // Mirror of WRAM
@@ -88,7 +88,7 @@ uint8_t Bus::read(uint16_t addr) {
     else if (addr == 0xFF04) value = Timer::DIV >> 8; // DIV register (Timer)
     else if (addr == 0xFF05) value = Timer::TIMA; // TIMA Register (Timer)
     else if (addr == 0xFF06) value = Timer::TMA; // TMA Register (Timer)
-    else if (addr == 0xFF07) value = Timer::TAC.raw & 0x03; // TAC Register (Timer)
+    else if (addr == 0xFF07) value = Timer::TAC.raw & 0x07; // TAC Register (Timer)
     else if (addr == 0xFF0F) value = SharpSM83::IF.raw; // Interrupt Flag
     else if (addr >= 0xFF10 && addr <= 0xFF3F) value = apu->read(addr); // APU
     else if (addr >= 0xFF40 && addr <= 0xFF4B) value = ppu->read(addr); // PPU
@@ -108,39 +108,6 @@ void Bus::tick(uint8_t mCycle) {
     ppu->tick(mCycle);
     inputManager->tick();
     serial->tick();
-}
-
-void Bus::readGameRom(const char *filename) {
-    logger->log(Logger::DEBUG, "Reading game : %s", filename);
-    std::ifstream file(filename, std::ios::binary);
-
-    if (!file.good()) {
-        logger->log(Logger::CRITICAL, "File not found: %s", filename);
-        exit(Debug::GAME_NOT_FOUND_EXIT_CODE);
-        return;
-    }
-    romName = filename;
-
-    file.read(reinterpret_cast<char *>(gameRom.data()), sizeof(uint8_t) * gameRom.size());
-    file.close();
-
-    // Parsing TOM header
-    logger->log(Logger::DEBUG, "Parsing ROM header...");
-
-    for (uint16_t i = 0; i < 16; i++) Debug::CARTRIDGE_INFO.title[i] = (char)gameRom[0x0134 + i]; // Title
-    Debug::CARTRIDGE_INFO.newLicenseCode = gameRom[0x0144];
-    Debug::CARTRIDGE_INFO.cartridgeType = gameRom[0x0147];
-    Debug::CARTRIDGE_INFO.romSize = gameRom[0x0148];
-    Debug::CARTRIDGE_INFO.ramSize = gameRom[0x0149];
-    Debug::CARTRIDGE_INFO.destinationCode = gameRom[0x014A];
-    Debug::CARTRIDGE_INFO.oldLicenseCode = gameRom[0x014B];
-
-    Debug::printRomHeaderData();
-
-    std::string windowTitle = "Emulating ";
-    windowTitle = windowTitle.append(Debug::CARTRIDGE_INFO.title);
-    while (!IsWindowReady()) {}
-    SetWindowTitle(windowTitle.c_str());
 }
 
 void Bus::readBootRom() {

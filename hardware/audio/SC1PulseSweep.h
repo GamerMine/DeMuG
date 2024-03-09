@@ -35,7 +35,7 @@ public:
         audioStream = LoadAudioStream(44100, 16, 2);
 
         SetAudioStreamCallback(audioStream, pulseWaveCallback);
-        SetAudioStreamVolume(audioStream, 0.01f);
+        SetAudioStreamVolume(audioStream, 1.0f);
     }
 
     AudioStream audioStream{};
@@ -58,14 +58,16 @@ public:
         uint8_t raw;
     } NR11{}; // 0xFF11: Channel 1 Sound length time & duty cycle
 
-    inline static union {
+    union envControl {
         struct {
-            bool sweepPace : 3;
-            bool envDirection : 2;
-            bool initialVolume : 4;
+            uint8_t sweepPace : 3;
+            bool nvDirection : 1;
+            uint8_t initialVolume : 4;
         };
         uint8_t raw;
-    } NR12{}; // 0xFF12: Channel 1 Volume & envelope
+    }; // 0xFF12: Channel 1 Volume & envelope
+    inline static  envControl NR12;
+    inline static  envControl NR12Temp;
 
     inline static uint8_t NR13{}; // 0xFF13: Channel 1 period low
 
@@ -80,6 +82,8 @@ public:
     } NR14{}; // 0xFF14: Channel 1 period high & control
 
     inline static bool DAC;
+    inline static int8_t currentVolume;
+    inline static uint8_t enveloppeTick;
 
 private:
     inline static std::array<float, 4> dutyCycles = {0.125f, 0.25f, 0.50f, 0.75f};

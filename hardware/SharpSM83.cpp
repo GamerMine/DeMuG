@@ -62,46 +62,60 @@ void SharpSM83::reset() {
 void SharpSM83::operator()() {
     PAUSE = true;
     while (!Bus::GLOBAL_HALT) {
-        if (!PAUSE || NEXT_INSTR) {
-            //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
-            {
-                DEBUG_INFO.Z = flags.zero;
-                DEBUG_INFO.C = flags.carry;
-                DEBUG_INFO.HC = flags.halfCarry;
-                DEBUG_INFO.N = flags.negative;
-                DEBUG_INFO.regA = registers.A;
-                DEBUG_INFO.regB = registers.B;
-                DEBUG_INFO.regC = registers.C;
-                DEBUG_INFO.regD = registers.D;
-                DEBUG_INFO.regE = registers.E;
-                DEBUG_INFO.regH = registers.H;
-                DEBUG_INFO.regL = registers.L;
-                DEBUG_INFO.regSP = SP;
-                DEBUG_INFO.currentInstr = opcodeStr[mBus->read(PC)];
-                DEBUG_INFO.currentAddr = PC;
-            }
+        int executed_cycles = 0;
+        std::chrono::time_point start = std::chrono::high_resolution_clock::now();
+        while (executed_cycles < 17556) {
+            if (!PAUSE || NEXT_INSTR) {
+                //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
+                {
+                    DEBUG_INFO.Z = flags.zero;
+                    DEBUG_INFO.C = flags.carry;
+                    DEBUG_INFO.HC = flags.halfCarry;
+                    DEBUG_INFO.N = flags.negative;
+                    DEBUG_INFO.regA = registers.A;
+                    DEBUG_INFO.regB = registers.B;
+                    DEBUG_INFO.regC = registers.C;
+                    DEBUG_INFO.regD = registers.D;
+                    DEBUG_INFO.regE = registers.E;
+                    DEBUG_INFO.regH = registers.H;
+                    DEBUG_INFO.regL = registers.L;
+                    DEBUG_INFO.regSP = SP;
+                    DEBUG_INFO.currentInstr = opcodeStr[mBus->read(PC)];
+                    DEBUG_INFO.currentAddr = PC;
+                }
 
-            uint8_t instr;
-            if (haltInstr != 0x00) {
-                instr = haltInstr;
-                haltInstr = 0x00;
-            } else {
-                instr = mBus->read(PC++);
-            }
+                uint8_t instr;
+                if (haltInstr != 0x00) {
+                    instr = haltInstr;
+                    haltInstr = 0x00;
+                } else {
+                    instr = mBus->read(PC++);
+                }
 
-            if (haltBug) {
-                haltInstr = instr;
-                haltBug = false;
-            }
-            mBus->tick(opcodes[instr]());
-            if ( interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
-            if (interruptShouldBeEnabled == 3) { IME = true; } else {IME = false;}
+                if (haltBug) {
+                    haltInstr = instr;
+                    haltBug = false;
+                }
+                uint8_t mCycles = opcodes[instr]();
+                executed_cycles += mCycles;
+                mBus->tick(mCycles);
+                if (interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
+                if (interruptShouldBeEnabled == 3) { IME = true; } else { IME = false; }
 
-            if (IME) checkInterrupts();
+                if (IME) checkInterrupts(true);
 
 
-            if (NEXT_INSTR) { using namespace std::chrono_literals; std::this_thread::sleep_for(100ms); }
-        } else {mBus->tick(0);}
+                if (NEXT_INSTR) {
+                    using namespace std::chrono_literals;
+                    std::this_thread::sleep_for(100ms);
+                }
+            } else { mBus->tick(0); }
+        }
+
+        std::chrono::time_point end = std::chrono::high_resolution_clock::now();
+
+        std::chrono::microseconds duration(16750 - std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+        std::this_thread::sleep_for(duration);
     }
 }
 
@@ -115,6 +129,7 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
             mBus->write(SP--, PC >> 8);
             mBus->write(SP, PC & 0xFF);
             PC = 0x0040;
+            mBus->tick(5);
         }
         return true;
     } else if (IE.lcd && IF.lcd) {
@@ -126,6 +141,7 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
             mBus->write(SP--, PC >> 8);
             mBus->write(SP, PC & 0xFF);
             PC = 0x0048;
+            mBus->tick(5);
         }
         return true;
     } else if (IE.timer && IF.timer) {
@@ -137,7 +153,9 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
             mBus->write(SP--, PC >> 8);
             mBus->write(SP, PC & 0xFF);
             PC = 0x0050;
+            mBus->tick(5);
         }
+        return true;
     } else if (IE.serial && IF.serial) {
         if (executeHandler) {
             IME = 0;
@@ -147,7 +165,9 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
             mBus->write(SP--, PC >> 8);
             mBus->write(SP, PC & 0xFF);
             PC = 0x0058;
+            mBus->tick(5);
         }
+        return true;
     } else if (IE.joypad && IF.joypad) {
         if (executeHandler) {
             IME = 0;
@@ -157,6 +177,7 @@ bool SharpSM83::checkInterrupts(bool executeHandler) {
             mBus->write(SP--, PC >> 8);
             mBus->write(SP, PC & 0xFF);
             PC = 0x0060;
+            mBus->tick(5);
         }
         return true;
     }
@@ -259,7 +280,6 @@ uint8_t SharpSM83::LDH(const uint8_t *reg) {
     } else {
         uint8_t tmpVale = mBus->read(PC++);
         registers.A = mBus->read(0xFF00 + tmpVale);
-        //if (tmpVale == 0x26) PAUSE = true;
     }
     return 3;
 }
@@ -854,12 +874,20 @@ uint8_t SharpSM83::CCF() {
     return 1;
 }
 
-uint8_t SharpSM83::HALT() {
+uint8_t SharpSM83::HALT() { // TODO: The executed_cycle must be synced with the main one so the sleep is not too far off
     if (IME) {
         bool isInterrupted = false;
         while (!isInterrupted && !Bus::GLOBAL_HALT) {
-            mBus->tick(1);
-            isInterrupted = checkInterrupts();
+            int executed_cycles = 0;
+            std::chrono::time_point start = std::chrono::high_resolution_clock::now();
+            while (executed_cycles < 17556 && !isInterrupted) {
+                mBus->tick(1);
+                executed_cycles++;
+                isInterrupted = checkInterrupts(true);
+            }
+            std::chrono::time_point end = std::chrono::high_resolution_clock::now();
+            std::chrono::microseconds duration(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+            std::this_thread::sleep_for(duration);
         }
     } else {
         if (IE.raw != 0x00 && IF.raw != 0x00) {
@@ -867,12 +895,21 @@ uint8_t SharpSM83::HALT() {
         } else {
             bool isInterrupted = false;
             while (!isInterrupted && !Bus::GLOBAL_HALT) {
-                isInterrupted = checkInterrupts(false);
+                int executed_cycles = 0;
+                std::chrono::time_point start = std::chrono::high_resolution_clock::now();
+                while (executed_cycles < 17556 && !isInterrupted) {
+                    mBus->tick(1);
+                    executed_cycles++;
+                    isInterrupted = checkInterrupts(false);
+                }
+                std::chrono::time_point end = std::chrono::high_resolution_clock::now();
+                std::chrono::microseconds duration(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+                std::this_thread::sleep_for(duration);
             }
         }
     }
 
-    return 1;
+    return 4;
 }
 
 uint8_t SharpSM83::JP(const bool *flag, bool unused) {

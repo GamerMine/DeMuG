@@ -44,7 +44,7 @@ private:
     class Bus *mBus;
 
     uint16_t internalCounter;
-    inline static std::array<uint, 4> clockSpeed = {256, 4, 16, 64};
+    inline static std::array<uint16_t, 4> clockSpeed = {256, 4, 16, 64};
 };
 
 

@@ -27,6 +27,9 @@ set(HEADER_FILES
         hardware/audio/SC4Noise.h
         hardware/Bus.h
         hardware/InputManager.h
+        hardware/mappers/Cartridge.h
+        hardware/mappers/CartridgeHelper.h
+        hardware/mappers/NoMBC.h
         hardware/Ppu.h
         hardware/Screen.h
         hardware/SerialIO.h
@@ -37,11 +40,12 @@ set(HEADER_FILES
 
 add_subdirectory(lib/raylib)
 add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
-target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
 if (UNIX OR LINUX)
-    target_link_libraries(Emu_GameBoy pthread raylib)
+    target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
+    target_link_libraries(Emu_GameBoy pthread raylib -static-libgcc -static-libstdc++)
 elseif (WIN32)
-    target_link_libraries(Emu_GameBoy pthread raylib)
+    target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra -Wa,-mbig-obj)
+    target_link_libraries(Emu_GameBoy pthread raylib -static)
 endif ()
 
 add_custom_command(TARGET Emu_GameBoy PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR}/)

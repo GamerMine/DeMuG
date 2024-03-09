@@ -25,6 +25,7 @@ Apu::Apu(class Bus *bus) {
     rate = 0;
 
     InitAudioDevice();
+    SetMasterVolume(0.05f);
 
     pulseSweep = new SC1PulseSweep();
     pulse = new SC2Pulse();
@@ -54,6 +55,9 @@ void Apu::write(uint16_t addr, uint8_t data) {
         SC1PulseSweep::NR14.raw = data;
         if (data >> 7 && SC1PulseSweep::DAC) {
             NR52.ch1On = 1;
+            SC1PulseSweep::NR12Temp.raw = SC1PulseSweep::NR12.raw;
+            SC1PulseSweep::currentVolume = static_cast<int8_t>(SC1PulseSweep::NR12Temp.initialVolume);
+            SetAudioStreamVolume(pulseSweep->audioStream, SC1PulseSweep::NR12Temp.initialVolume * (1.0f / 15.0f));
             PlayAudioStream(pulseSweep->audioStream);
         }
     }
@@ -71,6 +75,9 @@ void Apu::write(uint16_t addr, uint8_t data) {
         SC2Pulse::NR24.raw = data;
         if (data >> 7 && SC2Pulse::DAC) {
             NR52.ch2On = 1;
+            SC2Pulse::NR22Temp.raw = SC2Pulse::NR22.raw;
+            SC2Pulse::currentVolume = static_cast<int8_t>(SC2Pulse::NR22Temp.initialVolume);
+            SetAudioStreamVolume(pulse->audioStream, SC2Pulse::NR22Temp.initialVolume * (1.0f / 15.0f));
             PlayAudioStream(pulse->audioStream);
         }
     }
@@ -152,7 +159,7 @@ void Apu::tick() {
     if ((rate % 2) == 0) { // Execute every 2 ticks
         if (SC1PulseSweep::NR14.lengthEnable) {
             uint8_t oldLengthTimer = SC1PulseSweep::NR11.initialLengthTimer;
-            SC1PulseSweep::NR11.initialLengthTimer++;
+            if (SC1PulseSweep::NR11.initialLengthTimer < 63) SC1PulseSweep::NR11.initialLengthTimer++;
             if (oldLengthTimer + 1 == 64) {
                 NR52.ch1On = 0;
                 StopAudioStream(pulseSweep->audioStream);
@@ -160,7 +167,7 @@ void Apu::tick() {
         }
         if (SC2Pulse::NR24.lengthEnable) {
             uint8_t oldLengthTimer = SC2Pulse::NR21.initialLengthTimer;
-            SC2Pulse::NR21.initialLengthTimer++;
+            if (SC2Pulse::NR21.initialLengthTimer < 63) SC2Pulse::NR21.initialLengthTimer++;
             if (oldLengthTimer + 1 == 64) {
                 NR52.ch2On = 0;
                 StopAudioStream(pulse->audioStream);
@@ -184,6 +191,33 @@ void Apu::tick() {
         }
     }
 
+    if ((rate % 4) == 0) {
+
+    }
+
+    if ((rate % 8) == 0) {
+        SC1PulseSweep::enveloppeTick++;
+        if (SC1PulseSweep::NR12Temp.sweepPace != 0x0 && NR52.ch1On) {
+            if (SC1PulseSweep::enveloppeTick % SC1PulseSweep::NR12Temp.sweepPace == 0) {
+                if (SC1PulseSweep::NR12Temp.nvDirection) SC1PulseSweep::currentVolume++;
+                else SC1PulseSweep::currentVolume--;
+                if (SC1PulseSweep::currentVolume >= 0xF) SC1PulseSweep::currentVolume = 0xF;
+                else if (SC1PulseSweep::currentVolume <= 0) SC1PulseSweep::currentVolume = 0;
+                SetAudioStreamVolume(pulseSweep->audioStream, SC1PulseSweep::currentVolume * (1.0f / 15.0f));
+            }
+        }
+
+        SC2Pulse::enveloppeTick++;
+        if (SC2Pulse::NR22Temp.sweepPace != 0x0 && NR52.ch2On) {
+            if (SC2Pulse::enveloppeTick % SC2Pulse::NR22Temp.sweepPace == 0) {
+                if (SC2Pulse::NR22Temp.nvDirection) SC2Pulse::currentVolume++;
+                else SC2Pulse::currentVolume--;
+                if (SC2Pulse::currentVolume >= 0xF) SC2Pulse::currentVolume = 0xF;
+                else if (SC2Pulse::currentVolume <= 0) SC2Pulse::currentVolume = 0;
+                SetAudioStreamVolume(pulse->audioStream, SC2Pulse::currentVolume * (1.0f / 15.0f));
+            }
+        }
+    }
 
     if (rate == 8) {
         // Do things

@@ -105,7 +105,7 @@ void Ppu::startTransfer() {
     for (uint8_t lAddr = 0x00; lAddr < 0xA0; lAddr++) {
         OAM[lAddr] = mBus->read((page << 8) + lAddr);
     }
-    SharpSM83::dmaCycles = true;
+    //mBus->tick(160);
 }
 
 void Ppu::tick(uint8_t mCycle) const {

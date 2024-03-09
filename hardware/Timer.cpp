@@ -38,12 +38,12 @@ void Timer::tick(uint8_t mCycle) {
     if (TAC.enable) {
         for (uint8_t i = 0; i < mCycle; i++) {
             internalCounter++;
-            if (internalCounter == 257) internalCounter = 0;
-            if (internalCounter % clockSpeed[TAC.clockSelect]) TIMA++;
+            if (internalCounter % clockSpeed[TAC.clockSelect] == 0) TIMA++;
+            if (internalCounter == clockSpeed[TAC.clockSelect]) internalCounter = 0;
             if (TIMA == 0xFF) {
                 SharpSM83::IF.timer = 1;
                 TIMA = TMA;
-            } else { TIMA++; }
+            }
         }
     }
 }

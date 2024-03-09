@@ -80,7 +80,6 @@ public:
     static bool PAUSE;
     static bool NEXT_INSTR;
     static debugInfo DEBUG_INFO;
-    inline static bool dmaCycles = false;
     inline static bool ENABLE_DEBUG_PRINTS = false;
 
 private:

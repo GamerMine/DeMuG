@@ -27,6 +27,8 @@
 
 #include "Apu.h"
 #include "InputManager.h"
+#include "mappers/Cartridge.h"
+#include "mappers/CartridgeHelper.h"
 #include "Ppu.h"
 #include "Screen.h"
 #include "SharpSM83.h"
@@ -69,15 +71,13 @@ private:
     class SerialIO * serial;
     Logger *logger;
 
-    const char *romName;
+    std::unique_ptr<Cartridge> cartridge;
     uint8_t disableBootRom;
 
     uint8_t bootRom[BOOT_ROM_SIZE]{};
     uint8_t ram[RAM_SIZE]{};
     uint8_t hram[HRAM_SIZE]{};
-    inline static std::array<uint8_t, 32*1024> gameRom;
 
-    void readGameRom(const char *filename);
     void readBootRom();
 };
 
