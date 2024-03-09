@@ -389,7 +389,6 @@ void Screen::tick(uint8_t mCycle) {
             }
             if (yPos >= DEFAULT_HEIGHT + 9) {
                 yPos = 0x00;
-                verticalBlank = true;
             }
         }
     }
