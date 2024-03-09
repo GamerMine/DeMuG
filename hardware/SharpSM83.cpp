@@ -114,7 +114,7 @@ void SharpSM83::operator()() {
 
         std::chrono::time_point end = std::chrono::high_resolution_clock::now();
 
-        std::chrono::microseconds duration(16750 - std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+        std::chrono::milliseconds duration(17 - std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
         std::this_thread::sleep_for(duration);
     }
 }
