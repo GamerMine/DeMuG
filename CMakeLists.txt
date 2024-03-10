@@ -30,6 +30,7 @@ set(HEADER_FILES
         hardware/mappers/Cartridge.h
         hardware/mappers/CartridgeHelper.h
         hardware/mappers/NoMBC.h
+        hardware/mappers/MBC1.h
         hardware/Ppu.h
         hardware/Screen.h
         hardware/SerialIO.h

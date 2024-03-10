@@ -127,7 +127,7 @@ void Screen::render() {
     DrawInstructions(820, 0);
     DrawFlags(1100, 0);
     DrawRegisters(1100, 100);
-    DrawCartridgeData(5, 5);
+    //DrawCartridgeData(5, 5);
     if (VIEW_MEMORY) DrawMemory(0, 0, MEMORY_PAGE);
     EndDrawing();
 }

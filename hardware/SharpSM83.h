@@ -127,6 +127,7 @@ private:
     static Logger *logger;
     bool haltBug;
     uint8_t haltInstr;
+    int executedCycles;
 
     bool checkInterrupts(bool executeHandler = true);
 

@@ -24,6 +24,7 @@
 
 #include "Cartridge.h"
 #include "NoMBC.h"
+#include "MBC1.h"
 
 class CartridgeHelper {
 public:
@@ -45,31 +46,16 @@ public:
 
         std::unique_ptr<Cartridge> cartridge;
         switch (mapperType) {
-            case 0x00: cartridge = std::make_unique<NoMBC>();
-            default: logger->log(Logger::WARNING, "Mapper type %X is not implemented!", mapperType);
+            case 0x00: cartridge = std::make_unique<NoMBC>(); break;
+            case 0x01: cartridge = std::make_unique<MBC1>(); break;
+            case 0x02: cartridge = std::make_unique<MBC1>(); break;
+            case 0x03: cartridge = std::make_unique<MBC1>(); break;
+            default: logger->log(Logger::WARNING, "Mapper type %X is not implemented!", mapperType); break;
         }
 
         cartridge->loadGame(filename);
 
         return cartridge;
-
-        // Parsing TOM header
-        /*logger->log(Logger::DEBUG, "Parsing ROM header...");
-
-        for (uint16_t i = 0; i < 16; i++) Debug::CARTRIDGE_INFO.title[i] = (char)gameRom[0x0134 + i]; // Title
-        Debug::CARTRIDGE_INFO.newLicenseCode = gameRom[0x0144];
-        Debug::CARTRIDGE_INFO.cartridgeType = gameRom[0x0147];
-        Debug::CARTRIDGE_INFO.romSize = gameRom[0x0148];
-        Debug::CARTRIDGE_INFO.ramSize = gameRom[0x0149];
-        Debug::CARTRIDGE_INFO.destinationCode = gameRom[0x014A];
-        Debug::CARTRIDGE_INFO.oldLicenseCode = gameRom[0x014B];
-
-        Debug::printRomHeaderData();
-
-        std::string windowTitle = "Emulating ";
-        windowTitle = windowTitle.append(Debug::CARTRIDGE_INFO.title);
-        while (!IsWindowReady()) {}
-        SetWindowTitle(windowTitle.c_str());*/
     }
 };
 

@@ -32,8 +32,7 @@ Bus::Bus() {
     serial = new SerialIO(this);
 
     readBootRom();
-    //readGameRom("pocket.gb");
-    cartridge = CartridgeHelper::readGameRom("Tetris.gb");
+    cartridge = CartridgeHelper::readGameRom("Guillaume/Nouveau dossier/Kirby's Dream Land.gb");
 
     ppuThread.join();
     cpuThread.join();
@@ -43,7 +42,10 @@ Bus::Bus() {
 
 void Bus::write(uint16_t addr, uint8_t data) {
     if (addr <= 0x00FF && !disableBootRom) logger->log(Logger::WARNING, "Trying to write in an unauthorized area: 0x%X", addr); // We should not write into the boot rom (Read Only)
+    else if (addr <= 0x00FF && disableBootRom) cartridge->write(addr, data); // Game cartridge if boot rom is unmapped
+    else if (addr >= 0x0100 && addr <= 0x7FFF) cartridge->write(addr, data); // Game cartridge
     else if (addr >= 0x8000 && addr <= 0x9FFF) ppu->write(addr, data); // VRAM
+    else if (addr >= 0xA000 && addr <= 0xBFFF) cartridge->write(addr, data); // Game cartridge RAM
     else if (addr >= 0xC000 && addr <= 0xDFFF) ram[addr - 0xC000] = data; // WRAM
     else if (addr >= 0xE000 && addr <= 0xFDFF) ram[addr - 0xE000] = data; // Mirror of WRAM
     else if (addr >= 0xFE00 && addr <= 0xFE9F) ppu->write(addr, data); // PPU OAM
@@ -75,6 +77,7 @@ uint8_t Bus::read(uint16_t addr) {
     else if (addr <= 0x00FF && disableBootRom) value = cartridge->read(addr); // Game cartridge if boot rom is unmapped
     else if (addr >= 0x0100 && addr <= 0x7FFF) value = cartridge->read(addr); // Game cartridge
     else if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
+    else if (addr >= 0xA000 && addr <= 0xBFFF) value = cartridge->read(addr); // Game cartridge RAM
     else if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
     else if (addr >= 0xE000 && addr <= 0xFDFF) value = ram[addr - 0xE000]; // Mirror of WRAM
     else if (addr >= 0xFE00 && addr <= 0xFE9F) value = ppu->read(addr); // OAM

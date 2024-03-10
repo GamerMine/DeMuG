@@ -62,9 +62,9 @@ void SharpSM83::reset() {
 void SharpSM83::operator()() {
     PAUSE = true;
     while (!Bus::GLOBAL_HALT) {
-        int executed_cycles = 0;
+        executedCycles = 0;
         std::chrono::time_point start = std::chrono::high_resolution_clock::now();
-        while (executed_cycles < 17556) {
+        while (executedCycles < 17556) {
             if (!PAUSE || NEXT_INSTR) {
                 //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
                 {
@@ -97,7 +97,7 @@ void SharpSM83::operator()() {
                     haltBug = false;
                 }
                 uint8_t mCycles = opcodes[instr]();
-                executed_cycles += mCycles;
+                executedCycles += mCycles;
                 mBus->tick(mCycles);
                 if (interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
                 if (interruptShouldBeEnabled == 3) { IME = true; } else { IME = false; }
@@ -873,20 +873,13 @@ uint8_t SharpSM83::CCF() {
     return 1;
 }
 
-uint8_t SharpSM83::HALT() { // TODO: The executed_cycle must be synced with the main one so the sleep is not too far off
+uint8_t SharpSM83::HALT() {
     if (IME) {
         bool isInterrupted = false;
         while (!isInterrupted && !Bus::GLOBAL_HALT) {
-            int executed_cycles = 0;
-            std::chrono::time_point start = std::chrono::high_resolution_clock::now();
-            while (executed_cycles < 17556 && !isInterrupted) {
-                mBus->tick(1);
-                executed_cycles++;
-                isInterrupted = checkInterrupts(true);
-            }
-            std::chrono::time_point end = std::chrono::high_resolution_clock::now();
-            std::chrono::microseconds duration(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
-            std::this_thread::sleep_for(duration);
+            mBus->tick(1);
+            executedCycles++;
+            isInterrupted = checkInterrupts(true);
         }
     } else {
         if (IE.raw != 0x00 && IF.raw != 0x00) {
@@ -894,16 +887,9 @@ uint8_t SharpSM83::HALT() { // TODO: The executed_cycle must be synced with the 
         } else {
             bool isInterrupted = false;
             while (!isInterrupted && !Bus::GLOBAL_HALT) {
-                int executed_cycles = 0;
-                std::chrono::time_point start = std::chrono::high_resolution_clock::now();
-                while (executed_cycles < 17556 && !isInterrupted) {
-                    mBus->tick(1);
-                    executed_cycles++;
-                    isInterrupted = checkInterrupts(false);
-                }
-                std::chrono::time_point end = std::chrono::high_resolution_clock::now();
-                std::chrono::microseconds duration(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
-                std::this_thread::sleep_for(duration);
+                mBus->tick(1);
+                executedCycles++;
+                isInterrupted = checkInterrupts(false);
             }
         }
     }

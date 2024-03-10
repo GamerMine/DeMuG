@@ -175,7 +175,7 @@ void Apu::tick() {
         }
         if (SC3Wave::NR34.lengthEnable) {
             uint16_t oldLengthTimer = SC3Wave::NR31;
-            SC3Wave::NR31++;
+            if (SC3Wave::NR31 < 255) SC3Wave::NR31++;
             if (oldLengthTimer + 1 == 256) {
                 NR52.ch3On = 0;
                 StopAudioStream(wave->audioStream);

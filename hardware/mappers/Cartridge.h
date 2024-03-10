@@ -21,13 +21,23 @@
 
 class Cartridge {
     friend class CartridgeHelper;
+
 public:
     virtual uint8_t read(uint16_t addr) = 0;
-    virtual void write(uint16_t addr, uint8_t value) {};
+    virtual void write(uint16_t, uint8_t) {};
 
     virtual ~Cartridge() = default;
 protected:
     virtual void loadGame(const char *filename) = 0;
+
+protected:
+    inline static std::array<uint8_t, 6> ramSizes = {0, 0, 8, 32, 128, 64};
+    std::vector<uint8_t> gameRom{};
+    std::vector<uint8_t> gameRam{};
+    uint8_t romSize{};
+    uint16_t romBankNumber{};
+    uint8_t ramSize{};
+
 };
 
 #endif //EMU_GAMEBOY_CARTRIDGE_H
