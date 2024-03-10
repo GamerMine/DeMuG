@@ -21,16 +21,16 @@ Screen::Screen(class Ppu *ppu) {
     xPos = 0x00;
     yPos = 0x00;
     dots = 0x0000;
-}
-
-void Screen::operator()() {
-    InitWindow(1280, 720, WINDOW_NAME);
-    SetWindowMonitor(0);
 
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
     backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
     windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
+}
+
+void Screen::operator()() {
+    InitWindow(1280, 720, WINDOW_NAME);
+    SetWindowMonitor(0);
 
     // Initialize screen pixel array
     for (long i = 0; i < DEFAULT_WIDTH*DEFAULT_HEIGHT; i++) screenPixelArray[i] = Pixel(0x00, 0x00, 0x00);
@@ -61,12 +61,12 @@ void Screen::operator()() {
 
         // Render buffering
         // ----------------------------------------------------------------
-        setTileData();
+        /*setTileData();
         setTileDataObj();
         setObjects();
         generateBackgroundTileMap();
         generateWindowTileMap();
-        bufferTilesData();
+        bufferTilesData();*/
 
         // Render
         // ----------------------------------------------------------------
@@ -235,7 +235,7 @@ void Screen::bufferTilesData() {
             }
         }
     }
-    UpdateTexture(tilesDataTexture, tilesDataPixelArray);
+    //UpdateTexture(tilesDataTexture, tilesDataPixelArray);
 }
 
 void Screen::setTileData() {
@@ -289,7 +289,7 @@ void Screen::generateBackgroundTileMap() {
             }
         }
     }
-    UpdateTexture(backgroundMapTexture, backgroundMapPixelArray);
+    //UpdateTexture(backgroundMapTexture, backgroundMapPixelArray);
 }
 
 void Screen::generateWindowTileMap() {
@@ -301,10 +301,20 @@ void Screen::generateWindowTileMap() {
             }
         }
     }
-    UpdateTexture(windowMapTexture, windowMapPixelArray);
+    //UpdateTexture(windowMapTexture, windowMapPixelArray);
 }
 
+static bool generateData = true;
 void Screen::tick(uint8_t mCycle) {
+    if (generateData) {
+        generateData = false;
+        setTileData();
+        setTileDataObj();
+        setObjects();
+        generateBackgroundTileMap();
+        generateWindowTileMap();
+        bufferTilesData();
+    }
 
     for (uint8_t i = 0; i < mCycle * 4; i++) { // NOTE: 4 is correct only on normal speed
         if (dots == 4) {
@@ -389,6 +399,7 @@ void Screen::tick(uint8_t mCycle) {
             }
             if (yPos >= DEFAULT_HEIGHT + 9) {
                 yPos = 0x00;
+                generateData = true;
             }
         }
     }
