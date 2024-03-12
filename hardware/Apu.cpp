@@ -85,7 +85,7 @@ void Apu::write(uint16_t addr, uint8_t data) {
         SC3Wave::NR30.raw = data;
         if (!SC3Wave::NR30.DACOnOff) {
             NR52.ch3On = 0;
-            StopAudioStream(wave->audioStream);
+            StopAudioStream(SC3Wave::audioStream);
         }
     }
     else if (addr == 0xFF1B) {
@@ -98,7 +98,7 @@ void Apu::write(uint16_t addr, uint8_t data) {
         SC3Wave::NR34.raw = data;
         if (data >> 7 && SC3Wave::NR30.DACOnOff) {
             NR52.ch3On = 1;
-            PlayAudioStream(wave->audioStream);
+            PlayAudioStream(SC3Wave::audioStream);
         }
     }
     else if (addr == 0xFF20) {
@@ -124,7 +124,7 @@ void Apu::write(uint16_t addr, uint8_t data) {
         if (!(data >> 7)) resetRegisters();
         NR52.raw = data & 0xF0;
     }
-    else if (addr >= 0xFF30 && addr <= 0xFF3F) waveRAM[addr - 0xFF30] = data;
+    else if (addr >= 0xFF30 && addr <= 0xFF3F) SC3Wave::waveRAM[addr - 0xFF30] = data;
 }
 
 uint8_t Apu::read(uint16_t addr) {
@@ -146,7 +146,7 @@ uint8_t Apu::read(uint16_t addr) {
     else if (addr == 0xFF24) data = NR50.raw;
     else if (addr == 0xFF25) data = NR51.raw;
     else if (addr == 0xFF26) data = NR52.raw | 0x70;
-    else if (addr >= 0xFF30 && addr <= 0xFF3F) data = waveRAM[addr - 0xFF30];
+    else if (addr >= 0xFF30 && addr <= 0xFF3F) data = SC3Wave::waveRAM[addr - 0xFF30];
 
     //logger->log(Logger::DEBUG, "Reading %X from %X", data, addr);
 
@@ -175,10 +175,9 @@ void Apu::tick() {
         }
         if (SC3Wave::NR34.lengthEnable) {
             uint16_t oldLengthTimer = SC3Wave::NR31;
-            if (SC3Wave::NR31 < 255) SC3Wave::NR31++;
             if (oldLengthTimer + 1 == 256) {
                 NR52.ch3On = 0;
-                StopAudioStream(wave->audioStream);
+                StopAudioStream(SC3Wave::audioStream);
             }
         }
         if (SC4Noise::NR44.lengthEnable) {

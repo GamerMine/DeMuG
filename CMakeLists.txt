@@ -21,6 +21,7 @@ set(SOURCE_FILES
 set(HEADER_FILES
         debug/Debug.h
         hardware/Apu.h
+        hardware/audio/AudioHelper.h
         hardware/audio/SC1PulseSweep.h
         hardware/audio/SC2Pulse.h
         hardware/audio/SC3Wave.h

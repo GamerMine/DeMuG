@@ -81,7 +81,6 @@ private:
     Logger *logger;
 
     uint8_t rate;
-    uint8_t waveRAM[16]{}; // 0xFF30-0xFF3F: Waveform pattern RAM
 
     SC1PulseSweep *pulseSweep;
     SC2Pulse *pulse;

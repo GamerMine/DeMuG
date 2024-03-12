@@ -32,7 +32,7 @@ Bus::Bus() {
     serial = new SerialIO(this);
 
     readBootRom();
-    cartridge = CartridgeHelper::readGameRom("Guillaume/Nouveau dossier/Kirby's Dream Land.gb");
+    cartridge = CartridgeHelper::readGameRom("Tetris.gb");
 
     ppuThread.join();
     cpuThread.join();

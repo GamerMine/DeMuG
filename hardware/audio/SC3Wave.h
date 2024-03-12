@@ -18,6 +18,8 @@
 #define EMU_GAMEBOY_SC3WAVE_H
 
 #include <cstdint>
+#include "../../logging/Logger.h"
+#include "AudioHelper.h"
 
 class SC3Wave {
 public:
@@ -27,8 +29,10 @@ public:
         NR32.raw = 0x9F;
         NR33 = 0xFF;
         NR34.raw = 0xBF;
+        waveRAM.resize(16);
 
-        audioStream = LoadAudioStream(44100, 16, 2);
+        audioStream = LoadAudioStream(14080, 8, 2);
+        SetAudioStreamCallback(audioStream, waveCallback);
     }
 
     inline static union {
@@ -62,7 +66,25 @@ public:
         uint8_t raw;
     } NR34{}; // 0xFF1E: Channel 3 period high & control
 
-    AudioStream audioStream{};
+    inline static AudioStream audioStream;
+    inline static std::vector<uint8_t> waveRAM; // 0xFF30-0xFF3F: Waveform pattern RAM
+
+private:
+    inline static uint8_t sampleIndex = 0x01;
+    static void waveCallback(void *buffer, unsigned int frameCount) {
+        auto *d = (uint8_t *)buffer;
+        double frequency = ((2097152.0 / (2048.0 - ((NR34.periodHigh << 8) | NR33))) / 32.0);
+        SetAudioStreamPitch(audioStream, frequency / 440.0);
+        std::vector<uint8_t> resampledBuffer = AudioHelper::increaseDepth(waveRAM);
+
+        for (unsigned int i = 0; i < frameCount; i++) {
+            uint8_t sample = resampledBuffer[sampleIndex];
+            d[i * 2] = sample;
+            d[i * 2 + 1] = d[i * 2];
+            sampleIndex++;
+            if (sampleIndex == resampledBuffer.size()) { sampleIndex = 0x00;}
+        }
+    }
 };
 
 #endif //EMU_GAMEBOY_SC3WAVE_H

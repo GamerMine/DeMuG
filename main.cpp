@@ -16,7 +16,7 @@
 
 #include "hardware/Bus.h"
 #include "logging/Logger.h"
-#include "raylib.h"
+#include <raylib.h>
 
 void raylogCallback(int msgType, const char *text, va_list args) {
     Logger *logger = Logger::getInstance("Raylib");
