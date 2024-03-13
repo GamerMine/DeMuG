@@ -43,9 +43,14 @@ void raylogCallback(int msgType, const char *text, va_list args) {
     }
 }
 
-int main() {
+int main(int argc, const char *argv[]) {
     SetTraceLogCallback(raylogCallback);
-    Bus bus;
+    if (argc <= 1) {
+        Logger::getInstance("System")->log(Logger::CRITICAL, "Please, provide a game.");
+        exit(1);
+    }
+
+    Bus bus(argv[1]);
 
     return 0;
 }

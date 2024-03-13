@@ -38,7 +38,7 @@
 
 class Bus {
 public:
-    Bus();
+    explicit Bus(const char *filename);
 
     static bool GLOBAL_HALT;
 

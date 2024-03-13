@@ -18,7 +18,7 @@
 
 bool Bus::GLOBAL_HALT = false;
 
-Bus::Bus() {
+Bus::Bus(const char *filename) {
     logger = Logger::getInstance("Bus");
     disableBootRom = false;
 
@@ -32,7 +32,7 @@ Bus::Bus() {
     serial = new SerialIO(this);
 
     readBootRom();
-    cartridge = CartridgeHelper::readGameRom("Dr. Mario.gb");
+    cartridge = CartridgeHelper::readGameRom(filename);
 
     ppuThread.join();
     cpuThread.join();
