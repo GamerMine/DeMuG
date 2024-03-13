@@ -84,6 +84,9 @@ private:
             sampleIndex++;
             if (sampleIndex == resampledBuffer.size()) { sampleIndex = 0x00;}
         }
+
+        if (NR32.outputLevel != 0x01) SetAudioStreamVolume(audioStream, 0.0f);
+        else SetAudioStreamVolume(audioStream, 1.0f);
     }
 };
 

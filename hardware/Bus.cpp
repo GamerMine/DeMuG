@@ -32,7 +32,7 @@ Bus::Bus() {
     serial = new SerialIO(this);
 
     readBootRom();
-    cartridge = CartridgeHelper::readGameRom("Tetris.gb");
+    cartridge = CartridgeHelper::readGameRom("Dr. Mario.gb");
 
     ppuThread.join();
     cpuThread.join();
