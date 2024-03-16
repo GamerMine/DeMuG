@@ -33,7 +33,7 @@ class Screen {
 public:
     explicit Screen(class Ppu *ppu);
 
-    void operator()();
+    void run();
     void reset();
 
     struct Object {
@@ -57,6 +57,8 @@ public:
     inline static uint8_t MEMORY_PAGE = 0;
 
     void tick(uint8_t mCycle);
+
+    void close();
 
 private:
     class Ppu *mPpu;

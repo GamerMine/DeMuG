@@ -20,8 +20,8 @@ set(SOURCE_FILES
 
 set(HEADER_FILES
         debug/Debug.h
+        gui/FileChooser.h
         hardware/Apu.h
-        hardware/audio/AudioHelper.h
         hardware/audio/SC1PulseSweep.h
         hardware/audio/SC2Pulse.h
         hardware/audio/SC3Wave.h
@@ -43,8 +43,10 @@ set(HEADER_FILES
 add_subdirectory(lib/raylib)
 add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
 if (UNIX OR LINUX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(gtk4 REQUIRED IMPORTED_TARGET gtk4)
     target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
-    target_link_libraries(Emu_GameBoy pthread raylib -static-libgcc -static-libstdc++)
+    target_link_libraries(Emu_GameBoy pthread raylib -static-libgcc -static-libstdc++ PkgConfig::gtk4)
 elseif (WIN32)
     target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra -Wa,-mbig-obj)
     target_link_libraries(Emu_GameBoy pthread raylib -static)

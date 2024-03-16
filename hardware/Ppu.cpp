@@ -54,11 +54,6 @@ void Ppu::reset() {
     for (uint8_t &i : OAM)  i = 0x00;
 }
 
-void Ppu::operator()() {
-    std::thread screenThread(std::ref(*screen));
-    screenThread.join();
-}
-
 uint8_t Ppu::read(uint16_t addr) const {
     uint8_t value = 0xFF;
     if (addr >= 0x8000 && addr <= 0x9FFF) value = vram[addr - 0x8000];
@@ -110,4 +105,12 @@ void Ppu::startTransfer() {
 
 void Ppu::tick(uint8_t mCycle) const {
     screen->tick(mCycle);
+}
+
+void Ppu::runPpu() const {
+    screen->run();
+}
+
+void Ppu::closeConnection() {
+    screen->close();
 }

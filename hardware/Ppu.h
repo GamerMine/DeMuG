@@ -31,7 +31,6 @@ public:
 
     class Bus *mBus;
 
-    void operator()();
     void reset();
     void tick(uint8_t mCycle) const;
 
@@ -108,6 +107,10 @@ public:
 
     uint8_t vram[RAM_SIZE]{};
     uint8_t OAM[OAM_SIZE]{};
+
+    void runPpu() const;
+
+    void closeConnection();
 };
 
 #endif //EMU_GAMEBOY_PPU_H

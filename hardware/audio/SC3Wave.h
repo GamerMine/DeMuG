@@ -18,8 +18,7 @@
 #define EMU_GAMEBOY_SC3WAVE_H
 
 #include <cstdint>
-#include "../../logging/Logger.h"
-#include "AudioHelper.h"
+#include <vector>
 
 class SC3Wave {
 public:
@@ -74,19 +73,22 @@ private:
     static void waveCallback(void *buffer, unsigned int frameCount) {
         auto *d = (uint8_t *)buffer;
         double frequency = ((2097152.0 / (2048.0 - ((NR34.periodHigh << 8) | NR33))) / 32.0);
+
         SetAudioStreamPitch(audioStream, frequency / 440.0);
-        std::vector<uint8_t> resampledBuffer = AudioHelper::increaseDepth(waveRAM);
+
+        std::vector<uint8_t> resampledBuffer;
+        for (uint8_t value : waveRAM) {
+            resampledBuffer.push_back(value & 0xF0);
+            resampledBuffer.push_back(value << 4);
+        }
 
         for (unsigned int i = 0; i < frameCount; i++) {
-            uint8_t sample = resampledBuffer[sampleIndex];
+            uint8_t sample = resampledBuffer[sampleIndex] >> (NR32.outputLevel - 1);
             d[i * 2] = sample;
             d[i * 2 + 1] = d[i * 2];
             sampleIndex++;
             if (sampleIndex == resampledBuffer.size()) { sampleIndex = 0x00;}
         }
-
-        if (NR32.outputLevel != 0x01) SetAudioStreamVolume(audioStream, 0.0f);
-        else SetAudioStreamVolume(audioStream, 1.0f);
     }
 };
 

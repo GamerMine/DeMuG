@@ -31,7 +31,7 @@ public:
     explicit SharpSM83(class Bus *bus);
 
     void reset();
-    void operator()();
+    void runCpu();
 
     inline static union {
         struct {
@@ -132,6 +132,7 @@ private:
     bool checkInterrupts(bool executeHandler = true);
 
 private:
+    inline static std::chrono::time_point start = std::chrono::high_resolution_clock::now();
     using opcodeFunc = std::function<uint8_t()>;
     opcodeFunc opcodes[256] = {
             /*00*/[this]() {return NOP();},                               // OK

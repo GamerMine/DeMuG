@@ -26,11 +26,6 @@ Screen::Screen(class Ppu *ppu) {
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
     backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
     windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
-}
-
-void Screen::operator()() {
-    InitWindow(1280, 720, WINDOW_NAME);
-    SetWindowMonitor(0);
 
     // Initialize screen pixel array
     for (long i = 0; i < DEFAULT_WIDTH*DEFAULT_HEIGHT; i++) screenPixelArray[i] = Pixel(0x00, 0x00, 0x00);
@@ -44,51 +39,28 @@ void Screen::operator()() {
     // Initialize window map pixel array
     for (long i = 0; i < 32 * 8 * 32 * 8; i++) windowMapPixelArray[i] = Pixel(0x00, 0x00, 0x00);
 
+    InitWindow(1280, 720, WINDOW_NAME);
+    SetWindowMonitor(0);
+
     Image gameRender = {.data = screenPixelArray, .width = DEFAULT_WIDTH, .height = DEFAULT_HEIGHT, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
     Image tilesDataRender = {.data = tilesDataPixelArray, .width = 16 * 8, .height = 16 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
     Image backgroundMapRender = {.data = backgroundMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
     Image windowMapRender = {.data = windowMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
+
     gameTexture = LoadTextureFromImage(gameRender);
     tilesDataTexture = LoadTextureFromImage(tilesDataRender);
     backgroundMapTexture = LoadTextureFromImage(backgroundMapRender);
     windowMapTexture = LoadTextureFromImage(windowMapRender);
+}
 
-    double currentTime;
-    double lastTime;
-
-    while (!WindowShouldClose()) {
-        currentTime = GetTime();
-
-        // Render buffering
-        // ----------------------------------------------------------------
-        /*setTileData();
-        setTileDataObj();
-        setObjects();
-        generateBackgroundTileMap();
-        generateWindowTileMap();
-        bufferTilesData();*/
-
-        // Render
-        // ----------------------------------------------------------------
-        if (currentTime - lastTime >= 1.0 / FRAMERATE) {
-            lastTime = currentTime;
-            UpdateTexture(gameTexture, screenPixelArray);
-            render();
-        }
-    }
-
-    UnloadTexture(gameTexture);
-    UnloadTexture(tilesDataTexture);
-    UnloadTexture(backgroundMapTexture);
-    UnloadTexture(windowMapTexture);
-    Bus::GLOBAL_HALT = true;
-    CloseWindow();
+void Screen::run() {
+    render();
 }
 
 uint16_t tileDataBlock = 0x8000;
 void Screen::render() {
     BeginDrawing();
-    ClearBackground(DARKBLUE);
+    ClearBackground(BLACK);
     if (mPpu->LCDC.lcdEnable && !VIEW_MEMORY) {
         DrawTexturePro(gameTexture,
                        (Rectangle) {0, 0, static_cast<float>(gameTexture.width),
@@ -127,6 +99,7 @@ void Screen::render() {
     DrawInstructions(820, 0);
     DrawFlags(1100, 0);
     DrawRegisters(1100, 100);
+    DrawFPS(5, 5);
     //DrawCartridgeData(5, 5);
     if (VIEW_MEMORY) DrawMemory(0, 0, MEMORY_PAGE);
     EndDrawing();
@@ -235,7 +208,7 @@ void Screen::bufferTilesData() {
             }
         }
     }
-    //UpdateTexture(tilesDataTexture, tilesDataPixelArray);
+    UpdateTexture(tilesDataTexture, tilesDataPixelArray);
 }
 
 void Screen::setTileData() {
@@ -289,7 +262,7 @@ void Screen::generateBackgroundTileMap() {
             }
         }
     }
-    //UpdateTexture(backgroundMapTexture, backgroundMapPixelArray);
+    UpdateTexture(backgroundMapTexture, backgroundMapPixelArray);
 }
 
 void Screen::generateWindowTileMap() {
@@ -301,7 +274,7 @@ void Screen::generateWindowTileMap() {
             }
         }
     }
-    //UpdateTexture(windowMapTexture, windowMapPixelArray);
+    UpdateTexture(windowMapTexture, windowMapPixelArray);
 }
 
 static bool generateData = true;
@@ -400,6 +373,7 @@ void Screen::tick(uint8_t mCycle) {
             if (yPos >= DEFAULT_HEIGHT + 9) {
                 yPos = 0x00;
                 generateData = true;
+                UpdateTexture(gameTexture, screenPixelArray);
             }
         }
     }
@@ -420,22 +394,22 @@ void Screen::getObjectToRender(std::array<Object, 10> &out, uint8_t currentY) {
 
 Screen::Pixel Screen::getBGPPixelFromID(uint8_t pixelID) const {
     Pixel pixel{};
-    if (pixelID == mPpu->BGP.index3) {
+    if (((mPpu->BGP.raw >> pixelID * 2) & 0x03) == 0b11) {
         pixel.r = 0x00;
         pixel.g = 0x00;
         pixel.b = 0x00;
     }
-    else if (pixelID == mPpu->BGP.index2) {
+    else if (((mPpu->BGP.raw >> pixelID * 2) & 0x03) == 0b10) {
         pixel.r = 0x55;
         pixel.g = 0x55;
         pixel.b = 0x55;
     }
-    else if (pixelID == mPpu->BGP.index1) {
+    else if (((mPpu->BGP.raw >> pixelID * 2) & 0x03) == 0b01) {
         pixel.r = 0xAA;
         pixel.g = 0xAA;
         pixel.b = 0xAA;
     }
-    else if (pixelID == mPpu->BGP.index0) {
+    else if (((mPpu->BGP.raw >> pixelID * 2) & 0x03) == 0b00) {
         pixel.r = 0xFF;
         pixel.g = 0xFF;
         pixel.b = 0xFF;
@@ -447,43 +421,43 @@ Screen::Pixel Screen::getBGPPixelFromID(uint8_t pixelID) const {
 Screen::Pixel Screen::getOBPPixelFromID(uint8_t pixelID, bool palette) const {
     Pixel pixel {};
     if (palette) {
-        if (pixelID == mPpu->OBP1.index3) {
+        if (((mPpu->OBP1.raw >> pixelID * 2) & 0x03) == 0b11) {
             pixel.r = 0x00;
             pixel.g = 0x00;
             pixel.b = 0x00;
         }
-        else if (pixelID == mPpu->OBP1.index2) {
+        else if (((mPpu->OBP1.raw >> pixelID * 2) & 0x03) == 0b10) {
             pixel.r = 0x55;
             pixel.g = 0x55;
             pixel.b = 0x55;
         }
-        else if (pixelID == mPpu->OBP1.index1) {
+        else if (((mPpu->OBP1.raw >> pixelID * 2) & 0x03) == 0b01) {
             pixel.r = 0xAA;
             pixel.g = 0xAA;
             pixel.b = 0xAA;
         }
-        else if (pixelID == mPpu->OBP1.index0) {
+        else if (((mPpu->OBP1.raw >> pixelID * 2) & 0x03) == 0b00) {
             pixel.r = 0xFF;
             pixel.g = 0xFF;
             pixel.b = 0xFF;
         }
     } else {
-        if (pixelID == mPpu->OBP0.index3) {
+        if (((mPpu->OBP0.raw >> pixelID * 2) & 0x03) == 0b11) {
             pixel.r = 0x00;
             pixel.g = 0x00;
             pixel.b = 0x00;
         }
-        else if (pixelID == mPpu->OBP0.index2) {
+        else if (((mPpu->OBP0.raw >> pixelID * 2) & 0x03) == 0b10) {
             pixel.r = 0x55;
             pixel.g = 0x55;
             pixel.b = 0x55;
         }
-        else if (pixelID == mPpu->OBP0.index1) {
+        else if (((mPpu->OBP0.raw >> pixelID * 2) & 0x03) == 0b01) {
             pixel.r = 0xAA;
             pixel.g = 0xAA;
             pixel.b = 0xAA;
         }
-        else if (pixelID == mPpu->OBP0.index0) {
+        else if (((mPpu->OBP0.raw >> pixelID * 2) & 0x03) == 0b00) {
             pixel.r = 0xFF;
             pixel.g = 0xFF;
             pixel.b = 0xFF;
@@ -508,4 +482,12 @@ void Screen::reset() {
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
     backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
     windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
+}
+
+void Screen::close() {
+    UnloadTexture(gameTexture);
+    UnloadTexture(tilesDataTexture);
+    UnloadTexture(backgroundMapTexture);
+    UnloadTexture(windowMapTexture);
+    CloseWindow();
 }

@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "Bus.h"
+#include "../gui/FileChooser.h"
 
 class InputManager {
 public:

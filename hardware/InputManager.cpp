@@ -28,6 +28,7 @@ InputManager::InputManager(class Bus *bus) {
     registerKey(KEY_M);
     registerKey(KEY_KP_6);
     registerKey(KEY_KP_4);
+    registerKey(KEY_O);
 
     registerKey(BTN_A);      // A
     registerKey(BTN_B);      // B
@@ -90,6 +91,9 @@ void InputManager::keyPressed(int key) {
         case KEY_KP_4: {
             Screen::MEMORY_PAGE--;
             break;
+        }
+        case KEY_O: {
+            FileChooser::chooseROM();
         }
         default: {
             if (BTN_A == key)       JOY_BTN.A = 0;

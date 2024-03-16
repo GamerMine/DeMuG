@@ -46,6 +46,7 @@ public:
     uint8_t read(uint16_t addr);
     void tickApu();
     void tick(uint8_t mCycle);
+    void runPpu();
 
     void reset();
 

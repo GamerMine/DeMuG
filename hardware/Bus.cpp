@@ -22,11 +22,11 @@ Bus::Bus(const char *filename) {
     logger = Logger::getInstance("Bus");
     disableBootRom = false;
 
+    gtk_init();
+
     ppu = new Ppu(this);
-    std::thread ppuThread(std::ref(*ppu));
     apu = new Apu(this);
     cpu = new SharpSM83(this);
-    std::thread cpuThread(std::ref(*cpu));
     inputManager = new InputManager(this);
     timer = new Timer(this);
     serial = new SerialIO(this);
@@ -34,10 +34,13 @@ Bus::Bus(const char *filename) {
     readBootRom();
     cartridge = CartridgeHelper::readGameRom(filename);
 
-    ppuThread.join();
-    cpuThread.join();
+    while (!WindowShouldClose()) {
+        cpu->runCpu();
+    }
 
+    Bus::GLOBAL_HALT = true;
     apu->closeConnection();
+    ppu->closeConnection();
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {
@@ -138,4 +141,8 @@ void Bus::reset() {
     ppu->reset();
     std::this_thread::sleep_for(30ms);
     cpu->reset();
+}
+
+void Bus::runPpu() {
+    ppu->runPpu();
 }
