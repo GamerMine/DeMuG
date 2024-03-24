@@ -14,42 +14,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#ifndef EMU_GAMEBOY_FILEDIALOG_H
-#define EMU_GAMEBOY_FILEDIALOG_H
+#ifndef EMU_GAMEBOY_MAINWINDOW_H
+#define EMU_GAMEBOY_MAINWINDOW_H
 
-#include <nfd.h>
+#include "raygui.h"
+#include "../hardware/Bus.h"
 
-class FileChooser {
+class MainWindow {
 public:
-    static FileChooser *getInstance() {
-        if (instance == nullptr) {
-            instance = new FileChooser();
-        }
+    explicit MainWindow(class Bus *bus);
 
-        return instance;
-    }
-
-    const char *chooseROM() {
-        nfdu8char_t *outputPath;
-        nfdfilteritem_t fileFilters[1] = {{"GameBoy ROM", "gb"}};
-        nfdresult_t result = NFD_OpenDialogU8(&outputPath, fileFilters, 1, nullptr);
-
-        switch (result) {
-            case NFD_OKAY: return outputPath;
-            default: return "";
-        }
-    }
+    void render();
 
 private:
-    FileChooser() {
-        NFD_Init();
-    }
-
-    ~FileChooser() {
-        NFD_Quit();
-    }
-
-    inline static FileChooser *instance;
+    class Bus *mBus;
 };
 
-#endif //EMU_GAMEBOY_FILEDIALOG_H
+
+#endif //EMU_GAMEBOY_MAINWINDOW_H

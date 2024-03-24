@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(PROJECT_VERSION 1.0.0)
 
 set(SOURCE_FILES
+        gui/MainWindow.cpp
         hardware/Apu.cpp
         hardware/Bus.cpp
         hardware/InputManager.cpp
@@ -21,6 +22,8 @@ set(SOURCE_FILES
 set(HEADER_FILES
         debug/Debug.h
         gui/FileChooser.h
+        gui/MainWindow.cpp
+        gui/raygui.h
         hardware/Apu.h
         hardware/audio/SC1PulseSweep.h
         hardware/audio/SC2Pulse.h
@@ -41,15 +44,15 @@ set(HEADER_FILES
 )
 
 add_subdirectory(lib/raylib)
+add_subdirectory(lib/nativefiledialog-extended)
+
 add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
 if (UNIX OR LINUX)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(gtk4 REQUIRED IMPORTED_TARGET gtk4)
     target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
-    target_link_libraries(Emu_GameBoy pthread raylib -static-libgcc -static-libstdc++ PkgConfig::gtk4)
+    target_link_libraries(Emu_GameBoy pthread raylib nfd -static-libgcc -static-libstdc++)
 elseif (WIN32)
     target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra -Wa,-mbig-obj)
-    target_link_libraries(Emu_GameBoy pthread raylib -static)
+    target_link_libraries(Emu_GameBoy pthread raylib nfd -static)
 endif ()
 
 add_custom_command(TARGET Emu_GameBoy PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR}/)

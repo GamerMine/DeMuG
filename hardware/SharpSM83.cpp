@@ -24,7 +24,7 @@ SharpSM83::debugInfo SharpSM83::DEBUG_INFO = {};
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
 
-    PC = 0x0000;
+    PC = mBus->disableBootRom ? 0x0100 : 0x0000;
     SP = 0xFFFE;
     registers.A = 0x01;
     registers.B = 0xFF;
@@ -43,7 +43,7 @@ SharpSM83::SharpSM83(class Bus *bus) {
 }
 
 void SharpSM83::reset() {
-    PC = 0x0100;
+    PC = mBus->disableBootRom ? 0x0100 : 0x0000;
     SP = 0xFFFE;
     registers.A = 0x01;
     registers.B = 0xFF;
@@ -108,7 +108,6 @@ void SharpSM83::runCpu() {
         } else { mBus->tick(0); }
     } else {
         mBus->runPpu();
-        g_main_context_iteration(nullptr, false);
         executedCycles -= 17556;
         std::chrono::time_point end = std::chrono::high_resolution_clock::now();
         WaitTime((double)(16750 - std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000);

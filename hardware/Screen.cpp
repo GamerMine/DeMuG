@@ -467,16 +467,6 @@ Screen::Pixel Screen::getOBPPixelFromID(uint8_t pixelID, bool palette) const {
     return pixel;
 }
 
-void Screen::DrawCartridgeData(int x, int y) {
-    std::stringstream ss;
-    ss << "Name: " << Debug::CARTRIDGE_INFO.title;
-    DrawText(ss.str().c_str(), x, y, 30, BLACK);
-    ss.str("");
-    ss.clear();
-    ss << "MBC Type: " << Debug::cartType[Debug::CARTRIDGE_INFO.cartridgeType];
-    DrawText(ss.str().c_str(), x, y + 30, 30, BLACK);
-}
-
 void Screen::reset() {
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels

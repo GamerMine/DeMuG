@@ -88,7 +88,6 @@ private:
     static void DrawFlags(int x, int y);
     void DrawRegisters(int x, int y);
     void DrawMemory(int x, int y, int page);
-    void DrawCartridgeData(int x, int y);
 
     void render();
     void bufferTilesData();

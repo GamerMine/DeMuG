@@ -22,20 +22,23 @@ Bus::Bus(const char *filename) {
     logger = Logger::getInstance("Bus");
     disableBootRom = false;
 
-    gtk_init();
-
     ppu = new Ppu(this);
     apu = new Apu(this);
     cpu = new SharpSM83(this);
     inputManager = new InputManager(this);
     timer = new Timer(this);
     serial = new SerialIO(this);
+    mainWindow = new MainWindow(this);
 
     readBootRom();
-    cartridge = CartridgeHelper::readGameRom(filename);
+    if (strcmp(filename, "") != 0) {
+        cartridge = CartridgeHelper::readGameRom(filename);
+        gameLaunched = true;
+    } else gameLaunched = false;
 
     while (!WindowShouldClose()) {
-        cpu->runCpu();
+        if (gameLaunched) cpu->runCpu();
+        else mainWindow->render();
     }
 
     Bus::GLOBAL_HALT = true;
@@ -136,10 +139,15 @@ void Bus::readBootRom() {
     file.close();
 }
 
+void Bus::loadGameROM(const char *filename) {
+    reset();
+    cartridge = CartridgeHelper::readGameRom(filename);
+    gameLaunched = true;
+}
+
 void Bus::reset() {
     using namespace std::chrono_literals;
     ppu->reset();
-    std::this_thread::sleep_for(30ms);
     cpu->reset();
 }
 

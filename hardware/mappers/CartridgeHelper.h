@@ -44,6 +44,8 @@ public:
         file.read(reinterpret_cast<char *>(&mapperType), sizeof(uint8_t) * 1);
         file.close();
 
+        readGameRomData(filename);
+
         std::unique_ptr<Cartridge> cartridge;
         switch (mapperType) {
             case 0x00: cartridge = std::make_unique<NoMBC>(); break;
@@ -56,6 +58,43 @@ public:
         cartridge->loadGame(filename);
 
         return cartridge;
+    }
+
+    static void readGameRomData(const char *filename) {
+        std::ifstream file(filename, std::ios::binary);
+        uint8_t value;
+
+        // Parsing ROM header
+        for (uint16_t i = 0; i < 16; i++) { // Title
+            file.seekg(0x0134 + i);
+            file.read(reinterpret_cast<char *>(&value), sizeof(uint8_t) * 1);
+            Debug::CARTRIDGE_INFO.title[i] = (char)value;
+        }
+        file.seekg(0x0144);
+        file.read(reinterpret_cast<char *>(&value), sizeof(uint8_t) * 1);
+        Debug::CARTRIDGE_INFO.newLicenseCode = value;
+        file.seekg(0x147);
+        file.read(reinterpret_cast<char *>(&value), sizeof(uint8_t) * 1);
+        Debug::CARTRIDGE_INFO.cartridgeType = value;
+        file.seekg(0x0148);
+        file.read(reinterpret_cast<char *>(&value), sizeof(uint8_t) * 1);
+        Debug::CARTRIDGE_INFO.romSize = value;
+        file.seekg(0x0149);
+        file.read(reinterpret_cast<char *>(&value), sizeof(uint8_t) * 1);
+        Debug::CARTRIDGE_INFO.ramSize = value;
+        file.seekg(0x014A);
+        file.read(reinterpret_cast<char *>(&value), sizeof(uint8_t) * 1);
+        Debug::CARTRIDGE_INFO.destinationCode = value;
+        file.seekg(0x014B);
+        file.read(reinterpret_cast<char *>(&value), sizeof(uint8_t) * 1);
+        Debug::CARTRIDGE_INFO.oldLicenseCode = value;
+
+        Debug::printRomHeaderData();
+
+        std::string windowTitle = "Emulating ";
+        windowTitle = windowTitle.append(Debug::CARTRIDGE_INFO.title);
+        while (!IsWindowReady()) {}
+        SetWindowTitle(windowTitle.c_str());
     }
 };
 

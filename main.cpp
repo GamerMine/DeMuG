@@ -17,6 +17,8 @@
 #include "hardware/Bus.h"
 #include "logging/Logger.h"
 #include <raylib.h>
+#define RAYGUI_IMPLEMENTATION
+#include "gui/raygui.h"
 
 void raylogCallback(int msgType, const char *text, va_list args) {
     Logger *logger = Logger::getInstance("Raylib");
@@ -45,12 +47,8 @@ void raylogCallback(int msgType, const char *text, va_list args) {
 
 int main(int argc, const char *argv[]) {
     SetTraceLogCallback(raylogCallback);
-    if (argc <= 1) {
-        Logger::getInstance("System")->log(Logger::CRITICAL, "Please, provide a game.");
-        exit(1);
-    }
 
-    Bus bus(argv[1]);
+    Bus bus(argc <= 1 ? "" : argv[1]); // Launch with game if supplied else launch without game
 
     return 0;
 }

@@ -30,7 +30,7 @@ public:
         NR34.raw = 0xBF;
         waveRAM.resize(16);
 
-        audioStream = LoadAudioStream(14080, 8, 2);
+        audioStream = LoadAudioStream(32, 8, 2);
         SetAudioStreamCallback(audioStream, waveCallback);
     }
 
@@ -74,7 +74,7 @@ private:
         auto *d = (uint8_t *)buffer;
         double frequency = ((2097152.0 / (2048.0 - ((NR34.periodHigh << 8) | NR33))) / 32.0);
 
-        SetAudioStreamPitch(audioStream, frequency / 440.0);
+        SetAudioStreamPitch(audioStream, frequency / 1.0);
 
         std::vector<uint8_t> resampledBuffer;
         for (uint8_t value : waveRAM) {

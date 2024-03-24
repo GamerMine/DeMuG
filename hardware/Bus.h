@@ -23,18 +23,20 @@
 #define BOOT_ROM_LOCATION "boot/DMG_ROM.bin"
 
 #include <array>
+#include <cstring>
 #include <fstream>
 
+#include "../debug/Debug.h"
 #include "Apu.h"
+#include "../gui/MainWindow.h"
 #include "InputManager.h"
 #include "mappers/Cartridge.h"
 #include "mappers/CartridgeHelper.h"
 #include "Ppu.h"
 #include "Screen.h"
+#include "SerialIO.h"
 #include "SharpSM83.h"
 #include "Timer.h"
-#include "SerialIO.h"
-#include "../debug/Debug.h"
 
 class Bus {
 public:
@@ -50,6 +52,8 @@ public:
 
     void reset();
 
+    void loadGameROM(const char *filename);
+
     inline static union {
         struct {
             bool aOrRight : 1;
@@ -63,17 +67,20 @@ public:
         uint8_t raw;
     } JOYP;
 
+    inline static bool gameLaunched;
+    bool disableBootRom;
+
 private:
     class Apu *apu;
     class SharpSM83 *cpu;
     class Ppu *ppu;
     class InputManager *inputManager;
     class Timer *timer;
-    class SerialIO * serial;
+    class SerialIO *serial;
+    class MainWindow *mainWindow;
     Logger *logger;
 
     std::unique_ptr<Cartridge> cartridge;
-    uint8_t disableBootRom;
 
     uint8_t bootRom[BOOT_ROM_SIZE]{};
     uint8_t ram[RAM_SIZE]{};

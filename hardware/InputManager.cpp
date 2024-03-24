@@ -93,7 +93,8 @@ void InputManager::keyPressed(int key) {
             break;
         }
         case KEY_O: {
-            FileChooser::chooseROM();
+            mBus->loadGameROM(FileChooser::getInstance()->chooseROM());
+            break;
         }
         default: {
             if (BTN_A == key)       JOY_BTN.A = 0;
