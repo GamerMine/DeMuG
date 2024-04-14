@@ -7,10 +7,53 @@ as Emu_Intel8080.
 ## Dependencies
 
 ### Debian/Ubuntu
+- **gcc** 
+- **g++**
+- **git**
+- **cmake** 
+- **build-essentials** 
+- **libx11-dev** 
+- **libxinerama-dev** 
+- **libgl-dev**
+- **libxcursor-dev** 
+- **libxrandr-dev** 
+- **libxi-dev**
 
+You can use the following exemple command to install them:<br>
 `sudo apt install gcc g++ git cmake build-essentials libx11-dev libxinerama-dev libgl-dev
 libxcursor-dev libxrandr-dev libxi-dev`
 
 ### Fedora
+- **gcc**
+- **g++**
+- **git**
+- **cmake**
+- **libX11-devel** 
+- **libXrandr-devel** 
+- **libXinerama-devel** 
+- **libXcursor-devel** 
+- **libXi-devel** 
+- **mesa-libGL-devel**
+
+You can use the following exemple command to install them:<br>
 `sudo dnf install gcc g++ git cmake libX11-devel libXrandr-devel libXinerama-devel 
 libXcursor-devel libXi-devel mesa-libGL-devel`
+
+### MacOS
+- [**XCode**](https://apps.apple.com/fr/app/xcode/id497799835?mt=12) dependencies
+Install the following packages (using homebrew for exemple):
+- [**git**](https://formulae.brew.sh/formula/git#default)
+- [**cmake**](https://formulae.brew.sh/formula/cmake#default) >= 3.25
+- [**gcc**](https://formulae.brew.sh/formula/gcc#default) supporting C++20
+
+### Windows
+- **gcc** supporting C++20. You can use the binaries provided by [WinLibs](https://winlibs.com).<br>
+- [**git**](https://git-scm.com/downloads)
+- [**cmake**](https://cmake.org/download/) >= 3.25
+
+## Compilation
+Clone the repository<br>
+`git clone https://github.com/GamerMine/Emu_GameBoy.git --recurse-submodules`
+
+Compile !<br>
+`cd Emu_GameBoy && mkdir build && cd build && cmake .. && make`
