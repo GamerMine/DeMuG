@@ -50,5 +50,7 @@ int main(int argc, const char *argv[]) {
 
     Bus bus(argc <= 1 ? "" : argv[1]); // Launch with game if supplied else launch without game
 
+    bus.startEmulation();
+
     return 0;
 }

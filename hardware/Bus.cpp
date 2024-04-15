@@ -35,7 +35,9 @@ Bus::Bus(const char *filename) {
         cartridge = CartridgeHelper::readGameRom(filename);
         gameLaunched = true;
     } else gameLaunched = false;
+}
 
+int Bus::startEmulation() {
     while (!WindowShouldClose()) {
         if (gameLaunched) cpu->runCpu();
         else mainWindow->render();
@@ -44,6 +46,8 @@ Bus::Bus(const char *filename) {
     Bus::GLOBAL_HALT = true;
     apu->closeConnection();
     ppu->closeConnection();
+
+    return 0;
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {

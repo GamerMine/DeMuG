@@ -22,6 +22,8 @@ InputManager::InputManager(class Bus *bus) {
     mBus = bus;
     JOY_DPAD.raw = 0xFF;
     JOY_BTN.raw = 0xFF;
+    registerKey(KEY_LEFT_CONTROL);
+
     registerKey(KEY_R);
     registerKey(KEY_SPACE);
     registerKey(KEY_N);
@@ -92,10 +94,6 @@ void InputManager::keyPressed(int key) {
             Screen::MEMORY_PAGE--;
             break;
         }
-        case KEY_O: {
-            mBus->loadGameROM(FileChooser::getInstance()->chooseROM());
-            break;
-        }
         default: {
             if (BTN_A == key)       JOY_BTN.A = 0;
             if (BTN_B == key)       JOY_BTN.B = 0;
@@ -109,6 +107,11 @@ void InputManager::keyPressed(int key) {
 
             break;
         }
+    }
+
+    if (key == KEY_O && getKeyState(KEY_LEFT_CONTROL)) {
+        const char *file = FileChooser::getInstance()->chooseROM();
+        if (std::strcmp(file, "") != 0) mBus->loadGameROM(file);
     }
 }
 
@@ -124,5 +127,13 @@ void InputManager::keyReleased(int key) {
     if (DPAD_DOWN == key)   JOY_DPAD.down = 1;
 
     if (KEY_N == key) SharpSM83::NEXT_INSTR = false;
+}
+
+bool InputManager::getKeyState(int key) {
+    for (sKey &rkey : InputManager::registeredKeys) {
+        if (rkey.key == key) return rkey.newStatus;
+    }
+
+    return false;
 }
 

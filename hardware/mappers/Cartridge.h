@@ -18,6 +18,9 @@
 #define EMU_GAMEBOY_CARTRIDGE_H
 
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 
 class Cartridge {
     friend class CartridgeHelper;
@@ -25,6 +28,27 @@ class Cartridge {
 public:
     virtual uint8_t read(uint16_t addr) = 0;
     virtual void write(uint16_t, uint8_t) {};
+
+    void save() {
+        if (gameRam.size() > 0) {
+            std::filesystem::create_directory("saves");
+            std::ofstream saveFile(std::string("saves/") + Debug::CARTRIDGE_INFO.title + ".demug", std::ios::binary);
+
+            saveFile.write(reinterpret_cast<char *>(gameRam.data()), sizeof(uint8_t) * ramSizes[ramSize] * 1024);
+
+            saveFile.close();
+        }
+    };
+
+    void loadSave() {
+        if (std::filesystem::exists(std::string("saves/") + Debug::CARTRIDGE_INFO.title + ".demug")) {
+            std::ifstream saveFile(std::string("saves/") + Debug::CARTRIDGE_INFO.title + ".demug", std::ios::binary);
+
+            saveFile.read(reinterpret_cast<char *>(gameRam.data()), sizeof(uint8_t) * ramSizes[ramSize] * 1024);
+
+            saveFile.close();
+        }
+    }
 
     virtual ~Cartridge() = default;
 protected:

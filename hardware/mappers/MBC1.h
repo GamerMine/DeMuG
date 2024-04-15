@@ -64,6 +64,8 @@ public:
                 /*Logger::getInstance("Cartridge")->log(Logger::DEBUG, "%sWriting %X to RAM bank %d", Colors::LOG_DARK_MAGENTA, value, ramBankSelect);*/
                 if (!bankingMode) gameRam[addr - 0xA000] = value;
                 else gameRam[ramBankSelect * 0x2000 + (addr - 0xA000)] = value;
+
+                save();
             }
         }
     }
@@ -88,6 +90,8 @@ protected:
         gameRam.resize(ramSizes[ramSize] * 1024);
 
         for (uint32_t i = 0; i < gameRam.size(); i++) gameRam[i] = 0x00;
+
+        loadSave();
     }
 
 private:

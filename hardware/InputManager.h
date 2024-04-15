@@ -64,6 +64,8 @@ public:
     static void registerKey(int key);
     static void unregisterKey(int key);
 
+    static bool getKeyState(int key);
+
 protected:
     void keyPressed(int key);
     void keyReleased(int key);
