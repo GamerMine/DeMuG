@@ -39,7 +39,7 @@ Screen::Screen(class Ppu *ppu) {
     // Initialize window map pixel array
     for (long i = 0; i < 32 * 8 * 32 * 8; i++) windowMapPixelArray[i] = Pixel(0x00, 0x00, 0x00);
 
-    InitWindow(1280, 720, WINDOW_NAME);
+    InitWindow(Bus::ENABLE_DEBUG ? 1280 : 800, 720, WINDOW_NAME);
     SetWindowMonitor(0);
 
     Image gameRender = {.data = screenPixelArray, .width = DEFAULT_WIDTH, .height = DEFAULT_HEIGHT, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
@@ -71,34 +71,36 @@ void Screen::render() {
                        0,
                        RAYWHITE);
     }
-    DrawTexturePro(tilesDataTexture,
-                   (Rectangle) {0, 0, static_cast<float>(tilesDataTexture.width),
-                                static_cast<float>(tilesDataTexture.height)},
-                   (Rectangle) {810, static_cast<float>(GetRenderHeight() - tilesDataTexture.height * 2 - 10),
-                                static_cast<float>(tilesDataTexture.width * 2),
-                                static_cast<float>(tilesDataTexture.height * 2)},
-                   (Vector2) {0, 0},
-                   0,
-                   RAYWHITE);
-    DrawTexturePro(backgroundMapTexture,
-                   (Rectangle) {0, 0, static_cast<float>(backgroundMapTexture.width),
-                                static_cast<float>(backgroundMapTexture.height)},
-                   (Rectangle) {1090, 360, static_cast<float>(backgroundMapTexture.width / 1.5),
-                                static_cast<float>(backgroundMapTexture.height / 1.5)},
-                   (Vector2) {0, 0},
-                   0,
-                   RAYWHITE);
-    DrawTexturePro(windowMapTexture,
-                   (Rectangle) {0, 0, static_cast<float>(windowMapTexture.width),
-                                static_cast<float>(windowMapTexture.height)},
-                   (Rectangle) {1090, 540, static_cast<float>(windowMapTexture.width / 1.5),
-                                static_cast<float>(windowMapTexture.height / 1.5)},
-                   (Vector2) {0, 0},
-                   0,
-                   RAYWHITE);
-    DrawInstructions(820, 0);
-    DrawFlags(1100, 0);
-    DrawRegisters(1100, 100);
+    if (Bus::ENABLE_DEBUG) {
+        DrawTexturePro(tilesDataTexture,
+                       (Rectangle) {0, 0, static_cast<float>(tilesDataTexture.width),
+                                    static_cast<float>(tilesDataTexture.height)},
+                       (Rectangle) {810, static_cast<float>(GetRenderHeight() - tilesDataTexture.height * 2 - 10),
+                                    static_cast<float>(tilesDataTexture.width * 2),
+                                    static_cast<float>(tilesDataTexture.height * 2)},
+                       (Vector2) {0, 0},
+                       0,
+                       RAYWHITE);
+        DrawTexturePro(backgroundMapTexture,
+                       (Rectangle) {0, 0, static_cast<float>(backgroundMapTexture.width),
+                                    static_cast<float>(backgroundMapTexture.height)},
+                       (Rectangle) {1090, 360, static_cast<float>(backgroundMapTexture.width / 1.5),
+                                    static_cast<float>(backgroundMapTexture.height / 1.5)},
+                       (Vector2) {0, 0},
+                       0,
+                       RAYWHITE);
+        DrawTexturePro(windowMapTexture,
+                       (Rectangle) {0, 0, static_cast<float>(windowMapTexture.width),
+                                    static_cast<float>(windowMapTexture.height)},
+                       (Rectangle) {1090, 540, static_cast<float>(windowMapTexture.width / 1.5),
+                                    static_cast<float>(windowMapTexture.height / 1.5)},
+                       (Vector2) {0, 0},
+                       0,
+                       RAYWHITE);
+        DrawInstructions(820, 0);
+        DrawFlags(1100, 0);
+        DrawRegisters(1100, 100);
+    }
     DrawFPS(5, 5);
     //DrawCartridgeData(5, 5);
     if (VIEW_MEMORY) DrawMemory(0, 0, MEMORY_PAGE);

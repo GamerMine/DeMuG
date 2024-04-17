@@ -43,6 +43,7 @@ public:
     explicit Bus(const char *filename);
 
     static bool GLOBAL_HALT;
+    static bool ENABLE_DEBUG;
 
     int startEmulation();
     void write(uint16_t addr, uint8_t data);

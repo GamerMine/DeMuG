@@ -17,6 +17,7 @@
 #include "Bus.h"
 
 bool Bus::GLOBAL_HALT = false;
+bool Bus::ENABLE_DEBUG = false;
 
 Bus::Bus(const char *filename) {
     logger = Logger::getInstance("Bus");
