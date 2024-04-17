@@ -20,7 +20,6 @@
 #define RAM_SIZE 8192
 #define BOOT_ROM_SIZE 0xFF
 #define HRAM_SIZE 12
-#define BOOT_ROM_LOCATION "boot/DMG_ROM.bin"
 
 #include <array>
 #include <cstring>
@@ -38,10 +37,18 @@
 #include "SharpSM83.h"
 #include "Timer.h"
 
+#ifdef __APPLE__
+#include <CoreServices/CoreServices.h>
+#endif
+
 class Bus {
+private:
+    static std::string getBootROM();
+
 public:
     explicit Bus(const char *filename);
 
+    inline static std::string BOOT_ROM_LOCATION = getBootROM();
     static bool GLOBAL_HALT;
     static bool ENABLE_DEBUG;
 

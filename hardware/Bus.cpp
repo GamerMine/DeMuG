@@ -130,7 +130,7 @@ void Bus::readBootRom() {
     std::ifstream file(BOOT_ROM_LOCATION, std::ios::binary);
 
     if (!file.good()) {
-        logger->log(Logger::CRITICAL, "File not found: %s", BOOT_ROM_LOCATION);
+        logger->log(Logger::CRITICAL, "File not found: %s", BOOT_ROM_LOCATION.c_str());
         exit(1);
     }
 
@@ -142,6 +142,27 @@ void Bus::readBootRom() {
     }
 
     file.close();
+}
+
+std::string Bus::getBootROM() {
+#ifdef __APPLE__
+    CFURLRef appUrlRef = CFBundleCopyResourceURL(CFBundleGetMainBundle(), CFStringCreateWithCString(kCFAllocatorDefault, "boot/DMG_ROM.bin", kCFStringEncodingUTF8), NULL, NULL);
+    CFStringRef resourceString = CFURLGetString(appUrlRef);
+
+    CFIndex length = CFStringGetLength(resourceString);
+    CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
+
+    char *buffer = (char *)malloc(maxSize);
+    if (CFStringGetCString(resourceString, buffer, maxSize, kCFStringEncodingUTF8)) {
+        std::string filePath = buffer;
+        filePath.erase(0, 16);
+        return filePath;
+    }
+
+    return "";
+#else
+    return "boot/DMG_ROM.bin";
+#endif
 }
 
 void Bus::loadGameROM(const char *filename) {

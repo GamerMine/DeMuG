@@ -43,10 +43,12 @@ set(HEADER_FILES
         logging/Logger.h
 )
 
+file(GLOB_RECURSE RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resources/*")
+
 add_subdirectory(lib/raylib)
 add_subdirectory(lib/nativefiledialog-extended)
 
-add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES})
+add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES} ${RESOURCES})
 if (UNIX AND NOT APPLE OR LINUX)
     target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
     target_link_libraries(Emu_GameBoy pthread raylib nfd -static-libgcc -static-libstdc++)
@@ -54,6 +56,28 @@ elseif (WIN32)
     target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra -Wa,-mbig-obj)
     target_link_libraries(Emu_GameBoy pthread raylib nfd -static)
 elseif (APPLE)
+    set_target_properties(Emu_GameBoy PROPERTIES
+            MACOSX_BUNDLE TRUE
+            MACOSX_FRAMEWORK_IDENTIFIER fr.dwightstudio.DeMuG
+            MACOSX_BUNDLE_BUNDLE_NAME DeMuG
+            MACOSX_BUNDLE_ICON_FILE logo.icns
+    )
+
+    foreach (FILE ${RESOURCES})
+        # Get the relative path from the data-folder to the particular file.
+        file(RELATIVE_PATH NEW_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources" ${FILE})
+
+        # Get the relative path to the file.
+        get_filename_component(NEW_FILE_PATH ${NEW_FILE} DIRECTORY)
+
+        # Set it's location inside the app package (under Resources).
+        set_property(SOURCE ${FILE} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/${NEW_FILE_PATH}")
+
+        # Optional: Add the file to the 'Resources' folder group in Xcode.
+        #           This also preserves folder structure.
+        source_group("Resources/${NEW_FILE_PATH}" FILES "${FILE}")
+    endforeach ()
+
     target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
     target_link_libraries(Emu_GameBoy pthread raylib nfd -static-libgcc -static-libstdc++)
 endif ()
