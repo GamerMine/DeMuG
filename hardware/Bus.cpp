@@ -38,7 +38,7 @@ Bus::Bus(const char *filename) {
     } else gameLaunched = false;
 }
 
-int Bus::startEmulation() {
+void Bus::startEmulation() {
     while (!WindowShouldClose()) {
         if (gameLaunched) cpu->runCpu();
         else mainWindow->render();
@@ -48,7 +48,7 @@ int Bus::startEmulation() {
     apu->closeConnection();
     ppu->closeConnection();
 
-    return 0;
+    exit(0);
 }
 
 void Bus::write(uint16_t addr, uint8_t data) {

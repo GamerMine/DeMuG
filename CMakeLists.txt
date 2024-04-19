@@ -64,22 +64,15 @@ elseif (APPLE)
     )
 
     foreach (FILE ${RESOURCES})
-        # Get the relative path from the data-folder to the particular file.
         file(RELATIVE_PATH NEW_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources" ${FILE})
-
-        # Get the relative path to the file.
         get_filename_component(NEW_FILE_PATH ${NEW_FILE} DIRECTORY)
-
-        # Set it's location inside the app package (under Resources).
         set_property(SOURCE ${FILE} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/${NEW_FILE_PATH}")
-
-        # Optional: Add the file to the 'Resources' folder group in Xcode.
-        #           This also preserves folder structure.
-        source_group("Resources/${NEW_FILE_PATH}" FILES "${FILE}")
     endforeach ()
 
     target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
     target_link_libraries(Emu_GameBoy pthread raylib nfd -static-libgcc -static-libstdc++)
 endif ()
 
-add_custom_command(TARGET Emu_GameBoy PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR}/)
+if (UNIX AND NOT APPLE OR LINUX OR WIN32)
+    add_custom_command(TARGET Emu_GameBoy PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR}/)
+endif ()
