@@ -26,6 +26,7 @@ void MainWindow::render() {
     if (GuiButton((Rectangle){20, 20, 200, 200}, "Open ROM")) {
         const char *file = FileChooser::getInstance()->chooseROM();
         if (CartridgeHelper::checkRomValidity(file)) mBus->loadGameROM(file);
+        SetMasterVolume(Apu::DEFAULT_MASTER_VOLUME);
     }
 
     EndDrawing();

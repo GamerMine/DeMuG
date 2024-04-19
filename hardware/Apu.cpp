@@ -25,7 +25,7 @@ Apu::Apu(class Bus *bus) {
     rate = 0;
 
     InitAudioDevice();
-    SetMasterVolume(0.05f);
+    SetMasterVolume(DEFAULT_MASTER_VOLUME);
 
     pulseSweep = new SC1PulseSweep();
     pulse = new SC2Pulse();
@@ -55,6 +55,8 @@ void Apu::write(uint16_t addr, uint8_t data) {
         SC1PulseSweep::NR14.raw = data;
         if (data >> 7 && SC1PulseSweep::DAC) {
             NR52.ch1On = 1;
+            SC1PulseSweep::sweepDone = true;
+            SC1PulseSweep::sweepTick = 0;
             SC1PulseSweep::NR12Temp.raw = SC1PulseSweep::NR12.raw;
             SC1PulseSweep::currentVolume = static_cast<int8_t>(SC1PulseSweep::NR12Temp.initialVolume);
             SetAudioStreamVolume(pulseSweep->audioStream, SC1PulseSweep::NR12Temp.initialVolume * (1.0f / 15.0f));
@@ -191,7 +193,34 @@ void Apu::tick() {
     }
 
     if ((rate % 4) == 0) {
+        if (SC1PulseSweep::NR10.pace != 0 && NR52.ch1On) {
+            SC1PulseSweep::sweepTick++;
+            if (SC1PulseSweep::sweepDone) {
+                SC1PulseSweep::currentSweepPace = SC1PulseSweep::NR10.pace;
+                SC1PulseSweep::sweepDone = false;
+            }
+            if (SC1PulseSweep::sweepTick == SC1PulseSweep::currentSweepPace) {
+                SC1PulseSweep::sweepTick = 0;
 
+                uint16_t currentPeriod = ((SC1PulseSweep::NR14.periodHigh << 8) | SC1PulseSweep::NR13);
+                uint16_t resultingPeriod;
+
+                if (SC1PulseSweep::NR10.direction) resultingPeriod = currentPeriod - (currentPeriod >> SC1PulseSweep::NR10.individualStep);
+                else resultingPeriod = currentPeriod + (currentPeriod >> SC1PulseSweep::NR10.individualStep);
+
+                if (resultingPeriod > 0x7FF || currentPeriod > resultingPeriod) {
+                    NR52.ch1On = 0;
+                    StopAudioStream(pulseSweep->audioStream);
+                } else {
+                    SC1PulseSweep::NR13 = resultingPeriod & 0x00FF;
+                    SC1PulseSweep::NR14.periodHigh = resultingPeriod >> 8;
+                }
+
+                SC1PulseSweep::sweepDone = true;
+            }
+        } else {
+            SC1PulseSweep::sweepDone = true;
+        }
     }
 
     if ((rate % 8) == 0) {

@@ -71,6 +71,8 @@ public:
         uint8_t raw;
     } NR50{}; // 0xFF24: Master volume & VIN panning
 
+    inline static float DEFAULT_MASTER_VOLUME = 0.05f;
+
     void write(uint16_t addr, uint8_t data);
     uint8_t read(uint16_t addr);
     void tick();

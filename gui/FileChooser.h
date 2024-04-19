@@ -32,6 +32,8 @@ public:
     const char *chooseROM() {
         nfdu8char_t *outputPath;
         nfdfilteritem_t fileFilters[1] = {{"GameBoy ROM", "gb"}};
+
+        SetMasterVolume(0);
         nfdresult_t result = NFD_OpenDialogU8(&outputPath, fileFilters, 1, nullptr);
 
         switch (result) {

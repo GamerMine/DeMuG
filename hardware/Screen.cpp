@@ -337,17 +337,16 @@ void Screen::tick(uint8_t mCycle) {
                         if (obj.isReal) {
                             if (xPos >= (obj.Xpos - 8) && xPos <= obj.Xpos - 1) {
                                 uint8_t pixelID;
+                                uint8_t objectPixelX = xPos - (obj.Xpos - 8);
+                                uint8_t objectPixelY = yPos - (obj.Ypos - 16);
+
                                 if (obj.xFlip) {
-                                    pixelID = tileDataObj[obj.tileIndex][yPos - (obj.Ypos - 16)][abs(
-                                            7 - (xPos - (obj.Xpos - 8)))];
-                                } else if (obj.yFlip) {
-                                    pixelID = tileDataObj[obj.tileIndex][abs(7 - (yPos - (obj.Ypos - 16)))][xPos -
-                                                                                                            (obj.Xpos -
-                                                                                                             8)];
-                                } else {
-                                    pixelID = tileDataObj[obj.tileIndex][yPos - (obj.Ypos - 16)][xPos -
-                                                                                                 (obj.Xpos - 8)];
+                                    objectPixelX = abs(7 - (xPos - (obj.Xpos - 8)));
                                 }
+                                if (obj.yFlip) {
+                                    objectPixelY = abs(7 - (yPos - (obj.Ypos - 8)));
+                                }
+                                pixelID = tileDataObj[obj.tileIndex][objectPixelY][objectPixelX];
 
                                 if (pixelID != 0x00) {
                                     if (obj.priority) {

@@ -22,7 +22,7 @@ set(SOURCE_FILES
 set(HEADER_FILES
         debug/Debug.h
         gui/FileChooser.h
-        gui/MainWindow.cpp
+        gui/MainWindow.h
         gui/raygui.h
         hardware/Apu.h
         hardware/audio/SC1PulseSweep.h

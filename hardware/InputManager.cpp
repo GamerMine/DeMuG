@@ -113,6 +113,7 @@ void InputManager::keyPressed(int key) {
     if (key == KEY_O && getKeyState(KEY_LEFT_CONTROL)) {
         const char *file = FileChooser::getInstance()->chooseROM();
         if (CartridgeHelper::checkRomValidity(file)) mBus->loadGameROM(file);
+        SetMasterVolume(Apu::DEFAULT_MASTER_VOLUME);
     } else if (key == KEY_D && getKeyState(KEY_LEFT_CONTROL)) {
         Bus::ENABLE_DEBUG  = !Bus::ENABLE_DEBUG;
         if (Bus::ENABLE_DEBUG) SetWindowSize(1280, 720);

@@ -42,9 +42,9 @@ public:
 
     inline static union {
         struct {
-            bool individualStep : 3;
+            uint8_t individualStep : 3;
             bool direction : 1;
-            bool pace : 3;
+            uint8_t pace : 3;
             bool unused : 1;
         };
         uint8_t raw;
@@ -84,6 +84,10 @@ public:
     inline static bool DAC;
     inline static int8_t currentVolume;
     inline static uint8_t enveloppeTick;
+
+    inline static uint8_t sweepTick;
+    inline static uint8_t currentSweepPace;
+    inline static bool sweepDone = true;
 
 private:
     inline static std::array<float, 4> dutyCycles = {0.125f, 0.25f, 0.50f, 0.75f};

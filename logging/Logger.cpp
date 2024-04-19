@@ -79,9 +79,9 @@ void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *format, va_list ar
         out << std::put_time(&tm, "%d-%m-%Y %H:%M:%S");
 
         // TODO: This should compare the printf converted string instead of the format string directly
-        if (format == lastString) { printf("\r"); nbRepeat++; }
+        /*if (format == lastString) { printf("\r"); nbRepeat++; }
         else { printf("%s\n", Colors::LOG_DEFAULT); nbRepeat = 0; }
-        lastString = format;
+        lastString = format;*/
 
         switch (logLevel) {
             case DEBUG: printf("[%s %s%s%s] <%s>: ", out.str().c_str(), Colors::LOG_DARK_GRAY, levelNames[logLevel], Colors::LOG_DEFAULT, currentLoggerName); break;
@@ -90,7 +90,8 @@ void Logger::logAsync(Logger::LOG_LEVEL logLevel, const char *format, va_list ar
             default: printf("[%s %s] <%s>: ", out.str().c_str(), levelNames[logLevel], currentLoggerName); break;
         }
         vprintf(format, args);
-        if (nbRepeat > 0) printf(" %s(x%lu)", Colors::LOG_DARK_GRAY, nbRepeat);
+        printf("%s\n", Colors::LOG_DEFAULT);
+        //if (nbRepeat > 0) printf(" %s(x%lu)", Colors::LOG_DARK_GRAY, nbRepeat);
     }
 }
 
