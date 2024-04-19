@@ -30,9 +30,15 @@ public:
     virtual void write(uint16_t, uint8_t) {};
 
     void save() {
-        if (gameRam.size() > 0) {
-            std::filesystem::create_directory("saves");
-            std::ofstream saveFile(std::string("saves/") + Debug::CARTRIDGE_INFO.title + ".demug", std::ios::binary);
+        if (!gameRam.empty()) {
+            std::string saveFileLocation = "./saves/";
+#ifdef __APPLE__
+            saveFileLocation = std::string(getenv("HOME")) + "/Library/Application Support/DeMuG/saves/";
+            std::filesystem::create_directories(std::string(getenv("HOME")) + "/Library/Application Support/DeMuG");
+#endif
+
+            std::filesystem::create_directory(saveFileLocation);
+            std::ofstream saveFile(saveFileLocation + Debug::CARTRIDGE_INFO.title + ".demug", std::ios::binary);
 
             saveFile.write(reinterpret_cast<char *>(gameRam.data()), sizeof(uint8_t) * ramSizes[ramSize] * 1024);
 
@@ -41,8 +47,13 @@ public:
     };
 
     void loadSave() {
-        if (std::filesystem::exists(std::string("saves/") + Debug::CARTRIDGE_INFO.title + ".demug")) {
-            std::ifstream saveFile(std::string("saves/") + Debug::CARTRIDGE_INFO.title + ".demug", std::ios::binary);
+        std::string saveFileLocation = "./saves/";
+#ifdef __APPLE__
+        saveFileLocation = std::string(getenv("HOME")) + "/Library/Application Support/DeMuG/saves/";
+#endif
+
+        if (std::filesystem::exists(saveFileLocation + Debug::CARTRIDGE_INFO.title + ".demug")) {
+            std::ifstream saveFile(saveFileLocation + Debug::CARTRIDGE_INFO.title + ".demug", std::ios::binary);
 
             saveFile.read(reinterpret_cast<char *>(gameRam.data()), sizeof(uint8_t) * ramSizes[ramSize] * 1024);
 

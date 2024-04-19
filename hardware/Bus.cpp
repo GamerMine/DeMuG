@@ -32,7 +32,7 @@ Bus::Bus(const char *filename) {
     mainWindow = new MainWindow(this);
 
     readBootRom();
-    if (strcmp(filename, "") != 0) {
+    if (CartridgeHelper::checkRomValidity(filename)) {
         cartridge = CartridgeHelper::readGameRom(filename);
         gameLaunched = true;
     } else gameLaunched = false;

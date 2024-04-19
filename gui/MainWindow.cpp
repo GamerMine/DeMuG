@@ -25,7 +25,7 @@ void MainWindow::render() {
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
     if (GuiButton((Rectangle){20, 20, 200, 200}, "Open ROM")) {
         const char *file = FileChooser::getInstance()->chooseROM();
-        if (std::strcmp(file, "") != 0) mBus->loadGameROM(file);
+        if (CartridgeHelper::checkRomValidity(file)) mBus->loadGameROM(file);
     }
 
     EndDrawing();
