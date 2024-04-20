@@ -18,6 +18,7 @@
 #define EMU_GAMEBOY_SC4NOISE_H
 
 #include <cstdint>
+#include <random>
 
 class SC4Noise {
 public:
@@ -27,7 +28,10 @@ public:
         NR43.raw = 0x00;
         NR44.raw = 0xBF;
 
-        audioStream = LoadAudioStream(44100, 16, 2);
+        audioStream = LoadAudioStream(32, 16, 2);
+
+        SetAudioStreamCallback(audioStream, noiseCallback);
+        SetAudioStreamVolume(audioStream, 1.0f);
     }
 
     inline static union {
@@ -38,20 +42,22 @@ public:
         uint8_t raw;
     } NR41{}; // 0xFF20: Channel 4 length timer
 
-    inline static union {
+    union envControl {
         struct {
-            bool sweepPace : 3;
-            bool envDir : 1;
-            bool initialVolume : 4;
+            uint8_t sweepPace : 3;
+            bool nvDirection : 1;
+            uint8_t initialVolume : 4;
         };
         uint8_t raw;
-    } NR42{}; // 0xFF21: Channel 4 volume & envelope
+    }; // 0xFF21: Channel 4 volume & envelope
+    inline static  envControl NR42;
+    inline static  envControl NR42Temp;
 
     inline static union {
         struct {
-            bool clockDivider : 3;
+            uint8_t clockDivider : 3;
             bool LFSRWidth : 1;
-            bool clockShift : 4;
+            uint8_t clockShift : 4;
         };
         uint8_t raw;
     } NR43{}; // 0xFF22: Channel 4 frequency & randomness
@@ -66,8 +72,27 @@ public:
     } NR44{}; // 0xFF23: Channel 4 control
 
     inline static bool DAC;
+    inline static int8_t currentVolume;
+    inline static uint8_t enveloppeTick;
 
-    AudioStream audioStream{};
+    inline static AudioStream audioStream;
+
+private:
+    inline static std::mt19937 generator{std::random_device{}()};
+    inline static std::uniform_int_distribution<uint16_t> distribution{0, 65535};
+
+    static void noiseCallback(void *buffer, unsigned int frameCount) {
+        auto *d = (uint16_t *)buffer;
+        double frequency = 262144.0 / (NR43.clockDivider * (1 << NR43.clockShift));
+
+        SetAudioStreamPitch(audioStream, frequency / 1.0);
+
+        for (unsigned int i = 0; i < frameCount; i++) {
+            uint16_t sample = distribution(generator);
+            d[i * 2] = sample;
+            d[i * 2 + 1] = d[i * 2];
+        }
+    }
 };
 
 #endif //EMU_GAMEBOY_SC4NOISE_H

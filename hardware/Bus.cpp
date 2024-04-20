@@ -45,6 +45,7 @@ void Bus::startEmulation() {
     }
 
     Bus::GLOBAL_HALT = true;
+    cartridge->save();
     apu->closeConnection();
     ppu->closeConnection();
 

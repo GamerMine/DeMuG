@@ -30,9 +30,7 @@ void Timer::tick(uint8_t mCycle) {
         uint16_t oldDIV = DIV;
         DIV++;
 
-        if (((oldDIV >> 12) & 0x01) && !((DIV >> 12) & 0x01)) {
-            mBus->tickApu();
-        }
+        if (((oldDIV >> 12) & 0x01) && !((DIV >> 12) & 0x01)) mBus->tickApu();
     }
 
     if (TAC.enable) {

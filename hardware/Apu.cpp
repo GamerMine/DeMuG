@@ -117,7 +117,10 @@ void Apu::write(uint16_t addr, uint8_t data) {
         SC4Noise::NR44.raw = data;
         if (data >> 7 && SC4Noise::DAC) {
             NR52.ch4On = 1;
-            PlayAudioStream(noise->audioStream);
+            SC4Noise::NR42Temp.raw = SC4Noise::NR42.raw;
+            SC4Noise::currentVolume = static_cast<int8_t>(SC4Noise::NR42Temp.initialVolume);
+            SetAudioStreamVolume(SC4Noise::audioStream, SC4Noise::NR42Temp.initialVolume * (1.0f / 15.0f));
+            PlayAudioStream(SC4Noise::audioStream);
         }
     }
     else if (addr == 0xFF24 && NR52.audioOnOff) NR50.raw = data;
@@ -184,7 +187,7 @@ void Apu::tick() {
         }
         if (SC4Noise::NR44.lengthEnable) {
             uint8_t oldLengthTimer = SC4Noise::NR41.initialLengthTimer;
-            SC4Noise::NR41.initialLengthTimer++;
+            if (SC4Noise::NR41.initialLengthTimer < 63) SC4Noise::NR41.initialLengthTimer++;
             if (oldLengthTimer + 1 == 64) {
                 NR52.ch4On = 0;
                 StopAudioStream(noise->audioStream);
@@ -245,12 +248,20 @@ void Apu::tick() {
                 SetAudioStreamVolume(pulse->audioStream, SC2Pulse::currentVolume * (1.0f / 15.0f));
             }
         }
+
+        SC4Noise::enveloppeTick++;
+        if (SC4Noise::NR42Temp.sweepPace != 0x0 && NR52.ch4On) {
+            if (SC4Noise::enveloppeTick % SC4Noise::NR42Temp.sweepPace == 0) {
+                if (SC4Noise::NR42Temp.nvDirection) SC4Noise::currentVolume++;
+                else SC4Noise::currentVolume--;
+                if (SC4Noise::currentVolume >= 0xF) SC4Noise::currentVolume = 0xF;
+                else if (SC4Noise::currentVolume <= 0) SC4Noise::currentVolume = 0;
+                SetAudioStreamVolume(SC4Noise::audioStream, SC4Noise::currentVolume * (1.0f / 15.0f));
+            }
+        }
     }
 
-    if (rate == 8) {
-        // Do things
-        rate = 0;
-    }
+    if (rate == 8) rate = 0;
 }
 
 void Apu::resetRegisters() {
