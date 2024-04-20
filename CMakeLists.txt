@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(Emu_GameBoy C CXX)
+project(DeMuG C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -48,15 +48,15 @@ file(GLOB_RECURSE RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resources/*")
 add_subdirectory(lib/raylib)
 add_subdirectory(lib/nativefiledialog-extended)
 
-add_executable(Emu_GameBoy ${HEADER_FILES} ${SOURCE_FILES} ${RESOURCES})
+add_executable(DeMuG ${HEADER_FILES} ${SOURCE_FILES} ${RESOURCES})
 if (UNIX AND NOT APPLE OR LINUX)
-    target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
-    target_link_libraries(Emu_GameBoy pthread raylib nfd -static-libgcc -static-libstdc++)
+    target_compile_options(DeMuG PRIVATE -Wall -Wextra)
+    target_link_libraries(DeMuG pthread raylib nfd -static-libgcc -static-libstdc++)
 elseif (WIN32)
-    target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra -Wa,-mbig-obj)
-    target_link_libraries(Emu_GameBoy pthread raylib nfd -static)
+    target_compile_options(DeMuG PRIVATE -Wall -Wextra -Wa,-mbig-obj)
+    target_link_libraries(DeMuG pthread raylib nfd -static)
 elseif (APPLE)
-    set_target_properties(Emu_GameBoy PROPERTIES
+    set_target_properties(DeMuG PROPERTIES
             MACOSX_BUNDLE TRUE
             MACOSX_FRAMEWORK_IDENTIFIER fr.dwightstudio.DeMuG
             MACOSX_BUNDLE_BUNDLE_NAME DeMuG
@@ -69,10 +69,10 @@ elseif (APPLE)
         set_property(SOURCE ${FILE} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/${NEW_FILE_PATH}")
     endforeach ()
 
-    target_compile_options(Emu_GameBoy PRIVATE -Wall -Wextra)
-    target_link_libraries(Emu_GameBoy pthread raylib nfd -static-libgcc -static-libstdc++)
+    target_compile_options(DeMuG PRIVATE -Wall -Wextra)
+    target_link_libraries(DeMuG pthread raylib nfd -static-libgcc -static-libstdc++)
 endif ()
 
 if (UNIX AND NOT APPLE OR LINUX OR WIN32)
-    add_custom_command(TARGET Emu_GameBoy PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR}/)
+    add_custom_command(TARGET DeMuG PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources ${CMAKE_CURRENT_BINARY_DIR}/)
 endif ()

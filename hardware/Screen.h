@@ -20,7 +20,7 @@
 #define DEFAULT_WIDTH 160
 #define DEFAULT_HEIGHT 144
 #define FRAMERATE 59.7
-#define WINDOW_NAME "Emu_GameBoy"
+#define WINDOW_NAME "DeMuG"
 
 #include <cstdio>
 #include <raylib.h>
