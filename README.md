@@ -7,10 +7,10 @@ as Emu_Intel8080.
 ## Dependencies
 
 ### Debian/Ubuntu
-- **gcc** 
-- **g++**
+- **gcc >= 9** 
+- **g++ >= 9**
 - **git**
-- **cmake** 
+- **cmake >= 3.25** 
 - **build-essentials** 
 - **libx11-dev** 
 - **libxinerama-dev** 
@@ -18,16 +18,19 @@ as Emu_Intel8080.
 - **libxcursor-dev** 
 - **libxrandr-dev** 
 - **libxi-dev**
+- **libwayland-dev**
+- **libxkbcommon-dev**
+- **libgtk-3-dev**
 
 You can use the following exemple command to install them:<br>
 `sudo apt install gcc g++ git cmake build-essentials libx11-dev libxinerama-dev libgl-dev
 libxcursor-dev libxrandr-dev libxi-dev`
 
 ### Fedora
-- **gcc**
-- **g++**
+- **gcc >= 9**
+- **g++ >= 9**
 - **git**
-- **cmake**
+- **cmake >= 3.25**
 - **libX11-devel** 
 - **libXrandr-devel** 
 - **libXinerama-devel** 
