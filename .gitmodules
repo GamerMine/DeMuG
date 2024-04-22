@@ -1,0 +1,6 @@
+[submodule "lib/raylib"]
+	path = lib/raylib
+	url = https://github.com/raysan5/raylib.git
+[submodule "lib/nativefiledialog-extended"]
+	path = lib/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git
