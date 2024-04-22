@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=DeMuG
+Comment=GameBoy emulator for Linux, Windows and MacOSX
+Exec=/usr/opt/DeMuG/DeMuG
+Icon=/usr/opt/DeMuG/resources/icon.png
+Type=Application
+Categories=Game;
+Path=/usr/opt/DeMuG

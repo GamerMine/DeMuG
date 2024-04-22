@@ -45,7 +45,7 @@ void Bus::startEmulation() {
     }
 
     Bus::GLOBAL_HALT = true;
-    cartridge->save();
+    if (cartridge) cartridge->save();
     apu->closeConnection();
     ppu->closeConnection();
 
@@ -162,7 +162,7 @@ std::string Bus::getBootROM() {
 
     return "";
 #else
-    return "boot/DMG_ROM.bin";
+    return "resources/boot/DMG_ROM.bin";
 #endif
 }
 

@@ -42,7 +42,7 @@ Screen::Screen(class Ppu *ppu) {
     InitWindow(Bus::ENABLE_DEBUG ? 1280 : 800, 720, WINDOW_NAME);
     SetWindowMonitor(0);
 #ifndef __APPLE__
-    SetWindowIcon(LoadImage("logo.png"));
+    SetWindowIcon(LoadImage("resources/icon.png"));
 #endif
 
     Image gameRender = {.data = screenPixelArray, .width = DEFAULT_WIDTH, .height = DEFAULT_HEIGHT, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
