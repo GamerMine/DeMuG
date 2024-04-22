@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.25)
-project(DeMuG C CXX)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.25)
+PROJECT(DeMuG C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(PROJECT_VERSION 1.0.0)
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
+SET(CMAKE_PROJECT_HOMEPAGE_URL "https://dwightstudio.fr/DeMuG")
+SET(PROJECT_VERSION 1.0.0)
 
-set(SOURCE_FILES
+SET(SOURCE_FILES
         gui/MainWindow.cpp
         hardware/Apu.cpp
         hardware/Bus.cpp
@@ -19,7 +20,7 @@ set(SOURCE_FILES
         main.cpp
 )
 
-set(HEADER_FILES
+SET(HEADER_FILES
         debug/Debug.h
         gui/FileChooser.h
         gui/MainWindow.h
@@ -44,21 +45,21 @@ set(HEADER_FILES
 )
 
 if (APPLE)
-    file(GLOB_RECURSE RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/*")
+    FILE(GLOB_RECURSE RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/*")
 endif ()
 
-add_subdirectory(lib/raylib)
-add_subdirectory(lib/nativefiledialog-extended)
+ADD_SUBDIRECTORY(lib/raylib)
+ADD_SUBDIRECTORY(lib/nativefiledialog-extended)
 
-add_executable(DeMuG ${HEADER_FILES} ${SOURCE_FILES} ${RESOURCES})
+ADD_EXECUTABLE(DeMuG ${HEADER_FILES} ${SOURCE_FILES} ${RESOURCES})
 if (UNIX AND NOT APPLE OR LINUX)
-    target_compile_options(DeMuG PRIVATE -Wall -Wextra)
-    target_link_libraries(DeMuG pthread raylib nfd)
+    TARGET_COMPILE_OPTIONS(DeMuG PRIVATE -Wall -Wextra)
+    TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd)
 elseif (WIN32)
-    target_compile_options(DeMuG PRIVATE -Wall -Wextra -Wa,-mbig-obj)
-    target_link_libraries(DeMuG pthread raylib nfd -static)
+    TARGET_COMPILE_OPTIONS(DeMuG PRIVATE -Wall -Wextra -Wa,-mbig-obj)
+    TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd -static)
 elseif (APPLE)
-    set_target_properties(DeMuG PROPERTIES
+    SET_TARGET_PROPERTIES(DeMuG PROPERTIES
             MACOSX_BUNDLE TRUE
             MACOSX_FRAMEWORK_IDENTIFIER fr.dwightstudio.DeMuG
             MACOSX_BUNDLE_BUNDLE_NAME DeMuG
@@ -66,35 +67,55 @@ elseif (APPLE)
     )
 
     foreach (FILE ${RESOURCES})
-        file(RELATIVE_PATH NEW_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources" ${FILE})
-        get_filename_component(NEW_FILE_PATH ${NEW_FILE} DIRECTORY)
-        set_property(SOURCE ${FILE} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/${NEW_FILE_PATH}")
+        FILE(RELATIVE_PATH NEW_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources" ${FILE})
+        GET_FILENAME_COMPONENT(NEW_FILE_PATH ${NEW_FILE} DIRECTORY)
+        SET_PROPERTY(SOURCE ${FILE} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/${NEW_FILE_PATH}")
     endforeach ()
 
-    target_compile_options(DeMuG PRIVATE -Wall -Wextra)
-    target_link_libraries(DeMuG pthread raylib nfd -static-libgcc -static-libstdc++)
+    TARGET_COMPILE_OPTIONS(DeMuG PRIVATE -Wall -Wextra)
+    TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd -static-libgcc -static-libstdc++)
 endif ()
 
 if (UNIX AND NOT APPLE OR LINUX)
-    add_custom_command(TARGET DeMuG PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources/linux ${CMAKE_CURRENT_BINARY_DIR}/resources)
+    ADD_CUSTOM_COMMAND(TARGET DeMuG PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources/linux ${CMAKE_CURRENT_BINARY_DIR}/resources)
 elseif (WIN32)
-    add_custom_command(TARGET DeMuG PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources/windows ${CMAKE_CURRENT_BINARY_DIR}/resources)
+    ADD_CUSTOM_COMMAND(TARGET DeMuG PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/resources/windows ${CMAKE_CURRENT_BINARY_DIR}/resources)
 endif ()
+
+set(CPACK_PACKAGE_NAME "DeMuG")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+set(CPACK_PACKAGE_DESCRIPTION "GameBoy emulator for Linux, Windows and MacOSX")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GameBoy emulator for Linux, Windows and MacOSX")
+set(CPACK_PACKAGE_CONTACT "GamerMine <gamermine@dwightstudio.fr>")
+SET(CPACK_PACKAGE_VENDOR "Dwight Studio")
+SET(CPACK_PACKAGE_HOMEPAGE_URL "https://dwightstudio.fr/DeMuG")
+SET(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}_${PROJECT_VERSION}")
 
 if (UNIX AND NOT APPLE OR LINUX)
-    install(TARGETS DeMuG DESTINATION opt/DeMuG)
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources DESTINATION opt/DeMuG)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/DeMuG.desktop DESTINATION share/applications)
+    INSTALL(TARGETS DeMuG DESTINATION opt/DeMuG)
+    INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources DESTINATION opt/DeMuG)
+    INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/DeMuG.desktop DESTINATION share/applications)
 
-    set(CPACK_PACKAGE_NAME "DeMuG")
-    set(CPACK_PACKAGE_VERSION "1.0.0")
-    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GameBoy emulator for Linux, Windows and MacOSX")
-    set(CPACK_PACKAGE_CONTACT "GamerMine <gamermine@dwightstudio.fr>")
-    SET(CPACK_PACKAGE_VENDOR "Dwight Studio")
-    SET(CPACK_PACKAGE_HOMEPAGE_URL "https://dwightstudio.fr/DeMuG")
-    SET(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}_${MAJOR_VERSION}.${MINOR_VERSION}")
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-    SET(CPACK_GENERATOR "DEB")
+    SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+    SET(CPACK_DEBIAN_PACKAGE_SECTION "games")
 
-    INCLUDE(CPack)
+    SET(CPACK_RPM_PACKAGE_ARCHITECTURE "amd64")
+
+    SET(CPACK_GENERATOR "DEB;RPM")
+elseif (WIN32)
+    INSTALL(TARGETS DeMuG)
+    INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources DESTINATION ${CPACK_INNOSETUP_INSTALL_ROOT}/${CPACK_PACKAGE_INSTALL_DIRECTORY}/)
+
+    SET(CPACK_INNOSETUP_ARCHITECTURE "x64")
+    SET(CPACK_INNOSETUP_LANGUAGES "english;french")
+    SET(CPACK_INNOSETUP_ICON_FILE "${CMAKE_CURRENT_BINARY_DIR}/resources/icon.ico")
+    SET(CPACK_INNOSETUP_RUN_EXECUTABLES "DeMuG")
+
+    SET(CPACK_GENERATOR "INNOSETUP")
+elseif (APPLE)
+    INSTALL(TARGETS DeMuG)
+
+    SET(CPACK_GENERATOR "DRAGNDROP")
 endif ()
+
+INCLUDE(CPack)
