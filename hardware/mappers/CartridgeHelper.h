@@ -65,7 +65,7 @@ public:
         uint8_t value;
 
         // Parsing ROM header
-        for (uint16_t i = 0; i < 16; i++) { // Title
+        for (uint16_t i = 0; i < 15; i++) { // Title
             file.seekg(0x0134 + i);
             file.read(reinterpret_cast<char *>(&value), sizeof(uint8_t) * 1);
             Debug::CARTRIDGE_INFO.title[i] = (char)value;

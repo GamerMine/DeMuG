@@ -37,6 +37,7 @@ libxcursor-dev libxrandr-dev libxi-dev`
 - **libXcursor-devel** 
 - **libXi-devel** 
 - **mesa-libGL-devel**
+- **wayland-protocols-devel**
 
 You can use the following exemple command to install them:<br>
 `sudo dnf install gcc g++ git cmake libX11-devel libXrandr-devel libXinerama-devel 

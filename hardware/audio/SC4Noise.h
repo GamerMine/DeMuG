@@ -28,7 +28,7 @@ public:
         NR43.raw = 0x00;
         NR44.raw = 0xBF;
 
-        audioStream = LoadAudioStream(32, 16, 2);
+        audioStream = LoadAudioStream(32, 8, 2);
 
         SetAudioStreamCallback(audioStream, noiseCallback);
         SetAudioStreamVolume(audioStream, 1.0f);
@@ -79,18 +79,20 @@ public:
 
 private:
     inline static std::mt19937 generator{std::random_device{}()};
-    inline static std::uniform_int_distribution<uint16_t> distribution{0, 65535};
+    inline static std::uniform_int_distribution<uint8_t> distribution{0, 255};
 
     static void noiseCallback(void *buffer, unsigned int frameCount) {
-        auto *d = (uint16_t *)buffer;
+        auto *d = (uint8_t *)buffer;
         double frequency = 262144.0 / (NR43.clockDivider * (1 << NR43.clockShift));
 
         SetAudioStreamPitch(audioStream, frequency / 1.0);
 
-        for (unsigned int i = 0; i < frameCount; i++) {
-            uint16_t sample = distribution(generator);
-            d[i * 2] = sample;
-            d[i * 2 + 1] = d[i * 2];
+        uint8_t frameSkip = 8;
+        for (unsigned int i = 0; i < frameCount; i+=frameSkip) {
+            uint8_t sample = distribution(generator);
+            for (uint8_t j = 0; j < frameSkip * 2; j++) {
+                d[i * 2 + j] = sample;
+            }
         }
     }
 };

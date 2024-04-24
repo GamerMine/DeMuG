@@ -32,7 +32,7 @@ public:
         NR13 = 0xFF;
         NR14.raw = 0xBF;
 
-        audioStream = LoadAudioStream(44100, 16, 2);
+        audioStream = LoadAudioStream(44100, 8, 2);
 
         SetAudioStreamCallback(audioStream, pulseWaveCallback);
         SetAudioStreamVolume(audioStream, 1.0f);
@@ -96,12 +96,12 @@ private:
     static void pulseWaveCallback(void *buffer, unsigned int frameCount) {
         float frequency = 131072.0f / (2048.0f - ((NR14.periodHigh << 8) | NR13));
         float incr = frequency / 44100.0f;
-        auto *d = (short *)buffer;
+        auto *d = (uint8_t *)buffer;
         auto dutyCycle = dutyCycles[NR11.waveDuty];
 
         for (unsigned int i = 0; i < frameCount; i++) {
-            float value = (sinf(2.0f * PI * sineIdx) < (2 * dutyCycle - 1.0)) ? 1.0 : -1.0;
-            d[i * 2] = (short)(32000.0f * value);
+            uint8_t value = (sinf(2.0f * PI * sineIdx) < (2 * dutyCycle - 1.0)) ? 255 : 0;
+            d[i * 2] = value;
             d[i * 2 + 1] = d[i * 2];
             sineIdx += incr;
             if (sineIdx > 1.0f) sineIdx -= 1.0f;
