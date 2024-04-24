@@ -156,7 +156,7 @@ std::string Bus::getBootROM() {
     char *buffer = (char *)malloc(maxSize);
     if (CFStringGetCString(resourceString, buffer, maxSize, kCFStringEncodingUTF8)) {
         std::string filePath = buffer;
-        filePath.erase(0, 16);
+        filePath.erase(0, 7);
         return filePath;
     }
 
