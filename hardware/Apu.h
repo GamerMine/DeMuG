@@ -32,8 +32,6 @@ class Apu {
 public:
     explicit Apu(class Bus *bus);
 
-    void operator()();
-
     // Global control registers
     inline static union {
         struct {
@@ -77,6 +75,7 @@ public:
     uint8_t read(uint16_t addr);
     void tick();
     void closeConnection();
+    void reset();
 
 private:
     class Bus *mBus;

@@ -71,7 +71,7 @@ private:
         uint8_t r;
         uint8_t g;
         uint8_t b;
-	    Pixel(){}
+	    Pixel() : r(0x00), g(0x00), b(0x00){}
 	    Pixel(uint8_t red, uint8_t green, uint8_t blue) : r(red), g(green), b(blue) {}
     };
 

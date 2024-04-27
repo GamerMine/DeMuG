@@ -25,8 +25,6 @@ InputManager::InputManager(class Bus *bus) {
     registerKey(KEY_LEFT_CONTROL);
 
     registerKey(KEY_R);
-    registerKey(KEY_SPACE);
-    registerKey(KEY_N);
     registerKey(KEY_M);
     registerKey(KEY_KP_6);
     registerKey(KEY_KP_4);
@@ -71,16 +69,8 @@ void InputManager::unregisterKey(int key) {
 
 void InputManager::keyPressed(int key) {
     switch (key) {
-        case KEY_SPACE: {
-            SharpSM83::PAUSE = !SharpSM83::PAUSE;
-            break;
-        }
         case KEY_R: {
             mBus->reset();
-            break;
-        }
-        case KEY_N: {
-            SharpSM83::NEXT_INSTR = true;
             break;
         }
         case KEY_M: {

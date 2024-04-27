@@ -286,6 +286,17 @@ void Apu::resetRegisters() {
     NR52.raw = 0x00;
 }
 
+void Apu::reset() {
+    NR50.raw = 0x77;
+    NR51.raw = 0xF3;
+    NR52.raw = 0xF1;
+
+    pulseSweep->reset();
+    pulse->reset();
+    noise->reset();
+    wave->reset();
+}
+
 void Apu::closeConnection() {
     CloseAudioDevice();
 }

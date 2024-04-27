@@ -38,6 +38,17 @@ public:
         SetAudioStreamVolume(audioStream, 1.0f);
     }
 
+    void reset() const {
+        NR10.raw = 0x80;
+        NR11.raw = 0xBF;
+        NR12.raw = 0xF3;
+        NR13 = 0xFF;
+        NR14.raw = 0xBF;
+
+        StopAudioStream(audioStream);
+        SetAudioStreamVolume(audioStream, 1.0f);
+    }
+
     AudioStream audioStream{};
 
     inline static union {

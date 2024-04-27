@@ -91,9 +91,9 @@ private:
 
     std::unique_ptr<Cartridge> cartridge;
 
-    uint8_t bootRom[BOOT_ROM_SIZE]{};
-    uint8_t ram[RAM_SIZE]{};
-    uint8_t hram[HRAM_SIZE]{};
+    std::array<uint8_t, BOOT_ROM_SIZE> bootRom{};
+    std::array<uint8_t, RAM_SIZE> wram{};
+    std::array<uint8_t, HRAM_SIZE> hram{};
 
     void readBootRom();
 };

@@ -105,8 +105,8 @@ public:
         uint8_t raw;
     } OBP1{}; // 0xFF49
 
-    uint8_t vram[RAM_SIZE]{};
-    uint8_t OAM[OAM_SIZE]{};
+    std::array<uint8_t, RAM_SIZE> vram{};
+    std::array<uint8_t, OAM_SIZE> OAM{};
 
     void runPpu() const;
 

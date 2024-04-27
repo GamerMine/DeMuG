@@ -34,6 +34,18 @@ public:
         SetAudioStreamCallback(audioStream, waveCallback);
     }
 
+    void reset() const {
+        NR30.raw = 0x7F;
+        NR31 = 0xFF;
+        NR32.raw = 0x9F;
+        NR33 = 0xFF;
+        NR34.raw = 0xBF;
+        waveRAM.resize(16);
+
+        StopAudioStream(audioStream);
+        SetAudioStreamVolume(audioStream, 1.0f);
+    }
+
     inline static union {
         struct {
             uint8_t unused : 7;

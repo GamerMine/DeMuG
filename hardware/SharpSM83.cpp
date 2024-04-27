@@ -526,8 +526,9 @@ uint8_t SharpSM83::RL(uint8_t *reg) {
     return cycles;
 }
 
-uint8_t SharpSM83::NIMP() {
-    logger->log(Logger::WARNING, "Not implemented following %s at %X", opcodeStr[mBus->read(PC - 2)], PC - 2); return 0;
+uint8_t SharpSM83::NIMP(uint8_t opcode) {
+    logger->log(Logger::WARNING, "Not implemented %X at %X", opcode, PC - 1);
+    return 0;
 }
 
 uint8_t SharpSM83::LD(uint8_t *reg1, uint8_t reg2) {

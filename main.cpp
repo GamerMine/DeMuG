@@ -48,6 +48,11 @@ void raylogCallback(int msgType, const char *text, va_list args) {
 int main(int argc, const char *argv[]) {
     SetTraceLogCallback(raylogCallback);
 
+#if (!ISDEBUG)
+    Logger::setLogLevel(Logger::INFO);
+    SetTraceLogLevel(LOG_WARNING);
+#endif
+
     Bus bus(argc <= 1 ? "" : argv[1]); // Launch with game if supplied else launch without game
 
     bus.startEmulation();

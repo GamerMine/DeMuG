@@ -126,8 +126,8 @@ private:
     Bus *mBus;
     static Logger *logger;
     bool haltBug;
-    uint8_t haltInstr;
-    int executedCycles;
+    uint8_t haltInstr{0x00};
+    int executedCycles{0};
 
     bool checkInterrupts(bool executeHandler = true);
 
@@ -346,7 +346,7 @@ private:
             /*D0*/[this]() {bool inverted = !flags.carry; return RET(&inverted);},
             /*D1*/[this]() {return POP(&registers.DE);},                  // OK
             /*D2*/[this]() {bool inverted = !flags.carry; return JP(&inverted);},
-            /*D3*/[this]() {return NIMP();},
+            /*D3*/[this]() {return NIMP(0xD3);},
             /*D4*/[this]() {bool inverted = !flags.carry; return CALL(&inverted);},
             /*D5*/[this]() {return PUSH(&registers.DE);},                 // OK
             /*D6*/[this]() {return SUB(nullptr);},
@@ -354,32 +354,32 @@ private:
             /*D8*/[this]() {return RET(&flags.carry);},
             /*D9*/[this]() {return RETI();},                              // OK
             /*DA*/[this]() {return JP(&flags.carry);},
-            /*DB*/[this]() {return NIMP();},
+            /*DB*/[this]() {return NIMP(0xDB);},
             /*DC*/[this]() {return CALL(&flags.carry);},
-            /*DD*/[this]() {return NIMP();},
+            /*DD*/[this]() {return NIMP(0xDD);},
             /*DE*/[this]() {return SBC(nullptr);},
             /*DF*/[this]() {return RST(0x0018);},                         // OK
             /*E0*/[this]() {return LDH(nullptr);},                        // OK
             /*E1*/[this]() {return POP(&registers.HL);},                  // OK
             /*E2*/[this]() {return LD(registers.C, &registers.A);},       // OK
-            /*E3*/[this]() {return NIMP();},
-            /*E4*/[this]() {return NIMP();},
+            /*E3*/[this]() {return NIMP(0xE3);},
+            /*E4*/[this]() {return NIMP(0xE4);},
             /*E5*/[this]() {return PUSH(&registers.HL);},                 // OK
             /*E6*/[this]() {return AND(nullptr);},
             /*E7*/[this]() {return RST(0x0020);},                         // OK
             /*E8*/[this]() {return ADD(&SP, nullptr);},
             /*E9*/[this]() {return JP(&registers.HL);},
             /*EA*/[this]() {return LD(nullptr);},                         // OK
-            /*EB*/[this]() {return NIMP();},
-            /*EC*/[this]() {return NIMP();},
-            /*ED*/[this]() {return NIMP();},
+            /*EB*/[this]() {return NIMP(0xEB);},
+            /*EC*/[this]() {return NIMP(0xEC);},
+            /*ED*/[this]() {return NIMP(0xED);},
             /*EE*/[this]() {return XOR(nullptr);},
             /*EF*/[this]() {return RST(0x0028);},                         // OK
             /*F0*/[this]() {return LDH(&registers.A);},                   // OK
             /*F1*/[this]() {return POP(nullptr);},                        // OK
             /*F2*/[this]() {return LD(&registers.A, registers.C);},       // OK
             /*F3*/[this]() {return DI();},
-            /*F4*/[this]() {return NIMP();},
+            /*F4*/[this]() {return NIMP(0xF4);},
             /*F5*/[this]() {return PUSH(nullptr);},                       // OK
             /*F6*/[this]() {return OR(nullptr);},
             /*F7*/[this]() {return RST(0x0030);},                         // OK
@@ -387,8 +387,8 @@ private:
             /*F9*/[this]() {return LD(&SP, &registers.HL);},              // OK
             /*FA*/[this]() {return LD(&registers.A);},                    // OK
             /*FB*/[this]() {return EI();},
-            /*FC*/[this]() {return NIMP();},
-            /*FD*/[this]() {return NIMP();},
+            /*FC*/[this]() {return NIMP(0xFC);},
+            /*FD*/[this]() {return NIMP(0xFD);},
             /*FE*/[this]() {return CP(nullptr);},
             /*FF*/[this]() {return RST(0x0038);},                         // OK
     };
@@ -915,7 +915,7 @@ public:
 
 private:
     // Normal instructions
-    uint8_t NIMP();
+    uint8_t NIMP(uint8_t opcode);
     uint8_t NOP();
     uint8_t LD(uint8_t *reg);
     uint8_t LD(uint8_t *reg1, const uint8_t *reg2);

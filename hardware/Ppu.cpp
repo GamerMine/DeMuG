@@ -29,6 +29,7 @@ Ppu::Ppu(Bus *bus) {
     BGP.raw = 0xFC;
     OBP0.raw = 0x00;
     OBP1.raw = 0x00;
+    DMA = 0x00;
 
     for (uint8_t &i : vram) i = 0x00;
     for (uint8_t &i : OAM)  i = 0x00;

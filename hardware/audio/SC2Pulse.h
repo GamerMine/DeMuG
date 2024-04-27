@@ -33,6 +33,16 @@ public:
         SetAudioStreamVolume(audioStream, 1.0f);
     }
 
+    void reset() const {
+        NR21.raw = 0x3F;
+        NR22.raw = 0x00;
+        NR23 = 0xFF;
+        NR24.raw = 0xBF;
+
+        StopAudioStream(audioStream);
+        SetAudioStreamVolume(audioStream, 1.0f);
+    }
+
     inline static union {
         struct {
             uint8_t initialLengthTimer : 6;

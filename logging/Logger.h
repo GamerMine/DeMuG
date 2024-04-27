@@ -48,7 +48,7 @@ private:
     const char *currentLoggerName;
     const char *levelNames[4] = {"DEBUG", "INFO", "WARNING", "CRITICAL"};
     std::string lastString;
-    uint64_t nbRepeat;
+    uint64_t nbRepeat{};
 
     static std::map<const char *, Logger *> loggers;
 

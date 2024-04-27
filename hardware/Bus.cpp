@@ -54,12 +54,11 @@ void Bus::startEmulation() {
 
 void Bus::write(uint16_t addr, uint8_t data) {
     if (addr <= 0x00FF && !disableBootRom) logger->log(Logger::WARNING, "Trying to write in an unauthorized area: 0x%X", addr); // We should not write into the boot rom (Read Only)
-    else if (addr <= 0x00FF && disableBootRom) cartridge->write(addr, data); // Game cartridge if boot rom is unmapped
-    else if (addr >= 0x0100 && addr <= 0x7FFF) cartridge->write(addr, data); // Game cartridge
+    else if ((addr <= 0x00FF && disableBootRom) ||(addr >= 0x0100 && addr <= 0x7FFF)) cartridge->write(addr, data); // Game cartridge
     else if (addr >= 0x8000 && addr <= 0x9FFF) ppu->write(addr, data); // VRAM
     else if (addr >= 0xA000 && addr <= 0xBFFF) cartridge->write(addr, data); // Game cartridge RAM
-    else if (addr >= 0xC000 && addr <= 0xDFFF) ram[addr - 0xC000] = data; // WRAM
-    else if (addr >= 0xE000 && addr <= 0xFDFF) ram[addr - 0xE000] = data; // Mirror of WRAM
+    else if (addr >= 0xC000 && addr <= 0xDFFF) wram[addr - 0xC000] = data; // WRAM
+    else if (addr >= 0xE000 && addr <= 0xFDFF) wram[(addr & 0x1FFF) - 0xC000] = data; // Mirror of WRAM
     else if (addr >= 0xFE00 && addr <= 0xFE9F) ppu->write(addr, data); // PPU OAM
     else if (addr == 0xFF00) JOYP.raw = data; // JOYP Register
     else if (addr == 0xFF01) SerialIO::SB = data; // SB Register (Serial Transfer)
@@ -86,12 +85,11 @@ void Bus::write(uint16_t addr, uint8_t data) {
 uint8_t Bus::read(uint16_t addr) {
     uint8_t value = 0xFF;
     if (addr <= 0x00FF && !disableBootRom) value = bootRom[addr]; // DMG BOOT ROM if mapped
-    else if (addr <= 0x00FF && disableBootRom) value = cartridge->read(addr); // Game cartridge if boot rom is unmapped
-    else if (addr >= 0x0100 && addr <= 0x7FFF) value = cartridge->read(addr); // Game cartridge
+    else if ((addr <= 0x00FF && disableBootRom) || (addr >= 0x0100 && addr <= 0x7FFF)) value = cartridge->read(addr); // Game cartridge
     else if (addr >= 0x8000 && addr <= 0x9FFF) value = ppu->read(addr); // VRAM
     else if (addr >= 0xA000 && addr <= 0xBFFF) value = cartridge->read(addr); // Game cartridge RAM
-    else if (addr >= 0xC000 && addr <= 0xDFFF) value = ram[addr - 0xC000]; // WRAM
-    else if (addr >= 0xE000 && addr <= 0xFDFF) value = ram[addr - 0xE000]; // Mirror of WRAM
+    else if (addr >= 0xC000 && addr <= 0xDFFF) value = wram[addr - 0xC000]; // WRAM
+    else if (addr >= 0xE000 && addr <= 0xFDFF) value = wram[(addr & 0x1FFF) - 0xC000]; // Mirror of WRAM
     else if (addr >= 0xFE00 && addr <= 0xFE9F) value = ppu->read(addr); // OAM
     else if (addr == 0xFF00) { // Joypad register
         if (!JOYP.selectButtons) value = InputManager::JOY_BTN.raw;
@@ -126,7 +124,7 @@ void Bus::tick(uint8_t mCycle) {
 }
 
 void Bus::readBootRom() {
-    uint16_t i;
+    uint16_t i = 0;
     logger->log(Logger::DEBUG, "Reading boot rom...");
     std::ifstream file(BOOT_ROM_LOCATION, std::ios::binary);
 
@@ -176,6 +174,7 @@ void Bus::reset() {
     using namespace std::chrono_literals;
     ppu->reset();
     cpu->reset();
+    apu->reset();
 }
 
 void Bus::runPpu() {
