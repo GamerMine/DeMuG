@@ -31,8 +31,8 @@ Ppu::Ppu(Bus *bus) {
     OBP1.raw = 0x00;
     DMA = 0x00;
 
-    for (uint8_t &i : vram) i = 0x00;
-    for (uint8_t &i : OAM)  i = 0x00;
+    vram.fill(0x00);
+    OAM.fill(0x00);
 
     screen = new Screen(this);
 }
@@ -50,9 +50,10 @@ void Ppu::reset() {
     BGP.raw = 0xFC;
     OBP0.raw = 0x00;
     OBP1.raw = 0x00;
+    DMA = 0x00;
 
-    for (uint8_t &i : vram) i = 0x00;
-    for (uint8_t &i : OAM)  i = 0x00;
+    vram.fill(0x00);
+    OAM.fill(0x00);
 }
 
 uint8_t Ppu::read(uint16_t addr) const {
@@ -101,7 +102,6 @@ void Ppu::startTransfer() {
     for (uint8_t lAddr = 0x00; lAddr < 0xA0; lAddr++) {
         OAM[lAddr] = mBus->read((page << 8) + lAddr);
     }
-    //mBus->tick(160);
 }
 
 void Ppu::tick(uint8_t mCycle) const {

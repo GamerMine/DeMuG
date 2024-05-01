@@ -27,9 +27,14 @@ public:
         if (addr <= 0x3FFF) {
             value = gameRom[addr];
         } else if (addr >= 0x4000 && addr <= 0x7FFF) {
-            value = gameRom[romBankSelect * 0x4000 + (addr - 0x4000)];
-        } else if (addr >= 0xA000 && addr <= 0xBFFF) {
-            if (ramEnable && ramSize != 0x00) value = gameRam[ramBankSelect * 0x2000 + (addr - 0xA000)];
+            uint8_t currentRomBank;
+
+            if (romBankRegister == 0x00) currentRomBank = 0x01;
+            else currentRomBank = romBankRegister & (romBankNumber - 1);
+
+            value = gameRom[currentRomBank * 0x4000 + (addr - 0x4000)];
+        } else if (addr >= 0xA000 && addr <= 0xBFFF && ramSize > 0x00) {
+            if (ramEnable) value = gameRam[ramBankRegister * 0x2000 + (addr - 0x2000)];
         }
 
         return value;
@@ -39,30 +44,14 @@ public:
         if (addr <= 0x1FFF) {
             if ((value & 0x0F) == 0x0A) ramEnable = true;
             else ramEnable = false;
-        } else if (addr >= 0x2000 && addr <= 0x3FFF) {
-            if ((value & 0x1F) == 0x10 && romBankNumber <= 16) { romBankSelect = 0x00; }
-            else {
-                uint8_t bank = value & 0x1F;
-                //if (bank > romBankNumber - 1) Logger::getInstance("Cartridge")->log(Logger::WARNING, "Trying to access bank %d, falling back to %d", bank, bank & (romBankNumber - 1));
-                romBankSelect = bank >= romBankNumber ? (romBankNumber - 1) & bank : bank;
-                if (romBankSelect == 0x00) romBankSelect = 0x01;
-            }
-            //Logger::getInstance("Cartridge")->log(Logger::DEBUG, "Input was %X\tromBankSelect has been set to %d", value, romBankSelect);
+        } else if (0x2000 && addr <= 0x3FFF) {
+            romBankRegister = value & 0x1F;
         } else if (addr >= 0x4000 && addr <= 0x5FFF) {
-            if (romBankNumber > 32) romBankSelectHigh = value & 0x03;
-            else if (ramSize == 0x03 && romBankNumber <= 32) {
-                ramBankSelect = value & 0x03;
-                /*Logger::getInstance("Cartridge")->log(Logger::DEBUG, "RAM Bank set to %d", ramBankSelect);*/
-            }
-
+            ramBankRegister = value & 0x03;
         } else if (addr >= 0x6000 && addr <= 0x7FFF) {
-            bankingMode = value & 0x01;
+            bankingModeSelect = value & 0x01; //TODO: Use this for 1MiB ROM or larger
         } else if (addr >= 0xA000 && addr <= 0xBFFF) {
-            if (ramEnable && ramSize != 0x00) {
-                /*Logger::getInstance("Cartridge")->log(Logger::DEBUG, "%sWriting %X to RAM bank %d", Colors::LOG_DARK_MAGENTA, value, ramBankSelect);*/
-                if (!bankingMode) gameRam[addr - 0xA000] = value;
-                else gameRam[ramBankSelect * 0x2000 + (addr - 0xA000)] = value;
-            }
+            if (ramEnable) gameRam[ramBankRegister * 0x2000 + (addr - 0x2000)] = value;
         }
     }
 
@@ -85,17 +74,16 @@ protected:
 
         gameRam.resize(ramSizes[ramSize] * 1024);
 
-        for (uint32_t i = 0; i < gameRam.size(); i++) gameRam[i] = 0x00;
+        std::fill(gameRam.begin(), gameRam.end(), 0x00);
 
         loadSave();
     }
 
 private:
     bool ramEnable = false;
-    uint8_t romBankSelect = 0x01;
-    uint8_t romBankSelectHigh = 0x00;
-    uint8_t ramBankSelect = 0x00;
-    bool bankingMode = 0;
+    uint8_t romBankRegister = 0x00;
+    uint8_t ramBankRegister = 0x00;
+    bool bankingModeSelect = 0;
 
 };
 

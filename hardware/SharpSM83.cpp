@@ -17,8 +17,6 @@
 #include "SharpSM83.h"
 
 Logger *SharpSM83::logger;
-bool SharpSM83::PAUSE = false;
-bool SharpSM83::NEXT_INSTR = false;
 SharpSM83::debugInfo SharpSM83::DEBUG_INFO = {};
 
 SharpSM83::SharpSM83(class Bus *bus) {
@@ -61,57 +59,46 @@ void SharpSM83::reset() {
 
 void SharpSM83::runCpu() {
     if (executedCycles <= 17556) {
-        if (!PAUSE || NEXT_INSTR) {
-            //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
-            {
-                DEBUG_INFO.Z = flags.zero;
-                DEBUG_INFO.C = flags.carry;
-                DEBUG_INFO.HC = flags.halfCarry;
-                DEBUG_INFO.N = flags.negative;
-                DEBUG_INFO.regA = registers.A;
-                DEBUG_INFO.regB = registers.B;
-                DEBUG_INFO.regC = registers.C;
-                DEBUG_INFO.regD = registers.D;
-                DEBUG_INFO.regE = registers.E;
-                DEBUG_INFO.regH = registers.H;
-                DEBUG_INFO.regL = registers.L;
-                DEBUG_INFO.regSP = SP;
-                DEBUG_INFO.currentInstr = opcodeStr[mBus->read(PC)];
-                DEBUG_INFO.currentAddr = PC;
-            }
+        {
+            DEBUG_INFO.Z = flags.zero;
+            DEBUG_INFO.C = flags.carry;
+            DEBUG_INFO.HC = flags.halfCarry;
+            DEBUG_INFO.N = flags.negative;
+            DEBUG_INFO.regA = registers.A;
+            DEBUG_INFO.regB = registers.B;
+            DEBUG_INFO.regC = registers.C;
+            DEBUG_INFO.regD = registers.D;
+            DEBUG_INFO.regE = registers.E;
+            DEBUG_INFO.regH = registers.H;
+            DEBUG_INFO.regL = registers.L;
+            DEBUG_INFO.regSP = SP;
+            DEBUG_INFO.currentInstr = opcodeStr[mBus->read(PC)];
+            DEBUG_INFO.currentAddr = PC;
+        }
 
-            uint8_t instr;
-            if (haltInstr != 0x00) {
-                instr = haltInstr;
-                haltInstr = 0x00;
-            } else {
-                instr = mBus->read(PC++);
-            }
+        uint8_t instr;
+        if (haltInstr != 0x00) {
+            instr = haltInstr;
+            haltInstr = 0x00;
+        } else instr = mBus->read(PC++);
 
-            if (haltBug) {
-                haltInstr = instr;
-                haltBug = false;
-            }
-            uint8_t mCycles = opcodes[instr]();
-            executedCycles += mCycles;
-            mBus->tick(mCycles);
-            if (interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
-            if (interruptShouldBeEnabled == 3) { IME = true; } else { IME = false; }
+        if (haltBug) {
+            haltInstr = instr;
+            haltBug = false;
+        }
 
-            if (IME) checkInterrupts(true);
+        uint8_t mCycles = opcodes[instr]();
+        executedCycles += mCycles;
+        mBus->tick(mCycles);
 
+        if (interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
+        if (interruptShouldBeEnabled == 3) { IME = true; } else { IME = false; }
 
-            if (NEXT_INSTR) {
-                using namespace std::chrono_literals;
-                std::this_thread::sleep_for(100ms);
-            }
-        } else { mBus->tick(0); }
+        if (IME) checkInterrupts(true);
+
     } else {
         mBus->runPpu();
         executedCycles -= 17556;
-        std::chrono::time_point end = std::chrono::high_resolution_clock::now();
-        WaitTime((double)(16750 - std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000);
-        start = std::chrono::high_resolution_clock::now();
     }
 }
 

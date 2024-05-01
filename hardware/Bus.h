@@ -18,8 +18,8 @@
 #define EMU_GAMEBOY_BUS_H
 
 #define RAM_SIZE 8192
-#define BOOT_ROM_SIZE 0xFF
-#define HRAM_SIZE 12
+#define BOOT_ROM_SIZE 256
+#define HRAM_SIZE 128
 
 #include <array>
 #include <cstring>

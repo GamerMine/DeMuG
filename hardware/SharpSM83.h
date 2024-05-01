@@ -76,11 +76,7 @@ public:
         ~debugInfo();
     };
 
-    inline static bool executingInterrupt = false;
-    static bool PAUSE;
-    static bool NEXT_INSTR;
     static debugInfo DEBUG_INFO;
-    inline static bool ENABLE_DEBUG_PRINTS = false;
 
 private:
     inline static union {

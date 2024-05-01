@@ -110,7 +110,7 @@ void Apu::write(uint16_t addr, uint8_t data) {
     else if (addr == 0xFF21 && NR52.audioOnOff) {
         SC4Noise::NR42.raw = data;
         if ((SC4Noise::NR42.raw & 0xF8) != 0x00) SC4Noise::DAC = true;
-        else { SC4Noise::DAC = false; NR52.ch4On = 0; StopAudioStream(noise->audioStream); }
+        else { SC4Noise::DAC = false; NR52.ch4On = 0; StopAudioStream(SC4Noise::audioStream); }
     }
     else if (addr == 0xFF22 && NR52.audioOnOff) SC4Noise::NR43.raw = data;
     else if (addr == 0xFF23 && NR52.audioOnOff) {
@@ -190,7 +190,7 @@ void Apu::tick() {
             if (SC4Noise::NR41.initialLengthTimer < 63) SC4Noise::NR41.initialLengthTimer++;
             if (oldLengthTimer + 1 == 64) {
                 NR52.ch4On = 0;
-                StopAudioStream(noise->audioStream);
+                StopAudioStream(SC4Noise::audioStream);
             }
         }
     }

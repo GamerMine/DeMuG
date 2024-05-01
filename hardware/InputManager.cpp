@@ -121,8 +121,6 @@ void InputManager::keyReleased(int key) {
     if (DPAD_LEFT == key)   JOY_DPAD.left = 1;
     if (DPAD_UP == key)     JOY_DPAD.up = 1;
     if (DPAD_DOWN == key)   JOY_DPAD.down = 1;
-
-    if (KEY_N == key) SharpSM83::NEXT_INSTR = false;
 }
 
 bool InputManager::getKeyState(int key) {

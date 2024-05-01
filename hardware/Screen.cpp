@@ -41,6 +41,7 @@ Screen::Screen(class Ppu *ppu) {
 
     InitWindow(Bus::ENABLE_DEBUG ? 1280 : 800, 720, WINDOW_NAME);
     SetWindowMonitor(0);
+    SetTargetFPS(60);
 #ifndef __APPLE__
     SetWindowIcon(LoadImage("resources/icon.png"));
 #endif
@@ -472,6 +473,10 @@ Screen::Pixel Screen::getOBPPixelFromID(uint8_t pixelID, bool palette) const {
 }
 
 void Screen::reset() {
+    xPos = 0x00;
+    yPos = 0x00;
+    dots = 0x0000;
+
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
     backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
