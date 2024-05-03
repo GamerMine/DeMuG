@@ -77,14 +77,10 @@ private:
 
     Pixel *screenPixelArray{};
     Pixel *tilesDataPixelArray{};
-    Pixel *backgroundMapPixelArray{};
-    Pixel *windowMapPixelArray{};
 
-    uint8_t tileDataObj[0x100][8][8]{};
-    uint8_t tilesDataNormal[0x100][8][8]{};
     std::array<Object, 40> objects {};
 
-    Texture2D gameTexture{}, tilesDataTexture{}, backgroundMapTexture{}, windowMapTexture{};
+    Texture2D gameTexture{}, tilesDataTexture{};
 
     void DrawInstructions(int x, int y);
     static void DrawFlags(int x, int y);
@@ -93,14 +89,15 @@ private:
 
     void render();
     void bufferTilesData();
-    void setTileData();
-    void setTileDataObj();
     void setObjects();
-    void generateBackgroundTileMap();
-    void generateWindowTileMap();
     void getObjectToRender(std::array<Object, 10> &out, uint8_t currentY);
     [[nodiscard]] Screen::Pixel getBGPPixelFromID(uint8_t pixelID) const;
     [[nodiscard]] Screen::Pixel getOBPPixelFromID(uint8_t pixelID, bool palette) const;
+
+    uint8_t getPixel(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePixelY);
+    uint8_t getPixelObj(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePixelY);
+    Pixel getBackgroundPixelAt(uint8_t x, uint8_t y);
+    Pixel getWindowPixelAt(uint8_t x, uint8_t y);
 
 };
 

@@ -24,20 +24,12 @@ Screen::Screen(class Ppu *ppu) {
 
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
-    backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
-    windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
 
     // Initialize screen pixel array
     for (long i = 0; i < DEFAULT_WIDTH*DEFAULT_HEIGHT; i++) screenPixelArray[i] = Pixel(0x00, 0x00, 0x00);
 
     // Initialize tileset pixel array
     for (long i = 0; i < 16*8*16*8; i++) tilesDataPixelArray[i] = Pixel(0x00, 0x00, 0x00);
-
-    // Initialize background map pixel array
-    for (long i = 0; i < 32 * 8 * 32 * 8; i++) backgroundMapPixelArray[i] = Pixel(0x00, 0x00, 0x00);
-
-    // Initialize window map pixel array
-    for (long i = 0; i < 32 * 8 * 32 * 8; i++) windowMapPixelArray[i] = Pixel(0x00, 0x00, 0x00);
 
     InitWindow(Bus::ENABLE_DEBUG ? 1280 : 800, 720, WINDOW_NAME);
     SetWindowMonitor(0);
@@ -47,13 +39,9 @@ Screen::Screen(class Ppu *ppu) {
 
     Image gameRender = {.data = screenPixelArray, .width = DEFAULT_WIDTH, .height = DEFAULT_HEIGHT, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
     Image tilesDataRender = {.data = tilesDataPixelArray, .width = 16 * 8, .height = 16 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
-    Image backgroundMapRender = {.data = backgroundMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
-    Image windowMapRender = {.data = windowMapPixelArray, .width = 32 * 8, .height = 32 * 8, .mipmaps = 1, .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8};
 
     gameTexture = LoadTextureFromImage(gameRender);
     tilesDataTexture = LoadTextureFromImage(tilesDataRender);
-    backgroundMapTexture = LoadTextureFromImage(backgroundMapRender);
-    windowMapTexture = LoadTextureFromImage(windowMapRender);
 }
 
 void Screen::run() {
@@ -81,22 +69,6 @@ void Screen::render() {
                        (Rectangle) {810, static_cast<float>(GetRenderHeight() - tilesDataTexture.height * 2 - 10),
                                     static_cast<float>(tilesDataTexture.width * 2),
                                     static_cast<float>(tilesDataTexture.height * 2)},
-                       (Vector2) {0, 0},
-                       0,
-                       RAYWHITE);
-        DrawTexturePro(backgroundMapTexture,
-                       (Rectangle) {0, 0, static_cast<float>(backgroundMapTexture.width),
-                                    static_cast<float>(backgroundMapTexture.height)},
-                       (Rectangle) {1090, 360, static_cast<float>(backgroundMapTexture.width / 1.5),
-                                    static_cast<float>(backgroundMapTexture.height / 1.5)},
-                       (Vector2) {0, 0},
-                       0,
-                       RAYWHITE);
-        DrawTexturePro(windowMapTexture,
-                       (Rectangle) {0, 0, static_cast<float>(windowMapTexture.width),
-                                    static_cast<float>(windowMapTexture.height)},
-                       (Rectangle) {1090, 540, static_cast<float>(windowMapTexture.width / 1.5),
-                                    static_cast<float>(windowMapTexture.height / 1.5)},
                        (Vector2) {0, 0},
                        0,
                        RAYWHITE);
@@ -208,42 +180,12 @@ void Screen::bufferTilesData() {
     for (uint16_t tile = 0; tile < 0x100; tile++) {
         for (uint8_t y = 0; y < 8; y++){
             for (uint8_t x = 0; x < 8; x++) {
-                uint8_t pixelID = tilesDataNormal[tile][y][x];
+                uint8_t pixelID = getPixel(tile, x, y);
                 tilesDataPixelArray[(tile / 16 * 8 + y) * 128 + (tile % 16 * 8 + x)] = getBGPPixelFromID(pixelID);
             }
         }
     }
     UpdateTexture(tilesDataTexture, tilesDataPixelArray);
-}
-
-void Screen::setTileData() {
-    tileDataBlock = mPpu->LCDC.tileDataArea ? 0x8000 : 0x9000;
-    for (uint16_t tile = 0x00; tile < 0x100; tile++) { // There are 255 tilesDataPixelArray
-        uint16_t currentTileBlock = tile < 0x80 ? tileDataBlock : 0x8800;
-        for (uint8_t byte = 0; byte < 8; byte++) { // Each tile is 16 bytes long, but 8 because one line is 2 bytes long
-            uint8_t firstByte = mPpu->read((currentTileBlock + (tile % 128) * 16) + byte*2);
-            uint8_t secondByte = mPpu->read((currentTileBlock + (tile % 128) * 16) + 1 + byte*2);
-            for (uint8_t pixel = 0; pixel < 8; pixel++) {
-                uint8_t pixelID = ((firstByte & 0x1 << (7-pixel)) >> (7-pixel)) | ((secondByte & 0x1 << (7-pixel)) >> (7-pixel) << 1);
-                tilesDataNormal[tile][byte][pixel] = pixelID;
-            }
-        }
-    }
-}
-
-void Screen::setTileDataObj() {
-    tileDataBlock = 0x8000;
-    for (uint8_t tile = 0x00; tile < 0xFF; tile++) { // There are 255 tilesDataPixelArray
-        uint16_t currentTileBlock = tile < 0x80 ? tileDataBlock : 0x8800;
-        for (uint8_t byte = 0; byte < 8; byte++) { // Each tile is 16 bytes long, but 8 because one line is 2 bytes long
-            uint8_t firstByte = mPpu->read((currentTileBlock + (tile % 128) * 16) + byte*2);
-            uint8_t secondByte = mPpu->read((currentTileBlock + (tile % 128) * 16) + 1 + byte*2);
-            for (uint8_t pixel = 0; pixel < 8; pixel++) {
-                uint8_t pixelID = ((firstByte & 0x1 << (7-pixel)) >> (7-pixel)) | ((secondByte & 0x1 << (7-pixel)) >> (7-pixel) << 1);
-                tileDataObj[tile][byte][pixel] = pixelID;
-            }
-        }
-    }
 }
 
 void Screen::setObjects() {
@@ -258,39 +200,43 @@ void Screen::setObjects() {
     }
 }
 
-void Screen::generateBackgroundTileMap() {
-    for (uint16_t value = 0; value < 1024; value++) {
-        for (uint8_t y = 0; y < 8; y++) {
-            for (uint8_t x = 0; x < 8; x++) {
-                uint8_t pixelID = tilesDataNormal[mPpu->read(0x9800 + value)][y][x];
-                backgroundMapPixelArray[((value / 32) * 8 + y) * 32 * 8 + (value % 32 * 8 + x)] = getBGPPixelFromID(pixelID);
-            }
-        }
-    }
-    UpdateTexture(backgroundMapTexture, backgroundMapPixelArray);
+uint8_t Screen::getPixel(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePixelY) {
+    tileDataBlock = mPpu->LCDC.tileDataArea ? 0x8000 : 0x9000;
+    uint16_t currentTileBlock = tileIndex < 0x80 ? tileDataBlock : 0x8800;
+    uint8_t firstByte = mPpu->read((currentTileBlock + (tileIndex % 128) * 16) + tilePixelY*2);
+    uint8_t secondByte = mPpu->read((currentTileBlock + (tileIndex % 128) * 16) + 1 + tilePixelY*2);
+
+    return ((firstByte & 0x1 << (7-tilePixelX)) >> (7-tilePixelX)) | ((secondByte & 0x1 << (7-tilePixelX)) >> (7-tilePixelX) << 1);
 }
 
-void Screen::generateWindowTileMap() {
-    for (uint16_t value = 0; value < 1024; value++) {
-        for (uint8_t y = 0; y < 8; y++) {
-            for (uint8_t x = 0; x < 8; x++) {
-                uint8_t pixelID = tilesDataNormal[mPpu->read(0x9C00 + value)][y][x];
-                windowMapPixelArray[((value / 32) * 8 + y) * 32*8 + (value % 32 * 8 + x)] = getBGPPixelFromID(pixelID);
-            }
-        }
-    }
-    UpdateTexture(windowMapTexture, windowMapPixelArray);
+uint8_t Screen::getPixelObj(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePixelY) {
+    tileDataBlock = 0x8000;
+    uint16_t currentTileBlock = tileIndex < 0x80 ? tileDataBlock : 0x8800;
+    uint8_t firstByte = mPpu->read((currentTileBlock + (tileIndex % 128) * 16) + tilePixelY*2);
+    uint8_t secondByte = mPpu->read((currentTileBlock + (tileIndex % 128) * 16) + 1 + tilePixelY*2);
+
+    return ((firstByte & 0x1 << (7-tilePixelX)) >> (7-tilePixelX)) | ((secondByte & 0x1 << (7-tilePixelX)) >> (7-tilePixelX) << 1);
+}
+
+Screen::Pixel Screen::getBackgroundPixelAt(uint8_t x, uint8_t y) {
+    uint16_t tileID = (y / 8) * 32 + (x / 8);
+    uint8_t pixelID = getPixel(mPpu->read(0x9800 + tileID), x % 8, y % 8);
+
+    return getBGPPixelFromID(pixelID);
+}
+
+Screen::Pixel Screen::getWindowPixelAt(uint8_t x, uint8_t y) {
+    uint16_t tileID = (y / 8) * 32 + (x / 8);
+    uint8_t pixelID = getPixel(mPpu->read(0x9C00 + tileID), x % 8, y % 8);
+
+    return getBGPPixelFromID(pixelID);
 }
 
 static bool generateData = true;
 void Screen::tick(uint8_t mCycle) {
     if (generateData) {
         generateData = false;
-        setTileData();
-        setTileDataObj();
         setObjects();
-        generateBackgroundTileMap();
-        generateWindowTileMap();
         bufferTilesData();
     }
 
@@ -314,21 +260,16 @@ void Screen::tick(uint8_t mCycle) {
 
                 // First drawn layer is the background
                 if (mPpu->LCDC.tileMapArea)
-                    screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = windowMapPixelArray[
-                            ((mPpu->SCY + yPos) % 254) * 32 * 8 + (mPpu->SCX + xPos)];
+                    screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getWindowPixelAt(mPpu->SCX + xPos, (mPpu->SCY + yPos) % 254);
                 else
-                    screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = backgroundMapPixelArray[
-                            ((mPpu->SCY + yPos) % 254) * 32 * 8 + (mPpu->SCX + xPos)];
+                    screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBackgroundPixelAt(mPpu->SCX + xPos, (mPpu->SCY + yPos) % 254);
 
                 // Second drawn layer is the window
                 if (mPpu->LCDC.windowEnable && xPos >= mPpu->WX - 7 && yPos >= mPpu->WY) {
                     if (mPpu->LCDC.tilemapArea)
-                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = windowMapPixelArray[
-                                (yPos - mPpu->WY) * 32 * 8 +
-                                (xPos - (mPpu->WX - 7))];
+                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getWindowPixelAt(xPos - (mPpu->WX - 7), yPos - mPpu->WY);
                     else
-                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = backgroundMapPixelArray[
-                                (yPos - mPpu->WY) * 32 * 8 + (xPos - (mPpu->WX - 7))];
+                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBackgroundPixelAt(xPos - (mPpu->WX - 7), yPos - mPpu->WY);
                 }
 
                 // Third draw layer is the objects
@@ -346,7 +287,7 @@ void Screen::tick(uint8_t mCycle) {
                                 if (obj.yFlip) {
                                     objectPixelY = abs(7 - (yPos - (obj.Ypos - 8)));
                                 }
-                                pixelID = tileDataObj[obj.tileIndex][objectPixelY][objectPixelX];
+                                pixelID = getPixelObj(obj.tileIndex, objectPixelX, objectPixelY);
 
                                 if (pixelID != 0x00) {
                                     if (obj.priority) {
@@ -474,14 +415,10 @@ Screen::Pixel Screen::getOBPPixelFromID(uint8_t pixelID, bool palette) const {
 void Screen::reset() {
     screenPixelArray = new Pixel[DEFAULT_WIDTH * DEFAULT_HEIGHT];
     tilesDataPixelArray  = new Pixel[16 * 8 * 16 * 8]; // There are 256 tiles to render, so a 16x16 square is sufficient, but a tile is 8x8 pixels
-    backgroundMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
-    windowMapPixelArray = new Pixel[32 * 8 * 32 * 8];  // There are 1024 tiles to render, so a 32x32 square is sufficient, but a tile is 8x8 pixels
 }
 
 void Screen::close() {
     UnloadTexture(gameTexture);
     UnloadTexture(tilesDataTexture);
-    UnloadTexture(backgroundMapTexture);
-    UnloadTexture(windowMapTexture);
     CloseWindow();
 }
