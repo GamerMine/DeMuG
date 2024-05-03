@@ -26,6 +26,7 @@ public:
 
         if (addr <= 0x3FFF) {
             value = gameRom[addr];
+            //Logger::getInstance("Cartridge")->log(Logger::DEBUG, "Read %X at %X in bank %d", value, addr, 0);
         } else if (addr >= 0x4000 && addr <= 0x7FFF) {
             uint8_t currentRomBank;
 
@@ -33,9 +34,14 @@ public:
             else currentRomBank = romBankRegister & (romBankNumber - 1);
 
             value = gameRom[currentRomBank * 0x4000 + (addr - 0x4000)];
-        } else if (addr >= 0xA000 && addr <= 0xBFFF && ramSize > 0x00) {
+            //Logger::getInstance("Cartridge")->log(Logger::DEBUG, "Read %X at %X in bank %d", value, currentRomBank * 0x4000 + (addr - 0x4000), currentRomBank);
+        } else if (addr >= 0xA000 && addr <= 0xBFFF) {
             if (ramEnable) value = gameRam[ramBankRegister * 0x2000 + (addr - 0x2000)];
+        } else {
+            Logger::getInstance("Cartridge")->log(Logger::DEBUG, "%sShould not be here, trying to read at %X", Colors::LOG_DARK_RED, addr);
         }
+
+        //Logger::getInstance("Cartridge")->log(Logger::DEBUG, "%sRead %X at %X", Colors::LOG_CYAN, value, addr);
 
         return value;
     }
@@ -52,7 +58,11 @@ public:
             bankingModeSelect = value & 0x01; //TODO: Use this for 1MiB ROM or larger
         } else if (addr >= 0xA000 && addr <= 0xBFFF) {
             if (ramEnable) gameRam[ramBankRegister * 0x2000 + (addr - 0x2000)] = value;
+        } else {
+            Logger::getInstance("Cartridge")->log(Logger::DEBUG, "%sShould not be here, trying to write %X at %X", Colors::LOG_DARK_RED, value, addr);
         }
+
+        //Logger::getInstance("Cartridge")->log(Logger::DEBUG, "%sRead %X at %X", Colors::LOG_MAGENTA, value, addr);
     }
 
 protected:
