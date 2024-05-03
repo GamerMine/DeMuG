@@ -76,8 +76,6 @@ void Screen::render() {
         DrawFlags(1100, 0);
         DrawRegisters(1100, 100);
     }
-    DrawFPS(5, 5);
-    //DrawCartridgeData(5, 5);
     if (VIEW_MEMORY) DrawMemory(0, 0, MEMORY_PAGE);
     EndDrawing();
 }
@@ -188,18 +186,6 @@ void Screen::bufferTilesData() {
     UpdateTexture(tilesDataTexture, tilesDataPixelArray);
 }
 
-void Screen::setObjects() {
-    for (uint8_t o = 0; o < 40; o++) { // There are 40 objects in the OAM (Object Attribute Memory)
-        Object obj{};
-        obj.Ypos = mPpu->read(0xFE00 + (o * 4) + 0);
-        obj.Xpos = mPpu->read(0xFE00 + (o * 4) + 1);
-        obj.tileIndex = mPpu->read(0xFE00 + (o * 4) + 2);
-        obj.attributes = mPpu->read(0xFE00 + (o * 4) + 3);
-        obj.isReal = true;
-        objects[o] = obj;
-    }
-}
-
 uint8_t Screen::getPixel(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePixelY) {
     tileDataBlock = mPpu->LCDC.tileDataArea ? 0x8000 : 0x9000;
     uint16_t currentTileBlock = tileIndex < 0x80 ? tileDataBlock : 0x8800;
@@ -211,6 +197,10 @@ uint8_t Screen::getPixel(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePix
 
 uint8_t Screen::getPixelObj(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePixelY) {
     tileDataBlock = 0x8000;
+    /*if (mPpu->LCDC.objSize) {
+        if (tilePixelY < 8) tileIndex &= 0xFE;
+        else tileIndex |= 0x01;
+    }*/
     uint16_t currentTileBlock = tileIndex < 0x80 ? tileDataBlock : 0x8800;
     uint8_t firstByte = mPpu->read((currentTileBlock + (tileIndex % 128) * 16) + tilePixelY*2);
     uint8_t secondByte = mPpu->read((currentTileBlock + (tileIndex % 128) * 16) + 1 + tilePixelY*2);
@@ -232,6 +222,18 @@ Screen::Pixel Screen::getWindowPixelAt(uint8_t x, uint8_t y) {
     return getBGPPixelFromID(pixelID);
 }
 
+void Screen::setObjects() {
+    for (uint8_t o = 0; o < 40; o++) { // There are 40 objects in the OAM (Object Attribute Memory)
+        Object obj{};
+        obj.Ypos = mPpu->read(0xFE00 + (o * 4) + 0);
+        obj.Xpos = mPpu->read(0xFE00 + (o * 4) + 1);
+        obj.tileIndex = mPpu->read(0xFE00 + (o * 4) + 2);
+        obj.attributes = mPpu->read(0xFE00 + (o * 4) + 3);
+        obj.isReal = true;
+        objects[o] = obj;
+    }
+}
+
 static bool generateData = true;
 void Screen::tick(uint8_t mCycle) {
     if (generateData) {
@@ -241,6 +243,8 @@ void Screen::tick(uint8_t mCycle) {
     }
 
     for (uint8_t i = 0; i < mCycle * 4; i++) { // NOTE: 4 is correct only on normal speed
+        if (dots < 80 && mPpu->STAT.modeOAM) SharpSM83::IF.lcd = 1;
+
         if (dots == 4) {
             mPpu->LY = yPos;
             mPpu->STAT.LYCequalLY = (mPpu->LY == mPpu->LYC);
@@ -259,17 +263,23 @@ void Screen::tick(uint8_t mCycle) {
                 getObjectToRender(objs, yPos);
 
                 // First drawn layer is the background
-                if (mPpu->LCDC.tileMapArea)
-                    screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getWindowPixelAt(mPpu->SCX + xPos, (mPpu->SCY + yPos) % 254);
-                else
-                    screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBackgroundPixelAt(mPpu->SCX + xPos, (mPpu->SCY + yPos) % 254);
-
-                // Second drawn layer is the window
-                if (mPpu->LCDC.windowEnable && xPos >= mPpu->WX - 7 && yPos >= mPpu->WY) {
-                    if (mPpu->LCDC.tilemapArea)
-                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getWindowPixelAt(xPos - (mPpu->WX - 7), yPos - mPpu->WY);
+                if (mPpu->LCDC.bgWinEnable) {
+                    if (mPpu->LCDC.bgTileMap)
+                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getWindowPixelAt(mPpu->SCX + xPos,
+                                                                                         (mPpu->SCY + yPos) % 254);
                     else
-                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBackgroundPixelAt(xPos - (mPpu->WX - 7), yPos - mPpu->WY);
+                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBackgroundPixelAt(mPpu->SCX + xPos,
+                                                                                             (mPpu->SCY + yPos) % 254);
+
+                    // Second drawn layer is the window
+                    if (mPpu->LCDC.windowEnable && xPos >= mPpu->WX - 7 && yPos >= mPpu->WY) {
+                        if (mPpu->LCDC.windowTileMap)
+                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getWindowPixelAt(xPos - (mPpu->WX - 7),
+                                                                                             yPos - mPpu->WY);
+                        else
+                            screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBackgroundPixelAt(xPos - (mPpu->WX - 7),
+                                                                                                 yPos - mPpu->WY);
+                    }
                 }
 
                 // Third draw layer is the objects
@@ -281,23 +291,14 @@ void Screen::tick(uint8_t mCycle) {
                                 uint8_t objectPixelX = xPos - (obj.Xpos - 8);
                                 uint8_t objectPixelY = yPos - (obj.Ypos - 16);
 
-                                if (obj.xFlip) {
-                                    objectPixelX = abs(7 - (xPos - (obj.Xpos - 8)));
-                                }
-                                if (obj.yFlip) {
-                                    objectPixelY = abs(7 - (yPos - (obj.Ypos - 8)));
-                                }
+                                if (obj.xFlip) objectPixelX = abs(7 - (xPos - (obj.Xpos - 8)));
+                                if (obj.yFlip) objectPixelY = abs(7 - (yPos - (obj.Ypos - (mPpu->LCDC.objSize ? 8 : 16))));
+
                                 pixelID = getPixelObj(obj.tileIndex, objectPixelX, objectPixelY);
 
                                 if (pixelID != 0x00) {
-                                    if (obj.priority) {
-                                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBGPPixelFromID(
-                                                pixelID);
-                                    } else {
-                                        screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getOBPPixelFromID(
-                                                pixelID,
-                                                obj.dmgPalette);
-                                    }
+                                    if (obj.priority) screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getBGPPixelFromID(pixelID);
+                                    else screenPixelArray[yPos * DEFAULT_WIDTH + xPos] = getOBPPixelFromID(pixelID,obj.dmgPalette);
                                 }
                             }
                         }
@@ -310,11 +311,14 @@ void Screen::tick(uint8_t mCycle) {
             xPos++;
             dots++;
 
+            if (dots >= 376 && mPpu->STAT.modeHBLANK) SharpSM83::IF.lcd = 1; //TODO: This should be dots - mode 3's taken dots. https://gbdev.io/pandocs/Rendering.html#mode-3-length
+
             if (dots == 456) {
                 dots = 0x00;
                 yPos++;
                 xPos = 0x00;
             }
+            if (yPos >= DEFAULT_HEIGHT && yPos <= DEFAULT_HEIGHT + 9 && mPpu->STAT.modeVBLANK) SharpSM83::IF.lcd = 1;
             if (yPos >= DEFAULT_HEIGHT + 9) {
                 yPos = 0x00;
                 generateData = true;
@@ -326,11 +330,23 @@ void Screen::tick(uint8_t mCycle) {
 
 void Screen::getObjectToRender(std::array<Object, 10> &out, uint8_t currentY) {
     uint8_t objCount = 0;
-    for (auto &obj : objects) {
-        if (obj.Ypos >= 16 && obj.Ypos < 160 && obj.isReal) { // The Ypos is actually stored as currentY coord + 16, since we cannot draw out of the screen, do not get them
-            if (currentY >= obj.Ypos - 16 && currentY < obj.Ypos - (mPpu->LCDC.objSize ? 0 : 8)) {
-                out[objCount] = obj;
-                objCount++;
+    for (Object obj : objects) {
+
+        if (obj.isReal) {
+            if (mPpu->LCDC.objSize) { // 8x16 objects mode
+                if (obj.Ypos >= 1 && obj.Ypos < 160) {
+                    if (currentY >= obj.Ypos - 16 && currentY < obj.Ypos) {
+                        out[objCount] = obj;
+                        objCount++;
+                    }
+                }
+            } else { // 8x8 objects mode
+                if (obj.Ypos >= 16 && obj.Ypos < 160) {
+                    if (currentY >= obj.Ypos - 16 && currentY < obj.Ypos - 8) {
+                        out[objCount] = obj;
+                        objCount++;
+                    }
+                }
             }
         }
         if (objCount == 10) break;

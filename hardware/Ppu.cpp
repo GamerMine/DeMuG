@@ -96,12 +96,10 @@ void Ppu::write(uint16_t addr, uint8_t data) {
 }
 
 void Ppu::startTransfer() {
-    uint16_t page = DMA;
-
     for (uint8_t lAddr = 0x00; lAddr < 0xA0; lAddr++) {
-        OAM[lAddr] = mBus->read((page << 8) + lAddr);
+        OAM[lAddr] = mBus->read((DMA << 8) + lAddr);
+        mBus->tick(1);
     }
-    //mBus->tick(160);
 }
 
 void Ppu::tick(uint8_t mCycle) const {

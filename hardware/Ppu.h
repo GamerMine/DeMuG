@@ -48,10 +48,10 @@ public:
             bool bgWinEnable : 1; // Bit 0
             bool objEnable : 1; // Bit 1
             bool objSize : 1; // Bit 2
-            bool tileMapArea : 1; // Bit 3
+            bool bgTileMap : 1; // Bit 3
             bool tileDataArea : 1; // Bit 4
             bool windowEnable : 1; // Bit 5
-            bool tilemapArea : 1; // Bit 6
+            bool windowTileMap : 1; // Bit 6
             bool lcdEnable : 1; // Bit 7
         };
         uint8_t raw;
