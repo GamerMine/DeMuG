@@ -98,10 +98,7 @@ public:
     }
 
     static bool checkRomValidity(const char *filename) {
-        Logger *logger = Logger::getInstance("Cartridge");
         const std::string strFilename(filename);
-
-        logger->log(Logger::DEBUG, "Checking %s", filename);
 
         if (strcmp(filename, "") == 0) return false;
         if (strFilename.substr(strFilename.length() - 3) != ".gb") return false;

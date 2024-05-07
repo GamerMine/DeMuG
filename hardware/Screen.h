@@ -37,9 +37,9 @@ public:
     void reset();
 
     struct Object {
-        uint8_t Ypos;
-        uint8_t Xpos;
-        uint8_t tileIndex;
+        uint8_t Ypos = 0x00;
+        uint8_t Xpos = 0x00;
+        uint8_t tileIndex = 0x00;
         union {
             struct {
                 bool unused : 4;
@@ -48,9 +48,10 @@ public:
                 bool yFlip : 1;
                 bool priority : 1;
             };
-            uint8_t attributes;
+            uint8_t attributes = 0x00;
         };
-        bool isReal;
+        bool isReal = false;
+        uint8_t index = 0;
     };
 
     inline static bool VIEW_MEMORY = false;
@@ -76,9 +77,10 @@ private:
     };
 
     Pixel *screenPixelArray{};
-    Pixel *tilesDataPixelArray{};
 
-    std::array<Object, 40> objects {};
+    uint8_t selectedObjCount;
+    uint8_t discardedDotsCount;
+    std::array<Object, 10> selectedObjects {};
 
     Texture2D gameTexture{}, tilesDataTexture{};
 
@@ -88,10 +90,10 @@ private:
     void DrawMemory(int x, int y, int page);
 
     void render();
-    void bufferTilesData();
-    void setObjects();
-    void getObjectToRender(std::array<Object, 10> &out, uint8_t currentY);
+    void oamScan();
+    bool hasPriority(Object obj, uint8_t index);
     [[nodiscard]] Screen::Pixel getBGPPixelFromID(uint8_t pixelID) const;
+    [[nodiscard]] static uint8_t getIDFromBGPPixel(Pixel pixel) ;
     [[nodiscard]] Screen::Pixel getOBPPixelFromID(uint8_t pixelID, bool palette) const;
 
     uint8_t getPixel(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePixelY);
