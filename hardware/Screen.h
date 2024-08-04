@@ -54,9 +54,6 @@ public:
         uint8_t index = 0;
     };
 
-    inline static bool VIEW_MEMORY = false;
-    inline static uint8_t MEMORY_PAGE = 0;
-
     void tick(uint8_t mCycle);
 
     void close();
@@ -83,11 +80,6 @@ private:
     std::array<Object, 10> selectedObjects {};
 
     Texture2D gameTexture{}, tilesDataTexture{};
-
-    void DrawInstructions(int x, int y);
-    static void DrawFlags(int x, int y);
-    void DrawRegisters(int x, int y);
-    void DrawMemory(int x, int y, int page);
 
     void render();
     void oamScan();

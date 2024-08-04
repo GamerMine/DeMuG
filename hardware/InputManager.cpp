@@ -25,11 +25,7 @@ InputManager::InputManager(class Bus *bus) {
     registerKey(KEY_LEFT_CONTROL);
 
     registerKey(KEY_R);
-    registerKey(KEY_M);
-    registerKey(KEY_KP_6);
-    registerKey(KEY_KP_4);
     registerKey(KEY_O);
-    registerKey(KEY_D);
 
     registerKey(BTN_A);      // A
     registerKey(BTN_B);      // B
@@ -73,18 +69,6 @@ void InputManager::keyPressed(int key) {
             mBus->reset();
             break;
         }
-        case KEY_M: {
-            Screen::VIEW_MEMORY = !Screen::VIEW_MEMORY;
-            break;
-        }
-        case KEY_KP_6: {
-            Screen::MEMORY_PAGE++;
-            break;
-        }
-        case KEY_KP_4: {
-            Screen::MEMORY_PAGE--;
-            break;
-        }
         default: {
             if (BTN_A == key)       JOY_BTN.A = 0;
             if (BTN_B == key)       JOY_BTN.B = 0;
@@ -104,10 +88,6 @@ void InputManager::keyPressed(int key) {
         const char *file = FileChooser::getInstance()->chooseROM();
         if (CartridgeHelper::checkRomValidity(file)) mBus->loadGameROM(file);
         SetMasterVolume(Apu::DEFAULT_MASTER_VOLUME);
-    } else if (key == KEY_D && getKeyState(KEY_LEFT_CONTROL)) {
-        Bus::ENABLE_DEBUG  = !Bus::ENABLE_DEBUG;
-        if (Bus::ENABLE_DEBUG) SetWindowSize(1280, 720);
-        else SetWindowSize(800, 720);
     }
 }
 
@@ -121,8 +101,6 @@ void InputManager::keyReleased(int key) {
     if (DPAD_LEFT == key)   JOY_DPAD.left = 1;
     if (DPAD_UP == key)     JOY_DPAD.up = 1;
     if (DPAD_DOWN == key)   JOY_DPAD.down = 1;
-
-    if (KEY_N == key) SharpSM83::NEXT_INSTR = false;
 }
 
 bool InputManager::getKeyState(int key) {

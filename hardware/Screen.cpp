@@ -27,7 +27,7 @@ Screen::Screen(class Ppu *ppu) {
     // Initialize screen pixel array
     for (long i = 0; i < DEFAULT_WIDTH*DEFAULT_HEIGHT; i++) screenPixelArray[i] = Pixel(0x00, 0x00, 0x00);
 
-    InitWindow(Bus::ENABLE_DEBUG ? 1280 : 800, 720, WINDOW_NAME);
+    InitWindow(800, 720, WINDOW_NAME);
     SetWindowMonitor(0);
 #ifndef __APPLE__
     SetWindowIcon(LoadImage("resources/icon.png"));
@@ -46,7 +46,7 @@ uint16_t tileDataBlock = 0x8000;
 void Screen::render() {
     BeginDrawing();
     ClearBackground(BLACK);
-    if (mPpu->LCDC.lcdEnable && !VIEW_MEMORY) {
+    if (mPpu->LCDC.lcdEnable) {
         DrawTexturePro(gameTexture,
                        (Rectangle) {0, 0, static_cast<float>(gameTexture.width),
                                     static_cast<float>(gameTexture.height)},
@@ -56,106 +56,7 @@ void Screen::render() {
                        0,
                        RAYWHITE);
     }
-    if (Bus::ENABLE_DEBUG) {
-        DrawInstructions(820, 0);
-        DrawFlags(1100, 0);
-        DrawRegisters(1100, 100);
-    }
-    if (VIEW_MEMORY) DrawMemory(0, 0, MEMORY_PAGE);
     EndDrawing();
-}
-
-void Screen::DrawInstructions(int x, int y) {
-    std::stringstream ss;
-    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr - 4) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr - 4)];
-    DrawText(ss.str().c_str(), x, (y + 0) * 32, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr - 3) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr - 3)];
-    DrawText(ss.str().c_str(), x, (y + 1) * 32, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr - 2) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr - 2)];
-    DrawText(ss.str().c_str(), x, (y + 2) * 32, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr - 1) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr - 1)];
-    DrawText(ss.str().c_str(), x, (y + 3) * 32, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.currentAddr << " " << SharpSM83::DEBUG_INFO.currentInstr;
-    DrawText(ss.str().c_str(), x, (y + 4) * 32, 30, YELLOW);
-    ss.str("");
-    ss.clear();
-    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr + 1) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr + 1)];
-    DrawText(ss.str().c_str(), x, (y + 5) * 32, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr + 2) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr + 2)];
-    DrawText(ss.str().c_str(), x, (y + 6) * 32, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr + 3) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr + 3)];
-    DrawText(ss.str().c_str(), x, (y + 7) * 32, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << std::uppercase << std::hex << (SharpSM83::DEBUG_INFO.currentAddr + 4) << " " << SharpSM83::opcodeStr[mPpu->mBus->read(SharpSM83::DEBUG_INFO.currentAddr + 4)];
-    DrawText(ss.str().c_str(), x, (y + 8) * 32, 30, WHITE);
-}
-
-void Screen::DrawFlags(int x, int y) {
-    DrawText("Z", x, y * 32, 30, SharpSM83::DEBUG_INFO.Z ? GREEN : RED);
-    DrawText("C", x, (y + 1) * 32, 30, SharpSM83::DEBUG_INFO.C ? GREEN : RED);
-    DrawText("N", x, (y + 2) * 32, 30, SharpSM83::DEBUG_INFO.N ? GREEN : RED);
-    DrawText("HC", x, (y + 3) * 32, 30, SharpSM83::DEBUG_INFO.HC ? GREEN : RED);
-}
-
-void Screen::DrawRegisters(int x, int y) {
-    std::stringstream ss;
-    ss << " A = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regA;
-    DrawText(ss.str().c_str(), x, 0 * 32 + y, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << " B = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regB;
-    DrawText(ss.str().c_str(), x, 1 * 32 + y, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << " C = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regC;
-    DrawText(ss.str().c_str(), x, 2 * 32 + y, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << " D = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regD;
-    DrawText(ss.str().c_str(), x, 3 * 32 + y, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << " E = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regE;
-    DrawText(ss.str().c_str(), x, 4 * 32 + y, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << " H = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regH;
-    DrawText(ss.str().c_str(), x, 5 * 32 + y, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << " L = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regL;
-    DrawText(ss.str().c_str(), x, 6 * 32 + y, 30, WHITE);
-    ss.str("");
-    ss.clear();
-    ss << "SP = " << std::uppercase << std::hex << SharpSM83::DEBUG_INFO.regSP;
-    DrawText(ss.str().c_str(), x, 7 * 32 + y, 30, WHITE);
-}
-
-void Screen::DrawMemory(int x, int y, int page) {
-    std::stringstream ss;
-    for (uint8_t line = 0; line < 16; line++) {
-        ss << std::uppercase << std::hex << 0xC000 + line * 16 + page * 16 * 16 << ": ";
-        for (uint8_t value = 0; value < 16; value++) {
-            auto data = (uint16_t)mPpu->mBus->read(0xC000 + line * 16 + value + page * 16 * 16);
-            ss << std::uppercase << std::hex << (data < 0x10 ? "0" : "") << data << " ";
-        }
-        DrawText(ss.str().c_str(), x, line * 28 + y, 26, WHITE);
-        ss.str("");
-        ss.clear();
-    }
 }
 
 uint8_t Screen::getPixel(uint16_t tileIndex, uint8_t tilePixelX, uint8_t tilePixelY) {

@@ -57,31 +57,6 @@ public:
         uint8_t raw;
     } IF {}; // Interrupt flag controls handlers request
 
-    // Debug //
-    struct debugInfo {
-        const char *currentInstr;
-        uint16_t currentAddr;
-        bool Z;
-        bool C;
-        bool HC;
-        bool N;
-        uint16_t regA;
-        uint16_t regB;
-        uint16_t regC;
-        uint16_t regD;
-        uint16_t regE;
-        uint16_t regH;
-        uint16_t regL;
-        uint16_t regSP;
-        ~debugInfo();
-    };
-
-    inline static bool executingInterrupt = false;
-    static bool PAUSE;
-    static bool NEXT_INSTR;
-    static debugInfo DEBUG_INFO;
-    inline static bool ENABLE_DEBUG_PRINTS = false;
-
 private:
     inline static union {
         struct {
