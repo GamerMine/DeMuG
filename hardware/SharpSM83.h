@@ -94,7 +94,7 @@ public:
         uint8_t rawRegisters[8];
     } registers{};
 
-    inline static std::atomic<uint16_t> PC;
+    inline static uint16_t PC;
     inline static uint16_t SP;
     inline static bool IME; // Interrupt master enable flag
     inline static uint8_t interruptShouldBeEnabled;

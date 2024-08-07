@@ -14,4 +14,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#include
+#include "CodeViewer.h"
+
+void CodeViewer::ShowCodeViewer(const std::shared_ptr<Bus>& bus) {
+    tryLoadRoms(bus);
+
+    ImGui::Begin("Code Viewer");
+
+
+
+    ImGui::End();
+}
+
+void CodeViewer::tryLoadRoms(const std::shared_ptr<Bus>& bus) {
+    if (strcmp(CartridgeHelper::gamePath, "") != 0) {
+        RomReader::loadRom(CartridgeHelper::gamePath, );
+    }
+}

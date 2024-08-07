@@ -76,6 +76,7 @@ public:
     } JOYP;
 
     inline static bool gameLaunched;
+    inline static char *gamePath;
     bool disableBootRom;
 
 public:

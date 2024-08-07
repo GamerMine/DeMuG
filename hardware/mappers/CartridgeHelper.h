@@ -28,11 +28,14 @@
 
 class CartridgeHelper {
 public:
+    static inline char *gamePath;
+
     static std::unique_ptr<Cartridge> readGameRom(const char *filename) {
         Logger *logger = Logger::getInstance("Cartridge");
         uint8_t mapperType = 0;
 
         logger->log(Logger::DEBUG, "Reading game : %s", filename);
+        strcpy(gamePath, filename);
         std::ifstream file(filename, std::ios::binary);
 
         if (!file.good()) {

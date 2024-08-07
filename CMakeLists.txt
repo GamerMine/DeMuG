@@ -46,11 +46,15 @@ SET(HEADER_FILES
 )
 
 SET(DEBUGGER_SOURCE_FILES
-    debugger/DebuggerWindow.cpp
+        debugger/DebuggerWindow.cpp
+        debugger/utils/RomReader.cpp
+        debugger/windows/CodeViewer.cpp
 )
 
 SET(DEBUGGER_HEADER_FILES
-    debugger/DebuggerWindow.h
+        debugger/DebuggerWindow.h
+        debugger/utils/RomReader.h
+        debugger/windows/CodeViewer.h
 )
 
 if (APPLE)

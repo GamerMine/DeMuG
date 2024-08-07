@@ -16,7 +16,7 @@
 
 #include "DebuggerWindow.h"
 
-void DebuggerWindow::startDebugger(std::shared_ptr<Bus> bus) {
+void DebuggerWindow::startDebugger(const std::shared_ptr<Bus>& bus) {
     GLFWwindow *debuggerWindow = glfwCreateWindow(1280, 720, "DeMuG Debugger", nullptr, nullptr);
     glfwMakeContextCurrent(debuggerWindow);
     glfwSwapInterval(1);
@@ -53,7 +53,7 @@ void DebuggerWindow::startDebugger(std::shared_ptr<Bus> bus) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Text("Program Counter: %X", bus->cpu->PC.load());
+        renderLoop(bus);
 
         ImGui::Render();
 
@@ -71,4 +71,8 @@ void DebuggerWindow::startDebugger(std::shared_ptr<Bus> bus) {
     ImGui::DestroyContext();
 
     glfwDestroyWindow(debuggerWindow);
+}
+
+void DebuggerWindow::renderLoop(const std::shared_ptr<Bus>& bus) {
+    CodeViewer::ShowCodeViewer(bus);
 }

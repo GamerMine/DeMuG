@@ -17,16 +17,23 @@
 #ifndef DEMUG_DEBUGGERWINDOW_H
 #define DEMUG_DEBUGGERWINDOW_H
 
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
-#include "imgui.h"
-#include "../hardware/Bus.h"
 #include <memory>
+
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <imgui.h>
+
+#include "../hardware/Bus.h"
+
+#include "windows/CodeViewer.h"
 
 class DebuggerWindow {
 public:
-    static void startDebugger(std::shared_ptr<Bus> bus);
+    static void startDebugger(const std::shared_ptr<Bus>& bus);
+
+private:
+    static void renderLoop(const std::shared_ptr<Bus>& bus);
 };
 
 

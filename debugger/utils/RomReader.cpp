@@ -14,4 +14,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#include
+#include "RomReader.h"
+
+void RomReader::loadRom(char *romPath, std::vector<uint8_t> *romsData) {
+    uint8_t mapperType = 0;
+
+    std::ifstream file(romPath, std::ios::binary);
+
+    file.seekg(0x0147);
+    file.read(reinterpret_cast<char *>(&mapperType), sizeof(uint8_t) * 1);
+
+    file.seekg(0x0000);
+    file.read(reinterpret_cast<char *>(romsData->data()), sizeof(uint8_t) * 32*1024);
+    file.close();
+}

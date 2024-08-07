@@ -17,9 +17,18 @@
 #ifndef DEMUG_ROMREADER_H
 #define DEMUG_ROMREADER_H
 
+#include <cstdint>
+#include <fstream>
+#include <vector>
 
 class RomReader {
+public:
+    static void loadRom(char *romPath, std::vector<uint8_t> *romsData);
 
+private:
+    static inline char *currLoadedGamePath;
+
+    static void loadBootRom();
 };
 
 
