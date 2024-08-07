@@ -20,6 +20,10 @@
 #define RAYGUI_IMPLEMENTATION
 #include "gui/raygui.h"
 
+#ifdef ENABLE_DEBUGGER
+#include "debugger/DebuggerWindow.h"
+#endif
+
 void raylogCallback(int msgType, const char *text, va_list args) {
     Logger *logger = Logger::getInstance("Raylib");
     switch (msgType) {
@@ -53,9 +57,16 @@ int main(int argc, const char *argv[]) {
     SetTraceLogLevel(LOG_WARNING);
 #endif
 
-    Bus bus(argc <= 1 ? "" : argv[1]); // Launch with game if supplied else launch without game
+    std::shared_ptr<Bus> bus = std::make_shared<Bus>(argc <= 1 ? "" : argv[1]); // Launch with game if supplied else launch without game
 
-    bus.startEmulation();
+#ifdef ENABLE_DEBUGGER
+    std::thread debugger(DebuggerWindow::startDebugger, bus);
+#endif
+    bus->startEmulation();
+
+#ifdef ENABLE_DEBUGGER
+    debugger.join();
+#endif
 
     return 0;
 }

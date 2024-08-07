@@ -78,7 +78,7 @@ public:
     inline static bool gameLaunched;
     bool disableBootRom;
 
-private:
+public:
     class Apu *apu;
     class SharpSM83 *cpu;
     class Ppu *ppu;

@@ -5,6 +5,7 @@ SET(CMAKE_CXX_STANDARD 20)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_PROJECT_HOMEPAGE_URL "https://dwightstudio.fr/DeMuG")
 SET(PROJECT_VERSION 1.0.0)
+SET(ENABLE_DEBUGGER 1)
 
 SET(SOURCE_FILES
         gui/MainWindow.cpp
@@ -44,6 +45,14 @@ SET(HEADER_FILES
         logging/Logger.h
 )
 
+SET(DEBUGGER_SOURCE_FILES
+    debugger/DebuggerWindow.cpp
+)
+
+SET(DEBUGGER_HEADER_FILES
+    debugger/DebuggerWindow.h
+)
+
 if (APPLE)
     FILE(GLOB_RECURSE RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/*")
 elseif(WIN32)
@@ -56,16 +65,46 @@ endif ()
 ADD_SUBDIRECTORY(lib/raylib EXCLUDE_FROM_ALL)
 ADD_SUBDIRECTORY(lib/nativefiledialog-extended EXCLUDE_FROM_ALL)
 
+if (${ENABLE_DEBUGGER})
+    set(IMGUI_PATH lib/imgui)
+    file(GLOB IMGUI_GLOB
+            ${IMGUI_PATH}/*.h
+            ${IMGUI_PATH}/*.cpp
+
+            ${IMGUI_PATH}/backends/imgui_impl_glfw.h
+            ${IMGUI_PATH}/backends/imgui_impl_glfw.cpp
+            ${IMGUI_PATH}/backends/imgui_impl_opengl3.h
+            ${IMGUI_PATH}/backends/imgui_impl_opengl3.cpp
+    )
+    add_library("imgui" STATIC ${IMGUI_GLOB})
+    target_include_directories("imgui" PUBLIC ${IMGUI_PATH})
+    target_link_libraries("imgui" PRIVATE glfw)
+endif ()
+
 ADD_COMPILE_DEFINITIONS("ISDEBUG=$<CONFIG:Debug>")
 
-ADD_EXECUTABLE(DeMuG ${HEADER_FILES} ${SOURCE_FILES} ${RESOURCES})
+if (${ENABLE_DEBUGGER})
+    ADD_COMPILE_DEFINITIONS("ENABLE_DEBUGGER")
+    ADD_EXECUTABLE(DeMuG ${HEADER_FILES} ${DEBUGGER_HEADER_FILES} ${DEBUGGER_SOURCE_FILES} ${SOURCE_FILES} ${RESOURCES})
+else ()
+    ADD_EXECUTABLE(DeMuG ${HEADER_FILES} ${SOURCE_FILES} ${RESOURCES})
+endif ()
 if (UNIX AND NOT APPLE OR LINUX)
     TARGET_COMPILE_OPTIONS(DeMuG PRIVATE -Wall -Wextra)
-    TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd)
+    TARGET_INCLUDE_DIRECTORIES(DeMuG PUBLIC imgui)
+    if (${ENABLE_DEBUGGER})
+        TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd imgui)
+    else ()
+        TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd)
+    endif ()
 elseif (WIN32)
     SET_TARGET_PROPERTIES(DeMuG PROPERTIES LINK_FLAGS "-mwindows")
     TARGET_COMPILE_OPTIONS(DeMuG PRIVATE -mwindows -Wall -Wextra -Wa,-mbig-obj)
-    TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd -static)
+    if (${ENABLE_DEBUGGER})
+        TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd imgui -static)
+    else ()
+        TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd -static)
+    endif ()
 elseif (APPLE)
     SET_TARGET_PROPERTIES(DeMuG PROPERTIES
             MACOSX_BUNDLE TRUE
@@ -81,7 +120,11 @@ elseif (APPLE)
     endforeach ()
 
     TARGET_COMPILE_OPTIONS(DeMuG PRIVATE -Wall -Wextra)
-    TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd)
+    if (${ENABLE_DEBUGGER})
+        TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd imgui)
+    else ()
+        TARGET_LINK_LIBRARIES(DeMuG pthread raylib nfd)
+    endif ()
 endif ()
 
 if (UNIX AND NOT APPLE OR LINUX)

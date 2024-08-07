@@ -57,7 +57,7 @@ public:
         uint8_t raw;
     } IF {}; // Interrupt flag controls handlers request
 
-private:
+public:
     inline static union {
         struct {
             bool unused1;   // Bit 0
@@ -94,7 +94,7 @@ private:
         uint8_t rawRegisters[8];
     } registers{};
 
-    inline static uint16_t PC;
+    inline static std::atomic<uint16_t> PC;
     inline static uint16_t SP;
     inline static bool IME; // Interrupt master enable flag
     inline static uint8_t interruptShouldBeEnabled;
