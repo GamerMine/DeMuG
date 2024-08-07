@@ -27,4 +27,5 @@ void RomReader::loadRom(char *romPath, std::vector<uint8_t> *romsData) {
     file.seekg(0x0000);
     file.read(reinterpret_cast<char *>(romsData->data()), sizeof(uint8_t) * 32*1024);
     file.close();
+    currLoadedGamePath = romPath;
 }

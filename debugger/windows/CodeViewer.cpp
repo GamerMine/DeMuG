@@ -21,13 +21,13 @@ void CodeViewer::ShowCodeViewer(const std::shared_ptr<Bus>& bus) {
 
     ImGui::Begin("Code Viewer");
 
-
+    ImGui::Text("Test: %X", &romsData[0x134]);
 
     ImGui::End();
 }
 
 void CodeViewer::tryLoadRoms(const std::shared_ptr<Bus>& bus) {
     if (strcmp(CartridgeHelper::gamePath, "") != 0) {
-        RomReader::loadRom(CartridgeHelper::gamePath, );
+        RomReader::loadRom(CartridgeHelper::gamePath, romsData);
     }
 }
