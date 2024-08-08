@@ -20,17 +20,16 @@
 #include <imgui.h>
 #include <memory>
 
-#include "../../hardware/Bus.h"
 #include "../utils/RomReader.h"
 
 class CodeViewer {
 public:
-    static void ShowCodeViewer(const std::shared_ptr<Bus>& bus);
+    static void ShowCodeViewer();
 
 private:
     inline static std::vector<uint8_t> *romsData;
 
-    static void tryLoadRoms(const std::shared_ptr<Bus>& bus);
+    static void tryLoadRoms();
 };
 
 

@@ -14,18 +14,4 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#include "CodeViewer.h"
-
-void CodeViewer::ShowCodeViewer() {
-    tryLoadRoms();
-
-    ImGui::Begin("Code Viewer");
-
-    ImGui::Text("Test: %X", &romsData[0x134]);
-
-    ImGui::End();
-}
-
-void CodeViewer::tryLoadRoms() {
-
-}
+#include "EmulatorSharedMemory.h"
