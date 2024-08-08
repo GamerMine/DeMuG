@@ -15,6 +15,7 @@ target_include_directories(imgui PUBLIC ${IMGUI_PATH})
 target_link_libraries(imgui PRIVATE glfw)
 
 set(DEBUGGER_SOURCE_FILES
+        main.cpp
         DebuggerWindow.cpp
         utils/RomReader.cpp
         windows/CodeViewer.cpp

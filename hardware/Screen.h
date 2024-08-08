@@ -26,7 +26,7 @@
 #include <raylib.h>
 #include <thread>
 
-#include "../logging/Logger.h"
+#include "../misc/logging/Logger.h"
 #include "Ppu.h"
 
 class Screen {

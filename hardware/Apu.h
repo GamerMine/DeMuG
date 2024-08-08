@@ -26,7 +26,7 @@
 #include "audio/SC3Wave.h"
 #include "audio/SC4Noise.h"
 #include "Bus.h"
-#include "../logging/Logger.h"
+#include "../misc/logging/Logger.h"
 
 class Apu {
 public:

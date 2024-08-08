@@ -1,5 +1,5 @@
 /*
- *  ____
+*  ____
  * /\  _`\                                       /'\_/`\  __
  * \ \ \L\_\     __      ___ ___      __   _ __ /\      \/\_\    ___      __
  *  \ \ \L_L   /'__`\  /' __` __`\  /'__`\/\`'__\ \ \__\ \/\ \ /' _ `\  /'__`\
@@ -14,4 +14,27 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#include "EmulatorSharedMemory.h"
+#ifndef SHAREDMEMORYWRITER_H
+#define SHAREDMEMORYWRITER_H
+
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
+#include "../logging/Logger.h"
+
+class SharedMemoryWriter {
+public:
+    SharedMemoryWriter(char *segmentName, size_t size);
+    ~SharedMemoryWriter();
+
+    void *shm_ptr;
+
+private:
+    int filePointer;
+    size_t m_size;
+};
+
+
+
+#endif //SHAREDMEMORYWRITER_H

@@ -19,8 +19,8 @@
 
 #include <fstream>
 
-#include "../../debug/Debug.h"
-#include "../../logging/Logger.h"
+#include "../../misc/debug/Debug.h"
+#include "../../misc/logging/Logger.h"
 
 #include "Cartridge.h"
 #include "NoMBC.h"

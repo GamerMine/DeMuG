@@ -15,7 +15,7 @@
  */
 
 #include "hardware/Bus.h"
-#include "logging/Logger.h"
+#include "misc/logging/Logger.h"
 #include <raylib.h>
 #define RAYGUI_IMPLEMENTATION
 #include "gui/raygui.h"

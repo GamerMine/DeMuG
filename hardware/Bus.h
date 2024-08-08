@@ -25,7 +25,7 @@
 #include <cstring>
 #include <fstream>
 
-#include "../debug/Debug.h"
+#include "../misc/debug/Debug.h"
 #include "Apu.h"
 #include "../gui/MainWindow.h"
 #include "InputManager.h"

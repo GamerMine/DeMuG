@@ -24,7 +24,7 @@
 #include <string>
 
 #include "Bus.h"
-#include "../logging/Logger.h"
+#include "../misc/logging/Logger.h"
 
 class SharpSM83 {
 public:

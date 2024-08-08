@@ -19,7 +19,7 @@
 
 #include <cstdint>
 
-#include "../logging/Logger.h"
+#include "../misc/logging/Logger.h"
 #include "Screen.h"
 #include "Bus.h"
 

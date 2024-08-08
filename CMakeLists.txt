@@ -17,12 +17,13 @@ SET(SOURCE_FILES
         hardware/SerialIO.cpp
         hardware/SharpSM83.cpp
         hardware/Timer.cpp
-        logging/Logger.cpp
+        misc/logging/Logger.cpp
         main.cpp
+        misc/ipc/SharedMemoryWriter.cpp
 )
 
 SET(HEADER_FILES
-        debug/Debug.h
+        misc/debug/Debug.h
         gui/FileChooser.h
         gui/MainWindow.h
         gui/raygui.h
@@ -42,7 +43,8 @@ SET(HEADER_FILES
         hardware/SerialIO.h
         hardware/SharpSM83.h
         hardware/Timer.h
-        logging/Logger.h
+        misc/logging/Logger.h
+        misc/ipc/SharedMemoryWriter.h
 )
 
 if (APPLE)

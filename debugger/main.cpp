@@ -1,5 +1,5 @@
 /*
- *  ____
+*  ____
  * /\  _`\                                       /'\_/`\  __
  * \ \ \L\_\     __      ___ ___      __   _ __ /\      \/\_\    ___      __
  *  \ \ \L_L   /'__`\  /' __` __`\  /'__`\/\`'__\ \ \__\ \/\ \ /' _ `\  /'__`\
@@ -14,15 +14,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#ifndef EMULATORSHAREDMEMORY_H
-#define EMULATORSHAREDMEMORY_H
+#include "DebuggerWindow.h"
 
-
-
-class EmulatorSharedMemory {
-
-};
-
-
-
-#endif //EMULATORSHAREDMEMORY_H
+int main() {
+    DebuggerWindow::startDebugger();
+}
