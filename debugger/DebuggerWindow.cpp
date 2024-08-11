@@ -64,6 +64,8 @@ void DebuggerWindow::startDebugger() {
     ImGui_ImplGlfw_InitForOpenGL(debuggerWindow, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+    setup();
+
     while (!glfwWindowShouldClose(debuggerWindow)) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -89,6 +91,10 @@ void DebuggerWindow::startDebugger() {
 
     glfwDestroyWindow(debuggerWindow);
     glfwTerminate();
+}
+
+void DebuggerWindow::setup() {
+    CodeViewer::InitCodeViewer();
 }
 
 void DebuggerWindow::renderLoop() {

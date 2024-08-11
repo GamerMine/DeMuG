@@ -14,23 +14,27 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#include "CodeViewer.h"
+#ifndef DEMUG_SHAREDMEMORYREADER_H
+#define DEMUG_SHAREDMEMORYREADER_H
 
-void CodeViewer::InitCodeViewer() {
-    smr = new SharedMemoryReader("/DeMuG", sizeof(dbgCpuStatus));
-    v_dbgCpuStatus = (dbgCpuStatus*) smr->shm_ptr;
-}
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-void CodeViewer::ShowCodeViewer() {
-    tryLoadRoms();
+#include "../logging/Logger.h"
 
-    ImGui::Begin("Code Viewer");
+class SharedMemoryReader {
+public:
+    SharedMemoryReader(const char *segmentName, size_t size);
+    ~SharedMemoryReader();
 
-    ImGui::Text("Test: %X", v_dbgCpuStatus->PC);
+    void *shm_ptr;
 
-    ImGui::End();
-}
+private:
+    int filePointer;
+    size_t m_size;
+};
 
-void CodeViewer::tryLoadRoms() {
 
-}
+#endif //DEMUG_SHAREDMEMORYREADER_H

@@ -19,13 +19,14 @@
 
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "../logging/Logger.h"
 
 class SharedMemoryWriter {
 public:
-    SharedMemoryWriter(char *segmentName, size_t size);
+    SharedMemoryWriter(const char *segmentName, size_t size);
     ~SharedMemoryWriter();
 
     void *shm_ptr;

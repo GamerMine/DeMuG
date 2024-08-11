@@ -31,6 +31,7 @@ public:
     static void startDebugger();
 
 private:
+    static void setup();
     static void renderLoop();
 };
 

@@ -25,6 +25,7 @@
 
 #include "Bus.h"
 #include "../misc/logging/Logger.h"
+#include "../misc/ipc/SharedMemoryWriter.h"
 
 class SharpSM83 {
 public:
@@ -105,6 +106,14 @@ public:
     int executedCycles{0};
 
     bool checkInterrupts(bool executeHandler = true);
+
+private:
+    struct dbgCpuStatus {
+        uint16_t PC;
+    };
+
+    SharedMemoryWriter *smw;
+    dbgCpuStatus *v_dbgCpuStatus;
 
 private:
     inline static std::chrono::time_point start = std::chrono::high_resolution_clock::now();

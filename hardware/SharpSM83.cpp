@@ -21,6 +21,9 @@ Logger *SharpSM83::logger;
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
 
+    smw = new SharedMemoryWriter("/DeMuG", sizeof(dbgCpuStatus));
+    v_dbgCpuStatus = (dbgCpuStatus*)smw->shm_ptr;
+
     PC = mBus->disableBootRom ? 0x0100 : 0x0000;
     SP = 0xFFFE;
     registers.A = 0x01;
@@ -65,6 +68,7 @@ void SharpSM83::runCpu() {
             instr = haltInstr;
             haltInstr = 0x00;
         } else {
+            v_dbgCpuStatus->PC = PC;
             instr = mBus->read(PC++);
         }
 

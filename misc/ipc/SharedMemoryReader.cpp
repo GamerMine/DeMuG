@@ -1,5 +1,5 @@
 /*
-*  ____
+ *  ____
  * /\  _`\                                       /'\_/`\  __
  * \ \ \L\_\     __      ___ ___      __   _ __ /\      \/\_\    ___      __
  *  \ \ \L_L   /'__`\  /' __` __`\  /'__`\/\`'__\ \ \__\ \/\ \ /' _ `\  /'__`\
@@ -14,21 +14,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#include "SharedMemoryWriter.h"
+#include "SharedMemoryReader.h"
 
-SharedMemoryWriter::SharedMemoryWriter(const char *segmentName, size_t size) {
+SharedMemoryReader::SharedMemoryReader(const char *segmentName, size_t size) {
     Logger *logger = Logger::getInstance("SharedMemoryWriter");
-    filePointer = shm_open(segmentName, O_RDWR | O_CREAT, DEFFILEMODE);
-    if (filePointer == -1) logger->log(Logger::CRITICAL, "Memory segment %s, could not be created", segmentName);
-
-    if (ftruncate(filePointer, size) == -1) logger->log(Logger::CRITICAL, "Memory segment %s, cannot set size", segmentName);
+    filePointer = shm_open(segmentName, O_RDONLY, DEFFILEMODE);
+    if (filePointer == -1) logger->log(Logger::CRITICAL, "Memory segment %s, could not be opened", segmentName);
 
     m_size = size;
-    shm_ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, filePointer, 0);
+    shm_ptr = mmap(nullptr, size, PROT_READ, MAP_SHARED, filePointer, 0);
     if (shm_ptr == MAP_FAILED) logger->log(Logger::CRITICAL, "Memory segment %s, cannot map to memory", segmentName);
 }
 
-SharedMemoryWriter::~SharedMemoryWriter() {
+SharedMemoryReader::~SharedMemoryReader() {
     munmap(shm_ptr, m_size);
     close(filePointer);
 }

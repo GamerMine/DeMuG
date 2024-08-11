@@ -16,12 +16,16 @@ target_link_libraries(imgui PRIVATE glfw)
 
 set(DEBUGGER_SOURCE_FILES
         main.cpp
+        ../misc/ipc/SharedMemoryReader.cpp
+        ../misc/logging/Logger.cpp
         DebuggerWindow.cpp
         utils/RomReader.cpp
         windows/CodeViewer.cpp
 )
 
 set(DEBUGGER_HEADER_FILES
+        ../misc/ipc/SharedMemoryReader.h
+        ../misc/logging/Logger.h
         DebuggerWindow.h
         utils/RomReader.h
         windows/CodeViewer.h

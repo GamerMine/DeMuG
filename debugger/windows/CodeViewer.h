@@ -21,13 +21,21 @@
 #include <memory>
 
 #include "../utils/RomReader.h"
+#include "../../misc/ipc/SharedMemoryReader.h"
 
 class CodeViewer {
 public:
+    static void InitCodeViewer();
     static void ShowCodeViewer();
 
 private:
+    struct dbgCpuStatus {
+        uint16_t PC;
+    };
+
     inline static std::vector<uint8_t> *romsData;
+    inline static SharedMemoryReader *smr;
+    inline static dbgCpuStatus *v_dbgCpuStatus;
 
     static void tryLoadRoms();
 };
