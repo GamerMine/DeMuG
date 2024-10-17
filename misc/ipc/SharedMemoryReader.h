@@ -29,11 +29,14 @@ public:
     SharedMemoryReader(const char *segmentName, size_t size);
     ~SharedMemoryReader();
 
+    bool isSuccess() const;
+
     void *shm_ptr;
 
 private:
     int filePointer;
     size_t m_size;
+    bool success;
 };
 
 

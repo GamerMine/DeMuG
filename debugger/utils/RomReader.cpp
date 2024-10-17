@@ -16,7 +16,9 @@
 
 #include "RomReader.h"
 
-void RomReader::loadRom(char *romPath, std::vector<uint8_t> *romsData) {
+void RomReader::loadRom(char *romPath) {
+    if (romPath == currLoadedGamePath || strcmp(romPath, "") == 0) return;
+    Logger::getInstance("RomReader")->log(Logger::DEBUG, "Loading rom: %s", romPath);
     uint8_t mapperType = 0;
 
     std::ifstream file(romPath, std::ios::binary);
@@ -25,7 +27,14 @@ void RomReader::loadRom(char *romPath, std::vector<uint8_t> *romsData) {
     file.read(reinterpret_cast<char *>(&mapperType), sizeof(uint8_t) * 1);
 
     file.seekg(0x0000);
-    file.read(reinterpret_cast<char *>(romsData->data()), sizeof(uint8_t) * 32*1024);
+    file.read(reinterpret_cast<char *>(romData.data()), sizeof(uint8_t) * 32*1024);
     file.close();
     currLoadedGamePath = romPath;
+    loaded = true;
 }
+
+bool RomReader::isLoaded() {
+    return loaded;
+}
+
+

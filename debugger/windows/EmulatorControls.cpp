@@ -14,29 +14,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#include "SharedMemoryReader.h"
+#include "EmulatorControls.h"
 
-SharedMemoryReader::SharedMemoryReader(const char *segmentName, size_t size) {
-    filePointer = shm_open(segmentName, O_RDONLY, DEFFILEMODE);
-    success = true;
-    if (filePointer == -1) {
-        success = false;
-    }
+void EmulatorControls::InitEmulatorControls() {
+    smw = new SharedMemoryWriter("/demugger_emu_controls", sizeof(dbgEmuControls));
+    v_dbgEmuControlsW = (dbgEmuControls*)smw->shm_ptr;
 
-    if (success) {
-        m_size = size;
-        shm_ptr = mmap(nullptr, size, PROT_READ, MAP_SHARED, filePointer, 0);
-        if (shm_ptr == MAP_FAILED) {
-            success = false;
-        }
-    }
+    smr = new SharedMemoryReader("/demug_bus", sizeof(dbgBusStatus));
+    v_dbgBusStatus = (dbgBusStatus*) smr->shm_ptr;
 }
 
-bool SharedMemoryReader::isSuccess() const {
-    return success;
-}
+void EmulatorControls::ShowEmulatorControls() {
+    ImGui::Begin("Emulator Controls");
 
-SharedMemoryReader::~SharedMemoryReader() {
-    munmap(shm_ptr, m_size);
-    close(filePointer);
+    if (ImGui::Button(v_dbgBusStatus->isPaused ? ICON_FA_PLAY " Run" : ICON_FA_PAUSE " Pause")) {
+        v_dbgEmuControlsW->isPaused = !v_dbgEmuControlsW->isPaused;
+    }
+
+    ImGui::End();
 }

@@ -19,6 +19,7 @@ SET(SOURCE_FILES
         hardware/Timer.cpp
         misc/logging/Logger.cpp
         main.cpp
+        misc/ipc/SharedMemoryReader.cpp
         misc/ipc/SharedMemoryWriter.cpp
 )
 
@@ -44,6 +45,7 @@ SET(HEADER_FILES
         hardware/SharpSM83.h
         hardware/Timer.h
         misc/logging/Logger.h
+        misc/ipc/SharedMemoryReader.h
         misc/ipc/SharedMemoryWriter.h
 )
 

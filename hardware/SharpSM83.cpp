@@ -21,7 +21,7 @@ Logger *SharpSM83::logger;
 SharpSM83::SharpSM83(class Bus *bus) {
     this->mBus = bus;
 
-    smw = new SharedMemoryWriter("/DeMuG", sizeof(dbgCpuStatus));
+    smw = new SharedMemoryWriter("/demug_cpu", sizeof(dbgCpuStatus));
     v_dbgCpuStatus = (dbgCpuStatus*)smw->shm_ptr;
 
     PC = mBus->disableBootRom ? 0x0100 : 0x0000;
@@ -60,36 +60,39 @@ void SharpSM83::reset() {
 }
 
 void SharpSM83::runCpu() {
-    if (executedCycles <= 17556) {
-        //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
+    if (!mBus->isPaused()) {
+        if (executedCycles <= 17556) {
+            //if (interruptShouldBeEnabled) { IME = true; } else {IME = false;}
 
-        uint8_t instr;
-        if (haltInstr != 0x00) {
-            instr = haltInstr;
-            haltInstr = 0x00;
+            uint8_t instr;
+            if (haltInstr != 0x00) {
+                instr = haltInstr;
+                haltInstr = 0x00;
+            } else {
+                v_dbgCpuStatus->PC = PC;
+                instr = mBus->read(PC++);
+            }
+
+            if (haltBug) {
+                haltInstr = instr;
+                haltBug = false;
+            }
+            uint8_t mCycles = opcodes[instr]();
+            executedCycles += mCycles;
+            mBus->tick(mCycles);
+            if (interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
+            if (interruptShouldBeEnabled == 3) { IME = true; } else { IME = false; }
+
+            if (IME) checkInterrupts(true);
+
         } else {
-            v_dbgCpuStatus->PC = PC;
-            instr = mBus->read(PC++);
+            mBus->runPpu();
+            executedCycles -= 17556;
+            std::chrono::time_point end = std::chrono::high_resolution_clock::now();
+            WaitTime((double) (16750 - std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) /
+                     1000000);
+            start = std::chrono::high_resolution_clock::now();
         }
-
-        if (haltBug) {
-            haltInstr = instr;
-            haltBug = false;
-        }
-        uint8_t mCycles = opcodes[instr]();
-        executedCycles += mCycles;
-        mBus->tick(mCycles);
-        if (interruptShouldBeEnabled > 0 && interruptShouldBeEnabled < 3) interruptShouldBeEnabled++;
-        if (interruptShouldBeEnabled == 3) { IME = true; } else { IME = false; }
-
-        if (IME) checkInterrupts(true);
-
-    } else {
-        mBus->runPpu();
-        executedCycles -= 17556;
-        std::chrono::time_point end = std::chrono::high_resolution_clock::now();
-        WaitTime((double)(16750 - std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000);
-        start = std::chrono::high_resolution_clock::now();
     }
 }
 

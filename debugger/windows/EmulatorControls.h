@@ -14,29 +14,35 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/ .
  */
 
-#include "SharedMemoryReader.h"
+#ifndef DEMUG_EMULATORCONTROLS_H
+#define DEMUG_EMULATORCONTROLS_H
 
-SharedMemoryReader::SharedMemoryReader(const char *segmentName, size_t size) {
-    filePointer = shm_open(segmentName, O_RDONLY, DEFFILEMODE);
-    success = true;
-    if (filePointer == -1) {
-        success = false;
-    }
+#include <imgui.h>
 
-    if (success) {
-        m_size = size;
-        shm_ptr = mmap(nullptr, size, PROT_READ, MAP_SHARED, filePointer, 0);
-        if (shm_ptr == MAP_FAILED) {
-            success = false;
-        }
-    }
-}
+#include "../fonts/IconsFontAwesome5.h"
+#include "../../misc/ipc/SharedMemoryWriter.h"
+#include "../../misc/ipc/SharedMemoryReader.h"
 
-bool SharedMemoryReader::isSuccess() const {
-    return success;
-}
+class EmulatorControls {
+public:
+    static void InitEmulatorControls();
+    static void ShowEmulatorControls();
 
-SharedMemoryReader::~SharedMemoryReader() {
-    munmap(shm_ptr, m_size);
-    close(filePointer);
-}
+private:
+    struct dbgEmuControls {
+        bool isPaused;
+    };
+
+    struct dbgBusStatus {
+        char currentGamePath[4096];
+        bool isPaused;
+    };
+
+    inline static SharedMemoryWriter *smw;
+    inline static SharedMemoryReader *smr;
+    inline static dbgEmuControls *v_dbgEmuControlsW;
+    inline static dbgBusStatus *v_dbgBusStatus;
+};
+
+
+#endif //DEMUG_EMULATORCONTROLS_H

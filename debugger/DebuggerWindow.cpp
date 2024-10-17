@@ -15,6 +15,7 @@
  */
 
 #include "DebuggerWindow.h"
+#include "fonts/IconsFontAwesome5.h"
 
 void glfw_error_callback(int error, const char* description) {
     printf("Error #%d: %s\n", error, description);
@@ -93,10 +94,30 @@ void DebuggerWindow::startDebugger() {
     glfwTerminate();
 }
 
+void initFonts() {
+    ImGuiIO &io = ImGui::GetIO();
+    float baseFontSize = 13.0f;
+    float iconFontSize = baseFontSize * 2.0f / 3.0f;
+
+    io.Fonts->AddFontDefault();
+
+    static const ImWchar iconsRanges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
+    ImFontConfig iconsConfig;
+    iconsConfig.MergeMode = true;
+    iconsConfig.PixelSnapH = true;
+    iconsConfig.GlyphMinAdvanceX = iconFontSize;
+    io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconFontSize, &iconsConfig, iconsRanges);
+}
+
 void DebuggerWindow::setup() {
+    initFonts();
+
     CodeViewer::InitCodeViewer();
+    EmulatorControls::InitEmulatorControls();
 }
 
 void DebuggerWindow::renderLoop() {
     CodeViewer::ShowCodeViewer();
+    EmulatorControls::ShowEmulatorControls();
+    //ImGui::ShowDemoWindow();
 }

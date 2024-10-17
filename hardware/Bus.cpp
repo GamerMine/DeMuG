@@ -21,6 +21,7 @@ bool Bus::GLOBAL_HALT = false;
 Bus::Bus(const char *filename) {
     logger = Logger::getInstance("Bus");
     disableBootRom = false;
+    isDemuggerRunning = false;
 
     ppu = new Ppu(this);
     apu = new Apu(this);
@@ -30,17 +31,41 @@ Bus::Bus(const char *filename) {
     serial = new SerialIO(this);
     mainWindow = new MainWindow(this);
 
+    smw = new SharedMemoryWriter("/demug_bus", sizeof(dbgBusStatus));
+    v_dbgBusStatus = (dbgBusStatus*)smw->shm_ptr;
+    v_dbgBusStatus->isPaused = false;
+
     readBootRom();
     if (CartridgeHelper::checkRomValidity(filename)) {
-        cartridge = CartridgeHelper::readGameRom(filename);
-        gameLaunched = true;
+        loadGameROM(filename);
     } else gameLaunched = false;
+}
+
+void Bus::ipcLoop() {
+    if (gameLaunched) {
+        if (!isDemuggerRunning) {
+            smr = new SharedMemoryReader("/demugger_emu_controls", sizeof(dbgEmuControls));
+            if (smr->isSuccess()) {
+                v_dbgEmuControls = (dbgEmuControls*)smr->shm_ptr;
+                isDemuggerRunning = true;
+            }
+        } else {
+            v_dbgBusStatus->isPaused = v_dbgEmuControls->isPaused;
+            if (isPaused()) SetMasterVolume(0);
+            else SetMasterVolume(Apu::DEFAULT_MASTER_VOLUME);
+        }
+    }
+}
+
+bool Bus::isPaused() {
+    return v_dbgBusStatus->isPaused;
 }
 
 void Bus::startEmulation() {
     while (!WindowShouldClose()) {
         if (gameLaunched) cpu->runCpu();
         else mainWindow->render();
+        ipcLoop();
     }
 
     Bus::GLOBAL_HALT = true;
@@ -164,6 +189,7 @@ std::string Bus::getBootROM() {
 }
 
 void Bus::loadGameROM(const char *filename) {
+    strcpy(v_dbgBusStatus->currentGamePath, filename);
     reset();
     cartridge = CartridgeHelper::readGameRom(filename);
     gameLaunched = true;

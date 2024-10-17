@@ -18,15 +18,22 @@
 #define DEMUG_ROMREADER_H
 
 #include <cstdint>
+#include <cstring>
 #include <fstream>
-#include <vector>
+#include <array>
+
+#include "../../misc/logging/Logger.h"
 
 class RomReader {
 public:
-    static void loadRom(char *romPath, std::vector<uint8_t> *romsData);
+    inline static std::array<uint8_t, 32*1024> romData;
+
+    static void loadRom(char *romPath);
+    static bool isLoaded();
 
 private:
     static inline char *currLoadedGamePath;
+    static inline bool loaded;
 
     static void loadBootRom();
 };

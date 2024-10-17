@@ -17,18 +17,23 @@ target_link_libraries(imgui PRIVATE glfw)
 set(DEBUGGER_SOURCE_FILES
         main.cpp
         ../misc/ipc/SharedMemoryReader.cpp
+        ../misc/ipc/SharedMemoryWriter.cpp
         ../misc/logging/Logger.cpp
         DebuggerWindow.cpp
         utils/RomReader.cpp
         windows/CodeViewer.cpp
+        windows/EmulatorControls.cpp
 )
 
 set(DEBUGGER_HEADER_FILES
         ../misc/ipc/SharedMemoryReader.h
+        ../misc/ipc/SharedMemoryWriter.h
         ../misc/logging/Logger.h
         DebuggerWindow.h
+        fonts/IconsFontAwesome5.h
         utils/RomReader.h
         windows/CodeViewer.h
+        windows/EmulatorControls.h
 )
 
 add_executable(DeMuGGER ${DEBUGGER_HEADER_FILES} ${DEBUGGER_SOURCE_FILES})

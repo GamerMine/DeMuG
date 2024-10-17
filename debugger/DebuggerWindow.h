@@ -25,6 +25,7 @@
 #include <imgui.h>
 
 #include "windows/CodeViewer.h"
+#include "windows/EmulatorControls.h"
 
 class DebuggerWindow {
 public:

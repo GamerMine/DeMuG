@@ -26,6 +26,8 @@
 #include <fstream>
 
 #include "../misc/debug/Debug.h"
+#include "../misc/ipc/SharedMemoryReader.h"
+#include "../misc/ipc/SharedMemoryWriter.h"
 #include "Apu.h"
 #include "../gui/MainWindow.h"
 #include "InputManager.h"
@@ -59,6 +61,7 @@ public:
     void runPpu();
 
     void reset();
+    bool isPaused();
 
     void loadGameROM(const char *filename);
 
@@ -76,10 +79,10 @@ public:
     } JOYP;
 
     inline static bool gameLaunched;
-    inline static char *gamePath;
     bool disableBootRom;
+    bool isDemuggerRunning;
 
-public:
+private:
     class Apu *apu;
     class SharpSM83 *cpu;
     class Ppu *ppu;
@@ -95,7 +98,22 @@ public:
     std::array<uint8_t, RAM_SIZE> wram{};
     std::array<uint8_t, HRAM_SIZE> hram{};
 
+    struct dbgBusStatus {
+        char currentGamePath[4096];
+        bool isPaused;
+    };
+
+    struct dbgEmuControls {
+        bool isPaused;
+    };
+
+    SharedMemoryWriter *smw;
+    SharedMemoryReader *smr;
+    dbgBusStatus *v_dbgBusStatus;
+    dbgEmuControls *v_dbgEmuControls;
+
     void readBootRom();
+    void ipcLoop();
 };
 
 

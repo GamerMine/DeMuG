@@ -26,6 +26,8 @@ SharedMemoryWriter::SharedMemoryWriter(const char *segmentName, size_t size) {
     m_size = size;
     shm_ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, filePointer, 0);
     if (shm_ptr == MAP_FAILED) logger->log(Logger::CRITICAL, "Memory segment %s, cannot map to memory", segmentName);
+
+    memset(shm_ptr, 0, m_size);
 }
 
 SharedMemoryWriter::~SharedMemoryWriter() {

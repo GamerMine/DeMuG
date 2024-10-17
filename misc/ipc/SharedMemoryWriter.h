@@ -17,6 +17,7 @@
 #ifndef SHAREDMEMORYWRITER_H
 #define SHAREDMEMORYWRITER_H
 
+#include <cstring>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
