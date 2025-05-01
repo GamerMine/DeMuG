@@ -1,0 +1,8 @@
+[package]
+name = "demug-gui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+libdemug = {path = "../libdemug"}
+raylib = "5.5.1"
