@@ -25,12 +25,33 @@ impl Demug {
     }
     
     fn read(&self, addr: u16) -> u8 {
-        let mut data: u8 = 0x00;
-        
-        data
+        if let Some(mem) = &self.memory {
+            let mut data: u8 = 0x00;
+            let addr = addr as usize;
+
+            if addr <= 0x0100 {
+                data = mem.boot_rom[addr];
+            } else if addr >= 0xC000 && addr <= 0xDFFF {
+                data = mem.wram[addr - 0xC000];
+            } else if addr >= 0xFF80 && addr <= 0xFFFE {
+                data = mem.hram[addr - 0xFF80];
+            }
+
+            data
+        } else {
+            unreachable!()
+        }
     }
-    
+
     fn write(&mut self, addr: u16, data: u8) {
-        
+        if let Some(mem) = &mut self.memory {
+            let addr = addr as usize;
+
+            if addr >= 0xC000 && addr <= 0xDFFF {
+                mem.wram[addr - 0xC000] = data;
+            } else if addr >= 0xFF80 && addr <= 0xFFFE {
+                mem.hram[addr - 0xFF80] = data;
+            }
+        }
     }
 }
