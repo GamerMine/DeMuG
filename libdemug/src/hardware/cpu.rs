@@ -1,15 +1,24 @@
 mod opcodes;
 
 use crate::Demug;
+use crate::hardware::cpu::opcodes::OPCODES;
 use std::cell::RefCell;
 use std::sync::Arc;
-use crate::hardware::cpu::opcodes::OPCODES;
 
 enum Registers16Bit {
     BC,
     DE,
     HL,
     AF,
+}
+
+#[repr(u8)]
+pub(crate) enum Interrupts {
+    Joypad = 4,
+    Serial = 3,
+    Timer = 2,
+    Lcd = 1,
+    Vblank = 0,
 }
 
 struct CpuRegisters {
@@ -52,21 +61,50 @@ impl Cpu {
             ime: false,
         }
     }
-    
+
     pub fn execute(&mut self) {
         let opcode = self.fetch_byte();
-        
+
         if self.m_cycles <= 17556 {
             let old_m_cycles = self.m_cycles;
-            
+
             OPCODES[opcode as usize](self);
-            
+
             self.bus.borrow().tick(self.m_cycles - old_m_cycles);
-            
-            //if self.ime {self.checkInterrupts()}
+
+            if self.ime {
+                self.check_interrupts()
+            }
         } else {
             self.m_cycles -= 17556;
         }
+    }
+
+    fn check_interrupts(&mut self) {
+        let mut interrupt_triggered = (false, 0x0000);
+        if self.bus.borrow().interrupt_enable.get().bit(Interrupts::Vblank as u8) == 0b1
+            && self.bus.borrow().interrupt_flags.get().bit(Interrupts::Vblank as u8) == 0b1
+        {
+            interrupt_triggered.0 = true;
+            interrupt_triggered.1 = 0x0040;
+            self.bus.borrow_mut().interrupt_flags.get().clear(Interrupts::Vblank as u8);
+        }
+        else if self.bus.borrow().interrupt_enable.get().bit(Interrupts::Lcd as u8) == 0b1
+            && self.bus.borrow().interrupt_flags.get().bit(Interrupts::Lcd as u8) == 0b1
+        {
+            interrupt_triggered.0 = true;
+            interrupt_triggered.1 = 0x0048;
+            self.bus.borrow_mut().interrupt_flags.get().clear(Interrupts::Lcd as u8);
+        }
+
+        if interrupt_triggered.0 {
+            self.ime = false;
+            self.m_cycles += 2;
+            self.write_word(self.registers.sp - 2, self.registers.sp - 1, self.registers.pc);
+            self.registers.sp -= 2;
+            self.registers.pc = interrupt_triggered.1;
+        }
+        // TODO: Implements Timer, Serial, Joypad interrupts
     }
 
     fn get_16bit_register(&self, register: Registers16Bit) -> u16 {

@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub struct Register {
     value: u8
 }
@@ -20,9 +21,6 @@ impl Register {
         } else {
             self.clear(bit);
         }
-    }
-    pub fn sets(&mut self, bits: u8, value: u8) {
-        self.value = (self.value & !bits) | (value & bits);
     }
     pub fn clear(&mut self, bit: u8) {
         self.value &= !(1 << bit);

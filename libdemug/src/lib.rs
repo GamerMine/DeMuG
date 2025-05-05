@@ -1,6 +1,7 @@
-use crate::hardware::cpu::Cpu;
+use crate::hardware::cpu::{Cpu, Interrupts};
 use crate::hardware::memory::Memory;
 use crate::hardware::ppu::Ppu;
+use crate::utils::Register;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -16,6 +17,8 @@ pub struct Demug {
     cpu: RefCell<Option<Cpu>>,
     ppu: RefCell<Option<Ppu>>,
     disable_boot_rom: Cell<bool>,
+    interrupt_flags: Cell<Register>,
+    interrupt_enable: Cell<Register>,
 }
 
 impl Demug {
@@ -25,6 +28,8 @@ impl Demug {
             cpu: RefCell::new(None),
             ppu: RefCell::new(None),
             disable_boot_rom: Cell::new(false),
+            interrupt_flags: Cell::new(Register::new(0xE1)),
+            interrupt_enable: Cell::new(Register::new(0x00)),
         }));
 
         // Create all necessary 'devices'
@@ -46,22 +51,14 @@ impl Demug {
     }
 
     pub fn get_frame(&self) -> Vec<u8> {
-        if let Some(ppu) = &mut *self.ppu.borrow_mut() {
-            ppu.get_frame()
-        } else {
-            unreachable!()
-        }
+        if let Some(ppu) = &mut *self.ppu.borrow_mut() { ppu.get_frame() } else { unreachable!() }
     }
 
     pub fn step(&self) -> bool {
         if let Some(cpu) = &mut *self.cpu.borrow_mut() {
             cpu.execute();
         }
-        if let Some(ppu) = &*self.ppu.borrow() {
-            ppu.is_frame_ready()
-        } else {
-            unreachable!()
-        }
+        if let Some(ppu) = &*self.ppu.borrow() { ppu.is_frame_ready() } else { unreachable!() }
     }
 
     pub fn disable_boot_rom(&mut self, disabled: bool) {
@@ -69,7 +66,7 @@ impl Demug {
     }
 
     fn read(&self, addr: u16) -> u8 {
-        let mut data: u8 = 0x00;
+        let mut data: u8 = 0xFF;
         let addr = addr as usize;
 
         if addr <= 0x00FF && !self.disable_boot_rom.get() {
@@ -80,18 +77,25 @@ impl Demug {
             if let Some(mem) = &*self.memory.borrow() {
                 data = mem.game_rom[addr];
             }
-        } else if addr >= 0x0100 && addr <= 0x3FFF {
+        } else if addr >= 0x0100 && addr <= 0x7FFF {
+            // FIXME: This should not be handled like that, the game rom should be accessed through a read method of a cartridge management struct
             if let Some(mem) = &*self.memory.borrow() {
                 data = mem.game_rom[addr];
-            }
-        } else if addr >= 0xC000 && addr <= 0xDFFF {
-            if let Some(mem) = &*self.memory.borrow() {
-                data = mem.wram[addr - 0xC000];
             }
         } else if addr >= 0x8000 && addr <= 0x9FFF {
             if let Some(mem) = &*self.memory.borrow() {
                 data = mem.vram[addr - 0x8000];
             }
+        } else if addr >= 0xC000 && addr <= 0xDFFF {
+            if let Some(mem) = &*self.memory.borrow() {
+                data = mem.wram[addr - 0xC000];
+            }
+        } else if addr >= 0xE000 && addr <= 0xFDFF {
+            if let Some(mem) = &*self.memory.borrow() {
+                data = mem.wram[addr - 0xE000];
+            }
+        } else if addr == 0xFF0F {
+            data = self.interrupt_flags.get().value()
         } else if addr >= 0xFF40 && addr <= 0xFF4B {
             if let Some(ppu) = &*self.ppu.borrow() {
                 data = ppu.read(addr as u16)
@@ -100,37 +104,55 @@ impl Demug {
             if let Some(mem) = &*self.memory.borrow() {
                 data = mem.hram[addr - 0xFF80];
             }
+        } else if addr == 0xFFFF {
+            data = self.interrupt_enable.get().value();
         } else {
             println!("Read from {:#X} is not implemented!", addr);
+            //exit(0)
         }
 
         data
     }
 
     fn write(&self, addr: u16, data: u8) {
-        if let (Some(mem), Some(ppu)) = (&mut *self.memory.borrow_mut(), &mut *self.ppu.borrow_mut()) {
-            let addr = addr as usize;
+        let addr = addr as usize;
 
-            if addr >= 0xC000 && addr <= 0xDFFF {
-                mem.wram[addr - 0xC000] = data;
-            } else if addr >= 0x8000 && addr <= 0x9FFF {
+        if addr >= 0x8000 && addr <= 0x9FFF {
+            if let Some(mem) = &mut *self.memory.borrow_mut() {
                 mem.vram[addr - 0x8000] = data;
-            } else if addr >= 0xFF40 && addr <= 0xFF4B {
-                ppu.write(addr as u16, data);
-            } else if addr == 0xFF50 && data != 0x00 {
-                self.disable_boot_rom.set(true);
-                println!("Disabling Boot Rom");
-            } else if addr >= 0xFF80 && addr <= 0xFFFE {
-                mem.hram[addr - 0xFF80] = data;
-            } else {
-                println!("Write to {:#X} is not implemented!", addr);
             }
+        } else if addr >= 0xC000 && addr <= 0xDFFF {
+            if let Some(mem) = &mut *self.memory.borrow_mut() {
+                mem.wram[addr - 0xC000] = data;
+            }
+        } else if addr == 0xFF0F {
+            self.interrupt_flags.get().set_value(data);
+        } else if addr >= 0xFF40 && addr <= 0xFF4B {
+            if let Some(ppu) = &mut *self.ppu.borrow_mut() {
+                ppu.write(addr as u16, data);
+            }
+        } else if addr == 0xFF50 && data != 0x00 {
+            self.disable_boot_rom.set(true);
+            self.interrupt_flags.get().set_value(data);
+            println!("Disabling Boot Rom");
+        } else if addr >= 0xFF80 && addr <= 0xFFFE {
+            if let Some(mem) = &mut *self.memory.borrow_mut() {
+                mem.hram[addr - 0xFF80] = data;
+            }
+        } else if addr == 0xFFFF {
+            self.interrupt_enable.get().set_value(data);
+        } else {
+            println!("Write to {:#X} is not implemented!", addr);
         }
     }
 
     fn tick(&self, m_cycles: u64) {
-        if let (Some(ppu)) = (&mut *self.ppu.borrow_mut()) {
+        if let Some(ppu) = &mut *self.ppu.borrow_mut() {
             ppu.tick(m_cycles);
         }
+    }
+
+    fn trigger_interrupt(&self, interrupt: Interrupts) {
+        self.interrupt_flags.get().set(interrupt as u8);
     }
 }

@@ -1507,6 +1507,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let pc_lo = cpu.read_byte(cpu.registers.sp);
         let pc_hi = cpu.read_byte(cpu.registers.sp + 1);
 
+        cpu.ime = true;
         cpu.registers.sp += 2;
         cpu.registers.pc = (pc_hi as u16) << 8 | pc_lo as u16;
         cpu.m_cycles += 1;
