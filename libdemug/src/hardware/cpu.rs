@@ -146,7 +146,7 @@ impl Cpu {
             }
             Registers16Bit::AF => {
                 self.registers.a = (value >> 8) as u8;
-                self.registers.f = value as u8;
+                self.registers.f = value as u8 & 0xF0;
             }
         }
     }
@@ -228,7 +228,7 @@ impl Cpu {
 
     fn increment8_flag(&mut self, res_value: u8) {
         self.set_zero(res_value == 0x00);
-        self.set_half_carry(res_value - 0b1 & 0x0F == 0x0F);
+        self.set_half_carry(res_value.wrapping_sub(0b1) & 0x0F == 0x0F);
         self.set_negative(false);
     }
 
@@ -238,31 +238,48 @@ impl Cpu {
         self.set_negative(true);
     }
 
-    fn add8_flag(&mut self, base_value: u8, result_value: u8) {
-        self.set_zero(result_value == 0x00);
-        if result_value < base_value {
-            self.set_half_carry(true);
-            self.set_carry(true);
-        } else if result_value >> 4 > base_value >> 4 {
-            self.set_half_carry(true);
-        }
+    fn add8_flag(&mut self, base_value: u8, value: u8) {
+        self.set_carry((base_value as u16).wrapping_add(value as u16) > 0xFF);
+        self.set_half_carry((base_value & 0xF).wrapping_add(value & 0x0F) > 0x0F);
+        self.set_negative(false);
+        self.set_zero(base_value.wrapping_add(value) == 0x00);
+    }
+
+    fn adc8_flag(&mut self, base_value: u8, value: u8) {
+        let result = base_value.wrapping_add(value).wrapping_add(self.carry());
+        
+        self.set_half_carry((base_value & 0xF).wrapping_add(value & 0x0F).wrapping_add(self.carry()) > 0x0F);
+        self.set_carry((base_value as u16).wrapping_add(value as u16).wrapping_add(self.carry() as u16) > 0xFF);
+        self.set_negative(false);
+        self.set_zero(result == 0x00);
+    }
+
+    fn add16_flag(&mut self, base_value: u16, value: u16) {
+        self.set_carry((base_value as u32).wrapping_add(value as u32) > 0xFFFF);
+        self.set_half_carry((base_value & 0x0FFF).wrapping_add(value & 0x0FFF) > 0x0FFF);
         self.set_negative(false);
     }
 
-    fn add16_flag(&mut self, base_value: u16, result_value: u16) {
-        if result_value < base_value {
-            self.set_half_carry(true);
-            self.set_carry(true);
-        } else if result_value >> 12 > base_value >> 12 {
-            self.set_half_carry(true);
-        }
+    fn add_signed16_flag(&mut self, base_value: u16, value: i16) {
+        let result: u16 = base_value.wrapping_add_signed(value);
+        
+        self.set_carry((base_value ^ value as u16 ^ result & 0xFFFF) & 0x100 == 0x100);
+        self.set_half_carry((base_value ^ value as u16 ^ result & 0xFFFF) & 0x10 == 0x10);
         self.set_negative(false);
+        self.set_zero(false);
     }
 
     fn subtract8_flag(&mut self, base_value: u8, value: u8) {
         self.set_zero(base_value.wrapping_sub(value) == 0x00);
         self.set_half_carry(base_value & 0x0F < value & 0x0F);
-        self.set_carry(base_value < value);
+        self.set_carry((base_value as u16) < (value as u16));
+        self.set_negative(true);
+    }
+    
+    fn subtractc8_flag(&mut self, base_value: u8, value: u8) {
+        self.set_zero(base_value.wrapping_sub(value).wrapping_sub(self.carry()) == 0x00);
+        self.set_half_carry(base_value & 0x0F < (value & 0x0F) + self.carry());
+        self.set_carry((base_value as u16) < (value as u16 + self.carry() as u16));
         self.set_negative(true);
     }
 

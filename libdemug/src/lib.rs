@@ -3,9 +3,7 @@ use crate::hardware::memory::{Memory, MemoryDebugInfo};
 use crate::hardware::ppu::Ppu;
 use crate::utils::Register;
 use std::cell::{Cell, RefCell};
-use std::ops::Deref;
 use std::path::PathBuf;
-use std::process::exit;
 use std::sync::Arc;
 
 mod hardware;

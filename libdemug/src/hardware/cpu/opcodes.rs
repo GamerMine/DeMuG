@@ -66,7 +66,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
             Registers16Bit::HL,
             original_value.wrapping_add(cpu.get_16bit_register(Registers16Bit::BC)),
         );
-        cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::HL));
+        cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::BC));
 
         cpu.m_cycles += 1;
     },
@@ -108,7 +108,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.a, false, true);
         cpu.set_zero(false);
 
-        cpu.registers.a = cpu.registers.a.rotate_right(1) | cpu.carry();
+        cpu.registers.a = cpu.registers.a >> 1 | cpu.carry() << 7;
     },
     |_| {
         /* 0x10 */
@@ -178,7 +178,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
             Registers16Bit::HL,
             original_value.wrapping_add(cpu.get_16bit_register(Registers16Bit::DE)),
         );
-        cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::HL));
+        cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::DE));
 
         cpu.m_cycles += 1;
     },
@@ -315,7 +315,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
             Registers16Bit::HL,
             original_value.wrapping_add(cpu.get_16bit_register(Registers16Bit::HL)),
         );
-        cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::HL));
+        cpu.add16_flag(original_value, original_value);
 
         cpu.m_cycles += 1;
     },
@@ -438,7 +438,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.get_16bit_register(Registers16Bit::HL);
 
         cpu.set_16bit_register(Registers16Bit::HL, original_value.wrapping_add(cpu.registers.sp));
-        cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::HL));
+        cpu.add16_flag(original_value, cpu.registers.sp);
 
         cpu.m_cycles += 1;
     },
@@ -479,7 +479,9 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x3F */
         /* CCF */
-        cpu.set_carry(cpu.carry() != 0x01);
+        cpu.set_carry(cpu.carry() == 0x00);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
     },
     |cpu| {
         /* 0x40 */
@@ -814,7 +816,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.b);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, cpu.registers.b);
     },
     |cpu| {
         /* 0x81 */
@@ -822,7 +824,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.c);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, cpu.registers.c);
     },
     |cpu| {
         /* 0x82 */
@@ -830,7 +832,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.d);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, cpu.registers.d);
     },
     |cpu| {
         /* 0x83 */
@@ -838,7 +840,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.e);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, cpu.registers.e);
     },
     |cpu| {
         /* 0x84 */
@@ -846,7 +848,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.h);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, cpu.registers.h);
     },
     |cpu| {
         /* 0x85 */
@@ -854,7 +856,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.l);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, cpu.registers.l);
     },
     |cpu| {
         /* 0x86 */
@@ -863,7 +865,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let data = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
         cpu.registers.a = cpu.registers.a.wrapping_add(data);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, data);
     },
     |cpu| {
         /* 0x87 */
@@ -871,7 +873,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.a);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, original_value);
     },
     |cpu| {
         /* 0x88 */
@@ -879,7 +881,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.b).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, cpu.registers.b);
     },
     |cpu| {
         /* 0x89 */
@@ -887,7 +889,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.c).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, cpu.registers.c);
     },
     |cpu| {
         /* 0x8A */
@@ -895,7 +897,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.d).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, cpu.registers.d);
     },
     |cpu| {
         /* 0x8B */
@@ -903,7 +905,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.e).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, cpu.registers.e);
     },
     |cpu| {
         /* 0x8C */
@@ -911,7 +913,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.h).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, cpu.registers.h);
     },
     |cpu| {
         /* 0x8D */
@@ -919,7 +921,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.l).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, cpu.registers.l);
     },
     |cpu| {
         /* 0x8E */
@@ -928,7 +930,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let data = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
         cpu.registers.a = cpu.registers.a.wrapping_add(data).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, data);
     },
     |cpu| {
         /* 0x8F */
@@ -936,7 +938,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.a;
 
         cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.a).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, original_value);
     },
     |cpu| {
         /* 0x90 */
@@ -993,7 +995,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SBC A, B */
         let old_carry = cpu.carry();
 
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.b - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.b );
         cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.b).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1001,7 +1003,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SBC A, C */
         let old_carry = cpu.carry();
 
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.c - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.c);
         cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.c).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1009,7 +1011,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SBC A, D */
         let old_carry = cpu.carry();
 
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.d - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.d);
         cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.d).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1017,7 +1019,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SBC A, E */
         let old_carry = cpu.carry();
 
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.e - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.e);
         cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.e).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1025,7 +1027,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SBC A, H */
         let old_carry = cpu.carry();
 
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.h - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.h);
         cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.h).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1033,7 +1035,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SBC A, L */
         let old_carry = cpu.carry();
 
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.l - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.l);
         cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.l).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1042,7 +1044,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let old_carry = cpu.carry();
         let data = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        cpu.subtract8_flag(cpu.registers.a, data - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, data);
         cpu.registers.a = cpu.registers.a.wrapping_sub(data).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1050,7 +1052,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SBC A, A */
         let old_carry = cpu.carry();
 
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.a - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.a);
         cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.a).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1313,7 +1315,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let data = cpu.fetch_byte();
 
         cpu.registers.a = cpu.registers.a.wrapping_add(data);
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.add8_flag(original_value, data);
     },
     |cpu| {
         /* 0xC7 */
@@ -1389,7 +1391,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let data = cpu.fetch_byte();
 
         cpu.registers.a = cpu.registers.a.wrapping_add(data).wrapping_add(cpu.carry());
-        cpu.add8_flag(original_value, cpu.registers.a);
+        cpu.adc8_flag(original_value, data);
     },
     |cpu| {
         /* 0xCF */
@@ -1520,7 +1522,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let old_carry = cpu.carry();
         let value = cpu.fetch_byte();
 
-        cpu.subtract8_flag(cpu.registers.a, value - old_carry);
+        cpu.subtractc8_flag(cpu.registers.a, value);
         cpu.registers.a = cpu.registers.a.wrapping_sub(value).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1588,8 +1590,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let data = cpu.fetch_byte() as i8 as i16;
 
         cpu.registers.sp = cpu.registers.sp.wrapping_add_signed(data);
-        cpu.add16_flag(original_value, cpu.registers.sp);
-        cpu.set_zero(false);
+        cpu.add_signed16_flag(original_value, data);
     },
     |cpu| {
         /* 0xE9 */
@@ -1683,8 +1684,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let value = cpu.fetch_byte() as i8 as i16;
 
         cpu.set_16bit_register(Registers16Bit::HL, cpu.registers.sp.wrapping_add_signed(value));
-        cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::HL));
-        cpu.set_zero(false);
+        cpu.add_signed16_flag(original_value, value);
     },
     |cpu| {
         /* 0xF9 */
@@ -1779,37 +1779,37 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* 0x08 */
         /* RRC B */
         cpu.rotate8_flag(cpu.registers.b, false, true);
-        cpu.registers.b = cpu.registers.b.rotate_right(1) | cpu.carry();
+        cpu.registers.b = cpu.registers.b >> 1 | cpu.carry() << 7;
     },
     |cpu| {
         /* 0x09 */
         /* RRC C */
         cpu.rotate8_flag(cpu.registers.c, false, true);
-        cpu.registers.c = cpu.registers.c.rotate_right(1) | cpu.carry();
+        cpu.registers.c = cpu.registers.c >> 1 | cpu.carry() << 7;
     },
     |cpu| {
         /* 0x0A */
         /* RRC D */
         cpu.rotate8_flag(cpu.registers.d, false, true);
-        cpu.registers.d = cpu.registers.d.rotate_right(1) | cpu.carry();
+        cpu.registers.d = cpu.registers.d >> 1 | cpu.carry() << 7;
     },
     |cpu| {
         /* 0x0B */
         /* RRC E */
         cpu.rotate8_flag(cpu.registers.e, false, true);
-        cpu.registers.e = cpu.registers.e.rotate_right(1) | cpu.carry();
+        cpu.registers.e = cpu.registers.e >> 1 | cpu.carry() << 7;
     },
     |cpu| {
         /* 0x0C */
         /* RRC H */
         cpu.rotate8_flag(cpu.registers.h, false, true);
-        cpu.registers.h = cpu.registers.h.rotate_right(1) | cpu.carry();
+        cpu.registers.h = cpu.registers.h >> 1 | cpu.carry() << 7;
     },
     |cpu| {
         /* 0x0D */
         /* RRC L */
         cpu.rotate8_flag(cpu.registers.l, false, true);
-        cpu.registers.l = cpu.registers.l.rotate_right(1) | cpu.carry();
+        cpu.registers.l = cpu.registers.l >> 1 | cpu.carry() << 7;
     },
     |cpu| {
         /* 0x0E */
@@ -1817,14 +1817,14 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
         cpu.rotate8_flag(value, false, true);
-        value = value.rotate_right(1) | cpu.carry();
+        value = value >> 1 | cpu.carry() << 7;
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0x0F */
         /* RRC A */
         cpu.rotate8_flag(cpu.registers.a, false, true);
-        cpu.registers.a = cpu.registers.a.rotate_right(1) | cpu.carry();
+        cpu.registers.a = cpu.registers.a >> 1 | cpu.carry() << 7;
     },
     |cpu| {
         /* 0x10 */
@@ -1832,6 +1832,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.b, true, false);
 
         cpu.registers.b = cpu.registers.b << 1 | cpu.carry();
+        cpu.set_zero(cpu.registers.b == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1840,6 +1841,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.c, true, false);
 
         cpu.registers.c = cpu.registers.c << 1 | cpu.carry();
+        cpu.set_zero(cpu.registers.c == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1848,6 +1850,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.d, true, false);
 
         cpu.registers.d = cpu.registers.d << 1 | cpu.carry();
+        cpu.set_zero(cpu.registers.d == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1856,6 +1859,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.e, true, false);
 
         cpu.registers.e = cpu.registers.e << 1 | cpu.carry();
+        cpu.set_zero(cpu.registers.e == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1864,6 +1868,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.h, true, false);
 
         cpu.registers.h = cpu.registers.h << 1 | cpu.carry();
+        cpu.set_zero(cpu.registers.h == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1872,6 +1877,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.l, true, false);
 
         cpu.registers.l = cpu.registers.l << 1 | cpu.carry();
+        cpu.set_zero(cpu.registers.l == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1882,6 +1888,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
 
         value = value << 1 | cpu.carry();
 
+        cpu.set_zero(value == 0x00);
         cpu.set_carry(carry);
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
@@ -1891,6 +1898,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.a, true, false);
 
         cpu.registers.a = cpu.registers.a << 1 | cpu.carry();
+        cpu.set_zero(cpu.registers.a == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1899,6 +1907,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.b, false, false);
 
         cpu.registers.b = cpu.registers.b >> 1 | cpu.carry() << 7;
+        cpu.set_zero(cpu.registers.b == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1907,6 +1916,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.c, false, false);
 
         cpu.registers.c = cpu.registers.c >> 1 | cpu.carry() << 7;
+        cpu.set_zero(cpu.registers.c == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1915,6 +1925,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.d, false, false);
 
         cpu.registers.d = cpu.registers.d >> 1 | cpu.carry() << 7;
+        cpu.set_zero(cpu.registers.d == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1923,6 +1934,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.e, false, false);
 
         cpu.registers.e = cpu.registers.e >> 1 | cpu.carry() << 7;
+        cpu.set_zero(cpu.registers.e == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1931,6 +1943,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.h, false, false);
 
         cpu.registers.h = cpu.registers.h >> 1 | cpu.carry() << 7;
+        cpu.set_zero(cpu.registers.h == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1939,6 +1952,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.l, false, false);
 
         cpu.registers.l = cpu.registers.l >> 1 | cpu.carry() << 7;
+        cpu.set_zero(cpu.registers.l == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1949,6 +1963,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
 
         value = value >> 1 | cpu.carry() << 7;
 
+        cpu.set_zero(value == 0x00);
         cpu.set_carry(carry);
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
@@ -1958,6 +1973,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let carry = cpu.rotate8_flag(cpu.registers.a, false, false);
 
         cpu.registers.a = cpu.registers.a >> 1 | cpu.carry() << 7;
+        cpu.set_zero(cpu.registers.a == 0x00);
         cpu.set_carry(carry);
     },
     |cpu| {
@@ -1966,6 +1982,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.b, true, true);
 
         cpu.registers.b = cpu.registers.b << 1;
+        cpu.set_zero(cpu.registers.b == 0x00);
     },
     |cpu| {
         /* 0x21 */
@@ -1973,6 +1990,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.c, true, true);
 
         cpu.registers.c = cpu.registers.c << 1;
+        cpu.set_zero(cpu.registers.c == 0x00);
     },
     |cpu| {
         /* 0x22 */
@@ -1980,6 +1998,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.d, true, true);
 
         cpu.registers.d = cpu.registers.d << 1;
+        cpu.set_zero(cpu.registers.d == 0x00);
     },
     |cpu| {
         /* 0x23 */
@@ -1987,6 +2006,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.e, true, true);
 
         cpu.registers.e = cpu.registers.e << 1;
+        cpu.set_zero(cpu.registers.e == 0x00);
     },
     |cpu| {
         /* 0x24 */
@@ -1994,6 +2014,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.h, true, true);
 
         cpu.registers.h = cpu.registers.h << 1;
+        cpu.set_zero(cpu.registers.h == 0x00);
     },
     |cpu| {
         /* 0x25 */
@@ -2001,6 +2022,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.l, true, true);
 
         cpu.registers.l = cpu.registers.l << 1;
+        cpu.set_zero(cpu.registers.l == 0x00);
     },
     |cpu| {
         /* 0x26 */
@@ -2010,6 +2032,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
 
         value = value << 1;
 
+        cpu.set_zero(value == 0x00);
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
@@ -2018,6 +2041,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.a, true, true);
 
         cpu.registers.a = cpu.registers.a << 1;
+        cpu.set_zero(cpu.registers.a == 0x00);
     },
     |cpu| {
         /* 0x28 */
@@ -2026,6 +2050,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.b, false, true);
 
         cpu.registers.b = cpu.registers.b >> 1 | last_bit;
+        cpu.set_zero(cpu.registers.b == 0x00);
     },
     |cpu| {
         /* 0x29 */
@@ -2034,6 +2059,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.c, false, true);
 
         cpu.registers.c = cpu.registers.c >> 1 | last_bit;
+        cpu.set_zero(cpu.registers.c == 0x00);
     },
     |cpu| {
         /* 0x2A */
@@ -2042,6 +2068,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.d, false, true);
 
         cpu.registers.d = cpu.registers.d >> 1 | last_bit;
+        cpu.set_zero(cpu.registers.d == 0x00);
     },
     |cpu| {
         /* 0x2B */
@@ -2050,6 +2077,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.e, false, true);
 
         cpu.registers.e = cpu.registers.e >> 1 | last_bit;
+        cpu.set_zero(cpu.registers.e == 0x00);
     },
     |cpu| {
         /* 0x2C */
@@ -2058,6 +2086,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.h, false, true);
 
         cpu.registers.h = cpu.registers.h >> 1 | last_bit;
+        cpu.set_zero(cpu.registers.h == 0x00);
     },
     |cpu| {
         /* 0x2D */
@@ -2066,6 +2095,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.l, false, true);
 
         cpu.registers.l = cpu.registers.l >> 1 | last_bit;
+        cpu.set_zero(cpu.registers.l == 0x00);
     },
     |cpu| {
         /* 0x2E */
@@ -2076,6 +2106,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
 
         value = value >> 1 | last_bit;
 
+        cpu.set_zero(value == 0x00);
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
@@ -2085,72 +2116,82 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.a, false, true);
 
         cpu.registers.a = cpu.registers.a >> 1 | last_bit;
+        cpu.set_zero(cpu.registers.a == 0x00);
     },
     |cpu| {
         /* 0x30 */
         /* SWAP B */
-        let hi_bits = cpu.registers.b >> 4;
-
-        cpu.registers.b = cpu.registers.b << 4 | hi_bits;
+        cpu.registers.b = cpu.registers.b.rotate_left(4);
         cpu.set_zero(cpu.registers.b == 0x00);
+        cpu.set_carry(false);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
     },
     |cpu| {
         /* 0x31 */
         /* SWAP C */
-        let hi_bits = cpu.registers.c >> 4;
-
-        cpu.registers.c = cpu.registers.c << 4 | hi_bits;
+        cpu.registers.c = cpu.registers.c.rotate_left(4);
         cpu.set_zero(cpu.registers.c == 0x00);
+        cpu.set_carry(false);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
     },
     |cpu| {
         /* 0x32 */
         /* SWAP D */
-        let hi_bits = cpu.registers.d >> 4;
-
-        cpu.registers.d = cpu.registers.d << 4 | hi_bits;
+        cpu.registers.d = cpu.registers.d.rotate_left(4);
         cpu.set_zero(cpu.registers.d == 0x00);
+        cpu.set_carry(false);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
     },
     |cpu| {
         /* 0x33 */
         /* SWAP E */
-        let hi_bits = cpu.registers.e >> 4;
-
-        cpu.registers.e = cpu.registers.e << 4 | hi_bits;
+        cpu.registers.e = cpu.registers.e.rotate_left(4);
         cpu.set_zero(cpu.registers.e == 0x00);
+        cpu.set_carry(false);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
     },
     |cpu| {
         /* 0x34 */
         /* SWAP H */
-        let hi_bits = cpu.registers.h >> 4;
-
-        cpu.registers.h = cpu.registers.h << 4 | hi_bits;
+        cpu.registers.h = cpu.registers.h.rotate_left(4);
         cpu.set_zero(cpu.registers.h == 0x00);
+        cpu.set_carry(false);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
     },
     |cpu| {
         /* 0x35 */
         /* SWAP L */
-        let hi_bits = cpu.registers.l >> 4;
-
-        cpu.registers.l = cpu.registers.l << 4 | hi_bits;
+        cpu.registers.l = cpu.registers.l.rotate_left(4);
         cpu.set_zero(cpu.registers.l == 0x00);
+        cpu.set_carry(false);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
     },
     |cpu| {
         /* 0x36 */
         /* SWAP [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
-        let hi_bits = value >> 4;
 
-        value = value << 4 | hi_bits;
+        value = value.rotate_left(4);
         cpu.set_zero(value == 0x00);
+        cpu.set_carry(false);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0x37 */
         /* SWAP A */
-        let hi_bits = cpu.registers.a >> 4;
-
-        cpu.registers.a = cpu.registers.a << 4 | hi_bits;
+        cpu.registers.a = cpu.registers.a.rotate_left(4);
         cpu.set_zero(cpu.registers.a == 0x00);
+        cpu.set_carry(false);
+        cpu.set_half_carry(false);
+        cpu.set_negative(false);
     },
     |cpu| {
         /* 0x38 */
@@ -2158,6 +2199,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.b, false, true);
 
         cpu.registers.b = cpu.registers.b >> 1;
+        cpu.set_zero(cpu.registers.b == 0x00);
     },
     |cpu| {
         /* 0x39 */
@@ -2165,6 +2207,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.c, false, true);
 
         cpu.registers.c = cpu.registers.c >> 1;
+        cpu.set_zero(cpu.registers.c == 0x00);
     },
     |cpu| {
         /* 0x3A */
@@ -2172,6 +2215,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.d, false, true);
 
         cpu.registers.d = cpu.registers.d >> 1;
+        cpu.set_zero(cpu.registers.d == 0x00);
     },
     |cpu| {
         /* 0x3B */
@@ -2179,6 +2223,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.e, false, true);
 
         cpu.registers.e = cpu.registers.e >> 1;
+        cpu.set_zero(cpu.registers.e == 0x00);
     },
     |cpu| {
         /* 0x3C */
@@ -2186,6 +2231,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.h, false, true);
 
         cpu.registers.h = cpu.registers.h >> 1;
+        cpu.set_zero(cpu.registers.h == 0x00);
     },
     |cpu| {
         /* 0x3D */
@@ -2193,6 +2239,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.l, false, true);
 
         cpu.registers.l = cpu.registers.l >> 1;
+        cpu.set_zero(cpu.registers.l == 0x00);
     },
     |cpu| {
         /* 0x3E */
@@ -2202,6 +2249,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
 
         value = value >> 1;
 
+        cpu.set_zero(value == 0x00);
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
@@ -2210,6 +2258,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.rotate8_flag(cpu.registers.a, false, true);
 
         cpu.registers.a = cpu.registers.a >> 1;
+        cpu.set_zero(cpu.registers.a == 0x00);
     },
     |cpu| {
         /* 0x40 */
@@ -2439,7 +2488,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x6C */
         /* BIT 5, H */
-        cpu.bit8_flag(5, cpu.registers.e);
+        cpu.bit8_flag(5, cpu.registers.h);
     },
     |cpu| {
         /* 0x6D */

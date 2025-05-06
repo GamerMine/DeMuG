@@ -205,7 +205,7 @@ impl Ppu {
                             + ((y_pos as u16 + self.registers.scy as u16) / 8u16 % 32u16) * 32u16; // Address to Tile Data ID in Background/Window Tile Map
                         let tile_data_id = self.bus.borrow().read(tile_map_loc); // Tile Data ID from Background/Window map
                         if tile_data_id > 127 { tile_data_loc = 0x8000; }
-                        tile_data_loc += tile_data_id as u16 * 8 * 2 + (y_pos as u16 % 8) * 2; // Base Data Location + position of Tile Data ID in Tile Data, and because a tile as a width of 8 pixels but is 2 byte wide
+                        tile_data_loc += tile_data_id as u16 * 8 * 2 + ((y_pos as u16 + self.registers.scy as u16 % 256) % 8) * 2; // Base Data Location + position of Tile Data ID in Tile Data, and because a tile as a width of 8 pixels but is 2 byte wide
 
                         let pixels_hi =
                             self.bus.borrow().read(tile_data_loc) >> 7 - x_pos % 8 & 0x1;
