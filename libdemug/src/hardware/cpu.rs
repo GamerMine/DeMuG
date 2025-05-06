@@ -66,18 +66,14 @@ impl Cpu {
     pub fn execute(&mut self) {
         let opcode = self.fetch_byte();
 
-        if self.m_cycles <= 17556 {
-            let old_m_cycles = self.m_cycles;
+        let old_m_cycles = self.m_cycles;
 
-            OPCODES[opcode as usize](self);
+        OPCODES[opcode as usize](self);
 
-            self.bus.borrow().tick(self.m_cycles - old_m_cycles);
+        self.bus.borrow().tick(self.m_cycles - old_m_cycles);
 
-            if self.ime {
-                self.check_interrupts()
-            }
-        } else {
-            self.m_cycles -= 17556;
+        if self.ime {
+            self.check_interrupts()
         }
     }
 

@@ -26,4 +26,14 @@ impl Memory {
             Err(err) => {println!("Cannot open ROM {}: {err}", path.display())}
         }
     }
+    
+    pub(crate) fn gather_debug_info(&self) -> MemoryDebugInfo {
+        MemoryDebugInfo {
+            vram: self.vram.clone(),
+        }
+    }
+}
+
+pub struct MemoryDebugInfo {
+    pub vram: [u8; 0x2000],     // Video RAM    : Mapped at 0x8000 - 0x9FFF
 }

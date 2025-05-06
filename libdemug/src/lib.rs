@@ -1,8 +1,9 @@
 use crate::hardware::cpu::{Cpu, CpuDebugInfo, Interrupts};
-use crate::hardware::memory::Memory;
+use crate::hardware::memory::{Memory, MemoryDebugInfo};
 use crate::hardware::ppu::Ppu;
 use crate::utils::Register;
 use std::cell::{Cell, RefCell};
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::process::exit;
 use std::sync::Arc;
@@ -20,6 +21,7 @@ pub struct Demug {
     disable_boot_rom: Cell<bool>,
     interrupt_flags: Cell<Register>,
     interrupt_enable: Cell<Register>,
+    bus_debug_info: RefCell<Option<BusDebugInfo>>,
 }
 
 impl Demug {
@@ -31,6 +33,7 @@ impl Demug {
             disable_boot_rom: Cell::new(false),
             interrupt_flags: Cell::new(Register::new(0xE1)),
             interrupt_enable: Cell::new(Register::new(0x00)),
+            bus_debug_info: RefCell::new(None),
         }));
 
         // Create all necessary 'devices'
@@ -63,11 +66,14 @@ impl Demug {
     }
 
     #[cfg(feature = "debug")]
-    pub fn gather_debug_info(&self) -> CpuDebugInfo {
+    pub fn gather_debug_info(&self) -> (CpuDebugInfo, BusDebugInfo, MemoryDebugInfo) {
         let cpu_debug_info = 
             if let Some(cpu) = &*self.cpu.borrow() { cpu.gather_debug_info() } else { unreachable!() };
-
-        cpu_debug_info
+        let bus_debug_info = self.bus_debug_info.borrow_mut().take().unwrap();
+        let memory_debug_info =
+            if let Some(mem) = &*self.memory.borrow() { mem.gather_debug_info() } else { unreachable!() };
+        
+        (cpu_debug_info, bus_debug_info, memory_debug_info)
     }
 
     pub fn disable_boot_rom(&mut self, disabled: bool) {
@@ -119,6 +125,15 @@ impl Demug {
             //println!("Read from {:#X} is not implemented!", addr);
             //exit(0)
         }
+        
+        if cfg!(feature = "debug") {
+            let debug_info = BusDebugInfo {
+                last_accessed_addr: addr as u16,
+                last_accessed_addr_mode: AccessMode::READ,
+            };
+            
+            self.bus_debug_info.borrow_mut().replace(debug_info);
+        }
 
         data
     }
@@ -148,7 +163,6 @@ impl Demug {
             new_register.set_value(data);
             self.interrupt_flags.set(new_register);
             println!("Disabling Boot Rom");
-            exit(666);
         } else if addr >= 0xFF80 && addr <= 0xFFFE {
             if let Some(mem) = &mut *self.memory.borrow_mut() {
                 mem.hram[addr - 0xFF80] = data;
@@ -159,6 +173,15 @@ impl Demug {
             self.interrupt_enable.set(new_register);
         } else {
             //println!("Write to {:#X} is not implemented!", addr);
+        }
+
+        if cfg!(feature = "debug") {
+            let debug_info = BusDebugInfo {
+                last_accessed_addr: addr as u16,
+                last_accessed_addr_mode: AccessMode::WRITE,
+            };
+
+            self.bus_debug_info.borrow_mut().replace(debug_info);
         }
     }
 
@@ -173,4 +196,16 @@ impl Demug {
         new_register.set(interrupt as u8);
         self.interrupt_flags.set(new_register);
     }
+}
+
+#[cfg(feature = "debug")]
+pub enum AccessMode {
+    READ,
+    WRITE
+}
+
+#[cfg(feature = "debug")]
+pub struct BusDebugInfo {
+    last_accessed_addr: u16,
+    last_accessed_addr_mode: AccessMode
 }
