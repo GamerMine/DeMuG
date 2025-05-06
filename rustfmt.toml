@@ -2,5 +2,4 @@ single_line_if_else_max_width = 100
 chain_width = 100
 fn_call_width = 100
 fn_args_layout = "Compressed"
-combine_control_expr = true
 overflow_delimited_expr = true

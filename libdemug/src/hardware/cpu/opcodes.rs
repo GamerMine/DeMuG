@@ -46,7 +46,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x07 */
         /* RLCA */
-        cpu.rotate8_flag(cpu.registers.a, true, false);
+        cpu.rotate8_flag(cpu.registers.a, true, true);
         cpu.set_zero(false);
 
         cpu.registers.a = cpu.registers.a.rotate_left(1) | cpu.carry();
@@ -105,7 +105,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x0F */
         /* RRCA */
-        cpu.rotate8_flag(cpu.registers.a, false, false);
+        cpu.rotate8_flag(cpu.registers.a, false, true);
         cpu.set_zero(false);
 
         cpu.registers.a = cpu.registers.a.rotate_right(1) | cpu.carry();
@@ -156,7 +156,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x17 */
         /* RLA */
-        let carry = cpu.rotate8_flag(cpu.registers.a, true, true);
+        let carry = cpu.rotate8_flag(cpu.registers.a, true, false);
 
         cpu.set_zero(false);
         cpu.registers.a = cpu.registers.a << 1 | cpu.carry();
@@ -217,7 +217,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x1F */
         /* RRA */
-        let carry = cpu.rotate8_flag(cpu.registers.a, false, true);
+        let carry = cpu.rotate8_flag(cpu.registers.a, false, false);
 
         cpu.set_zero(false);
         cpu.registers.a = cpu.registers.a >> 1 | cpu.carry() << 7;
@@ -396,9 +396,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x34 */
         /* INC [HL] */
-        let value = cpu
-            .read_byte(cpu.get_16bit_register(Registers16Bit::HL))
-            .wrapping_add(1);
+        let value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL)).wrapping_add(1);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
         cpu.increment8_flag(value);
@@ -406,9 +404,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x35 */
         /* DEC [HL] */
-        let value = cpu
-            .read_byte(cpu.get_16bit_register(Registers16Bit::HL))
-            .wrapping_sub(1);
+        let value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL)).wrapping_sub(1);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
         cpu.decrement8_flag(value);
@@ -441,10 +437,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* ADD HL, SP */
         let original_value = cpu.get_16bit_register(Registers16Bit::HL);
 
-        cpu.set_16bit_register(
-            Registers16Bit::HL,
-            original_value.wrapping_add(cpu.registers.sp),
-        );
+        cpu.set_16bit_register(Registers16Bit::HL, original_value.wrapping_add(cpu.registers.sp));
         cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::HL));
 
         cpu.m_cycles += 1;
@@ -885,11 +878,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* ADC A, B */
         let original_value = cpu.registers.a;
 
-        cpu.registers.a = cpu
-            .registers
-            .a
-            .wrapping_add(cpu.registers.b)
-            .wrapping_add(cpu.carry());
+        cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.b).wrapping_add(cpu.carry());
         cpu.add8_flag(original_value, cpu.registers.a);
     },
     |cpu| {
@@ -897,11 +886,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* ADC A, C */
         let original_value = cpu.registers.a;
 
-        cpu.registers.a = cpu
-            .registers
-            .a
-            .wrapping_add(cpu.registers.c)
-            .wrapping_add(cpu.carry());
+        cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.c).wrapping_add(cpu.carry());
         cpu.add8_flag(original_value, cpu.registers.a);
     },
     |cpu| {
@@ -909,11 +894,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* ADC A, D */
         let original_value = cpu.registers.a;
 
-        cpu.registers.a = cpu
-            .registers
-            .a
-            .wrapping_add(cpu.registers.d)
-            .wrapping_add(cpu.carry());
+        cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.d).wrapping_add(cpu.carry());
         cpu.add8_flag(original_value, cpu.registers.a);
     },
     |cpu| {
@@ -921,11 +902,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* ADC A, E */
         let original_value = cpu.registers.a;
 
-        cpu.registers.a = cpu
-            .registers
-            .a
-            .wrapping_add(cpu.registers.e)
-            .wrapping_add(cpu.carry());
+        cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.e).wrapping_add(cpu.carry());
         cpu.add8_flag(original_value, cpu.registers.a);
     },
     |cpu| {
@@ -933,11 +910,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* ADC A, H */
         let original_value = cpu.registers.a;
 
-        cpu.registers.a = cpu
-            .registers
-            .a
-            .wrapping_add(cpu.registers.h)
-            .wrapping_add(cpu.carry());
+        cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.h).wrapping_add(cpu.carry());
         cpu.add8_flag(original_value, cpu.registers.a);
     },
     |cpu| {
@@ -945,11 +918,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* ADC A, L */
         let original_value = cpu.registers.a;
 
-        cpu.registers.a = cpu
-            .registers
-            .a
-            .wrapping_add(cpu.registers.l)
-            .wrapping_add(cpu.carry());
+        cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.l).wrapping_add(cpu.carry());
         cpu.add8_flag(original_value, cpu.registers.a);
     },
     |cpu| {
@@ -966,11 +935,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* ADC A, A */
         let original_value = cpu.registers.a;
 
-        cpu.registers.a = cpu
-            .registers
-            .a
-            .wrapping_add(cpu.registers.a)
-            .wrapping_add(cpu.carry());
+        cpu.registers.a = cpu.registers.a.wrapping_add(cpu.registers.a).wrapping_add(cpu.carry());
         cpu.add8_flag(original_value, cpu.registers.a);
     },
     |cpu| {
@@ -1026,52 +991,67 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x98 */
         /* SBC A, B */
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.b - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.b);
+        let old_carry = cpu.carry();
+
+        cpu.subtract8_flag(cpu.registers.a, cpu.registers.b - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.b).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0x99 */
         /* SBC A, C */
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.c - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.c);
+        let old_carry = cpu.carry();
+
+        cpu.subtract8_flag(cpu.registers.a, cpu.registers.c - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.c).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0x9A */
         /* SBC A, D */
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.d - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.d);
+        let old_carry = cpu.carry();
+
+        cpu.subtract8_flag(cpu.registers.a, cpu.registers.d - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.d).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0x9B */
         /* SBC A, E */
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.e - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.e);
+        let old_carry = cpu.carry();
+
+        cpu.subtract8_flag(cpu.registers.a, cpu.registers.e - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.e).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0x9C */
         /* SBC A, H */
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.h - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.h);
+        let old_carry = cpu.carry();
+
+        cpu.subtract8_flag(cpu.registers.a, cpu.registers.h - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.h).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0x9D */
         /* SBC A, L */
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.l - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.l);
+        let old_carry = cpu.carry();
+
+        cpu.subtract8_flag(cpu.registers.a, cpu.registers.l - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.l).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0x9E */
         /* SBC A, [HL] */
+        let old_carry = cpu.carry();
         let data = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        cpu.subtract8_flag(cpu.registers.a, data - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(data);
+        cpu.subtract8_flag(cpu.registers.a, data - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(data).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0x9F */
         /* SBC A, A */
-        cpu.subtract8_flag(cpu.registers.a, cpu.registers.a - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.a);
+        let old_carry = cpu.carry();
+
+        cpu.subtract8_flag(cpu.registers.a, cpu.registers.a - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.a).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0xA0 */
@@ -1479,7 +1459,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let value = cpu.fetch_byte();
 
         cpu.subtract8_flag(cpu.registers.a, value);
-        cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.a);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(value);
     },
     |cpu| {
         /* 0xD7 */
@@ -1537,10 +1517,11 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0xDE */
         /* SBC A, n8 */
+        let old_carry = cpu.carry();
         let value = cpu.fetch_byte();
 
-        cpu.subtract8_flag(cpu.registers.a, value - cpu.carry());
-        cpu.registers.a = cpu.registers.a.wrapping_sub(value);
+        cpu.subtract8_flag(cpu.registers.a, value - old_carry);
+        cpu.registers.a = cpu.registers.a.wrapping_sub(value).wrapping_sub(old_carry);
     },
     |cpu| {
         /* 0xDF */
@@ -1701,10 +1682,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let original_value = cpu.registers.sp;
         let value = cpu.fetch_byte() as i8 as i16;
 
-        cpu.set_16bit_register(
-            Registers16Bit::HL,
-            cpu.registers.sp.wrapping_add_signed(value),
-        );
+        cpu.set_16bit_register(Registers16Bit::HL, cpu.registers.sp.wrapping_add_signed(value));
         cpu.add16_flag(original_value, cpu.get_16bit_register(Registers16Bit::HL));
         cpu.set_zero(false);
     },
@@ -1749,37 +1727,37 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x00 */
         /* RLC B */
-        cpu.rotate8_flag(cpu.registers.b, true, false);
+        cpu.rotate8_flag(cpu.registers.b, true, true);
         cpu.registers.b = cpu.registers.b.rotate_left(1) | cpu.carry();
     },
     |cpu| {
         /* 0x01 */
         /* RLC C */
-        cpu.rotate8_flag(cpu.registers.c, true, false);
+        cpu.rotate8_flag(cpu.registers.c, true, true);
         cpu.registers.c = cpu.registers.c.rotate_left(1) | cpu.carry();
     },
     |cpu| {
         /* 0x02 */
         /* RLC D */
-        cpu.rotate8_flag(cpu.registers.d, true, false);
+        cpu.rotate8_flag(cpu.registers.d, true, true);
         cpu.registers.d = cpu.registers.d.rotate_left(1) | cpu.carry();
     },
     |cpu| {
         /* 0x03 */
         /* RLC E */
-        cpu.rotate8_flag(cpu.registers.e, true, false);
+        cpu.rotate8_flag(cpu.registers.e, true, true);
         cpu.registers.e = cpu.registers.e.rotate_left(1) | cpu.carry();
     },
     |cpu| {
         /* 0x04 */
         /* RLC H */
-        cpu.rotate8_flag(cpu.registers.h, true, false);
+        cpu.rotate8_flag(cpu.registers.h, true, true);
         cpu.registers.h = cpu.registers.h.rotate_left(1) | cpu.carry();
     },
     |cpu| {
         /* 0x05 */
         /* RLC L */
-        cpu.rotate8_flag(cpu.registers.l, true, false);
+        cpu.rotate8_flag(cpu.registers.l, true, true);
         cpu.registers.l = cpu.registers.l.rotate_left(1) | cpu.carry();
     },
     |cpu| {
@@ -1787,50 +1765,50 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* RLC [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        cpu.rotate8_flag(value, true, false);
+        cpu.rotate8_flag(value, true, true);
         value = value.rotate_left(1) | cpu.carry();
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0x07 */
         /* RLC A */
-        cpu.rotate8_flag(cpu.registers.a, true, false);
+        cpu.rotate8_flag(cpu.registers.a, true, true);
         cpu.registers.a = cpu.registers.a.rotate_left(1) | cpu.carry();
     },
     |cpu| {
         /* 0x08 */
         /* RRC B */
-        cpu.rotate8_flag(cpu.registers.b, false, false);
+        cpu.rotate8_flag(cpu.registers.b, false, true);
         cpu.registers.b = cpu.registers.b.rotate_right(1) | cpu.carry();
     },
     |cpu| {
         /* 0x09 */
         /* RRC C */
-        cpu.rotate8_flag(cpu.registers.c, false, false);
+        cpu.rotate8_flag(cpu.registers.c, false, true);
         cpu.registers.c = cpu.registers.c.rotate_right(1) | cpu.carry();
     },
     |cpu| {
         /* 0x0A */
         /* RRC D */
-        cpu.rotate8_flag(cpu.registers.d, false, false);
+        cpu.rotate8_flag(cpu.registers.d, false, true);
         cpu.registers.d = cpu.registers.d.rotate_right(1) | cpu.carry();
     },
     |cpu| {
         /* 0x0B */
         /* RRC E */
-        cpu.rotate8_flag(cpu.registers.e, false, false);
+        cpu.rotate8_flag(cpu.registers.e, false, true);
         cpu.registers.e = cpu.registers.e.rotate_right(1) | cpu.carry();
     },
     |cpu| {
         /* 0x0C */
         /* RRC H */
-        cpu.rotate8_flag(cpu.registers.h, false, false);
+        cpu.rotate8_flag(cpu.registers.h, false, true);
         cpu.registers.h = cpu.registers.h.rotate_right(1) | cpu.carry();
     },
     |cpu| {
         /* 0x0D */
         /* RRC L */
-        cpu.rotate8_flag(cpu.registers.l, false, false);
+        cpu.rotate8_flag(cpu.registers.l, false, true);
         cpu.registers.l = cpu.registers.l.rotate_right(1) | cpu.carry();
     },
     |cpu| {
@@ -1838,14 +1816,14 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* RRC [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        cpu.rotate8_flag(value, false, false);
+        cpu.rotate8_flag(value, false, true);
         value = value.rotate_right(1) | cpu.carry();
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0x0F */
         /* RRC A */
-        cpu.rotate8_flag(cpu.registers.a, false, false);
+        cpu.rotate8_flag(cpu.registers.a, false, true);
         cpu.registers.a = cpu.registers.a.rotate_right(1) | cpu.carry();
     },
     |cpu| {
@@ -2913,9 +2891,6 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* RES 7, A */
         cpu.registers.a = cpu.registers.a & !(1 << 7);
     },
-
-
-
     |cpu| {
         /* 0xC0 */
         /* SET 0, B */
@@ -3268,4 +3243,524 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SET 7, A */
         cpu.registers.a = cpu.registers.a | (1 << 7);
     },
+];
+
+#[cfg(feature = "debug")]
+pub static OPCODES_STRING: [fn(pfx: u8) -> &'static str; 0x100] = [
+    |_| "NOP",
+    |_| "LD BC, n16",
+    |_| "LD [BC], A",
+    |_| "INC BC",
+    |_| "INC B",
+    |_| "DEC B",
+    |_| "LD B, n8",
+    |_| "RLCA",
+    |_| "LD [a16], SP",
+    |_| "ADD HL, BC",
+    |_| "LD A, [BC]",
+    |_| "DEC BC",
+    |_| "INC C",
+    |_| "DEC C",
+    |_| "LD C, n8",
+    |_| "RRCA",
+    |_| "STOP n8",
+    |_| "LD DE, n16",
+    |_| "LD [DE], A",
+    |_| "INC DE",
+    |_| "INC D",
+    |_| "DEC D",
+    |_| "LD D, n8",
+    |_| "RLA",
+    |_| "JR e8",
+    |_| "ADD HL, DE",
+    |_| "LD A, [DE]",
+    |_| "DEC DE",
+    |_| "INC E",
+    |_| "DEC E",
+    |_| "LD E, n8",
+    |_| "RRA",
+    |_| "JR NZ, e8",
+    |_| "LD HL, n16",
+    |_| "LD [HL+], A",
+    |_| "INC HL",
+    |_| "INC H",
+    |_| "DEC H",
+    |_| "LD H, n8",
+    |_| "DAA",
+    |_| "JR Z, e8",
+    |_| "ADD HL, HL",
+    |_| "LD A, [HL+]",
+    |_| "DEC HL",
+    |_| "INC L",
+    |_| "DEC L",
+    |_| "LD L, n8",
+    |_| "CPL",
+    |_| "JR NC, e8",
+    |_| "LD SP, n16",
+    |_| "LD [HL-], A",
+    |_| "INC SP",
+    |_| "INC [HL]",
+    |_| "DEC [HL]",
+    |_| "LD [HL], n8",
+    |_| "SCF",
+    |_| "JR C, e8",
+    |_| "ADD HL, SP",
+    |_| "LD A, [HL-]",
+    |_| "DEC SP",
+    |_| "INC A",
+    |_| "DEC A",
+    |_| "LD A, n8",
+    |_| "CCF",
+    |_| "LD B, B",
+    |_| "LD B, C",
+    |_| "LD B, D",
+    |_| "LD B, E",
+    |_| "LD B, H",
+    |_| "LD B, L",
+    |_| "LD B, [HL]",
+    |_| "LD B, A",
+    |_| "LD C, B",
+    |_| "LD C, C",
+    |_| "LD C, D",
+    |_| "LD C, E",
+    |_| "LD C, H",
+    |_| "LD C, L",
+    |_| "LD C, [HL]",
+    |_| "LD C, A",
+    |_| "LD D, B",
+    |_| "LD D, C",
+    |_| "LD D, D",
+    |_| "LD D, E",
+    |_| "LD D, H",
+    |_| "LD D, L",
+    |_| "LD D, [HL]",
+    |_| "LD D, A",
+    |_| "LD E, B",
+    |_| "LD E, C",
+    |_| "LD E, D",
+    |_| "LD E, E",
+    |_| "LD E, H",
+    |_| "LD E, L",
+    |_| "LD E, [HL]",
+    |_| "LD E, A",
+    |_| "LD H, B",
+    |_| "LD H, C",
+    |_| "LD H, D",
+    |_| "LD H, E",
+    |_| "LD H, H",
+    |_| "LD H, L",
+    |_| "LD H, [HL]",
+    |_| "LD H, A",
+    |_| "LD L, B",
+    |_| "LD L, C",
+    |_| "LD L, D",
+    |_| "LD L, E",
+    |_| "LD L, H",
+    |_| "LD L, L",
+    |_| "LD L, [HL]",
+    |_| "LD L, A",
+    |_| "LD [HL], B",
+    |_| "LD [HL], C",
+    |_| "LD [HL], D",
+    |_| "LD [HL], E",
+    |_| "LD [HL], H",
+    |_| "LD [HL], L",
+    |_| "HALT",
+    |_| "LD [HL], A",
+    |_| "LD A, B",
+    |_| "LD A, C",
+    |_| "LD A, D",
+    |_| "LD A, E",
+    |_| "LD A, H",
+    |_| "LD A, L",
+    |_| "LD A, [HL]",
+    |_| "LD A, A",
+    |_| "ADD A, B",
+    |_| "ADD A, C",
+    |_| "ADD A, D",
+    |_| "ADD A, E",
+    |_| "ADD A, H",
+    |_| "ADD A, L",
+    |_| "ADD A, [HL]",
+    |_| "ADD A, A",
+    |_| "ADC A, B",
+    |_| "ADC A, C",
+    |_| "ADC A, D",
+    |_| "ADC A, E",
+    |_| "ADC A, H",
+    |_| "ADC A, L",
+    |_| "ADC A, [HL]",
+    |_| "ADC A, A",
+    |_| "SUB A, B",
+    |_| "SUB A, C",
+    |_| "SUB A, D",
+    |_| "SUB A, E",
+    |_| "SUB A, H",
+    |_| "SUB A, L",
+    |_| "SUB A, [HL]",
+    |_| "SUB A, A",
+    |_| "SBC A, B",
+    |_| "SBC A, C",
+    |_| "SBC A, D",
+    |_| "SBC A, E",
+    |_| "SBC A, H",
+    |_| "SBC A, L",
+    |_| "SBC A, [HL]",
+    |_| "SBC A, A",
+    |_| "AND A, B",
+    |_| "AND A, C",
+    |_| "AND A, D",
+    |_| "AND A, E",
+    |_| "AND A, h",
+    |_| "AND A, L",
+    |_| "AND A, [HL]",
+    |_| "AND A, A",
+    |_| "XOR A, B",
+    |_| "XOR A, C",
+    |_| "XOR A, D",
+    |_| "XOR A, E",
+    |_| "XOR A, H",
+    |_| "XOR A, L",
+    |_| "XOR A, [HL]",
+    |_| "XOR A, A",
+    |_| "OR A, B",
+    |_| "OR A, C",
+    |_| "OR A, D",
+    |_| "OR A, E",
+    |_| "OR A, H",
+    |_| "OR A, L",
+    |_| "OR A, [HL]",
+    |_| "OR A, A",
+    |_| "CP A, B",
+    |_| "CP A, C",
+    |_| "CP A, D",
+    |_| "CP A, E",
+    |_| "CP A, H",
+    |_| "CP A, L",
+    |_| "CP A, [HL]",
+    |_| "CP A, A",
+    |_| "RET NZ",
+    |_| "POP BC",
+    |_| "JP NZ, a16",
+    |_| "JP a16",
+    |_| "CALL NZ, a16",
+    |_| "PUSH BC",
+    |_| "ADD A, n8",
+    |_| "RST $00",
+    |_| "RET Z",
+    |_| "RET",
+    |_| "JP Z, a16",
+    |pfx| PREFIXED_OPCODES_STRING[pfx as usize],
+    |_| "CALL Z, a16",
+    |_| "CALL a16",
+    |_| "ADC A, n8",
+    |_| "RST $08",
+    |_| "RET NC",
+    |_| "POP DE",
+    |_| "JP NC, a16",
+    |_| "_",
+    |_| "CALL NC, a16",
+    |_| "PUSH DE",
+    |_| "SUB A, n8",
+    |_| "RST $10",
+    |_| "RET C",
+    |_| "RETI",
+    |_| "JP C, a16",
+    |_| "_",
+    |_| "CALL C, a16",
+    |_| "_",
+    |_| "SBC A, n8",
+    |_| "RST $18",
+    |_| "LDH [a8], A",
+    |_| "POP HL",
+    |_| "LDH [C], A",
+    |_| "_",
+    |_| "_",
+    |_| "PUSH HL",
+    |_| "AND A, n8",
+    |_| "RST $20",
+    |_| "ADD SP, e8",
+    |_| "JP HL",
+    |_| "LD [a16], A",
+    |_| "_",
+    |_| "_",
+    |_| "_",
+    |_| "XOR A, n8",
+    |_| "RST $28",
+    |_| "LDH A, [a8]",
+    |_| "POP AF",
+    |_| "LDH A, [C]",
+    |_| "DI",
+    |_| "_",
+    |_| "PUSH AF",
+    |_| "OR A, n8",
+    |_| "RST $30",
+    |_| "LD HL, SP + e8",
+    |_| "LD SP, HL",
+    |_| "LD A, [a16]",
+    |_| "EI",
+    |_| "_",
+    |_| "_",
+    |_| "CP A, n8",
+    |_| "RST $38",
+];
+
+#[cfg(feature = "debug")]
+pub static PREFIXED_OPCODES_STRING: [&'static str; 0x100] = [
+    "RLC B",
+    "RLC C",
+    "RLC D",
+    "RLC E",
+    "RLC H",
+    "RLC L",
+    "RLC [HL]",
+    "RLC A",
+    "RRC B",
+    "RRC C",
+    "RRC D",
+    "RRC E",
+    "RRC H",
+    "RRC L",
+    "RRC [HL]",
+    "RRC A",
+    "RL B",
+    "RL C",
+    "RL D",
+    "RL E",
+    "RL H",
+    "RL L",
+    "RL [HL]",
+    "RL A",
+    "RR B",
+    "RR C",
+    "RR D",
+    "RR E",
+    "RR H",
+    "RR L",
+    "RR [HL]",
+    "RR A",
+    "SLA B",
+    "SLA C",
+    "SLA D",
+    "SLA E",
+    "SLA H",
+    "SLA L",
+    "SLA [HL]",
+    "SLA A",
+    "SRA B",
+    "SRA C",
+    "SRA D",
+    "SRA E",
+    "SRA H",
+    "SRA L",
+    "SRA [HL]",
+    "SRA A",
+    "SWAP B",
+    "SWAP C",
+    "SWAP D",
+    "SWAP E",
+    "SWAP H",
+    "SWAP L",
+    "SWAP [HL]",
+    "SWAP A",
+    "SRL B",
+    "SRL C",
+    "SRL D",
+    "SRL E",
+    "SRL H",
+    "SRL L",
+    "SRL [HL]",
+    "SRL A",
+    "BIT 0, B",
+    "BIT 0, C",
+    "BIT 0, D",
+    "BIT 0, E",
+    "BIT 0, H",
+    "BIT 0, L",
+    "BIT 0, [HL]",
+    "BIT 0, A",
+    "BIT 1, B",
+    "BIT 1, C",
+    "BIT 1, D",
+    "BIT 1, E",
+    "BIT 1, H",
+    "BIT 1, L",
+    "BIT 1, [HL]",
+    "BIT 1, A",
+    "BIT 2, B",
+    "BIT 2, C",
+    "BIT 2, D",
+    "BIT 2, E",
+    "BIT 2, H",
+    "BIT 2, L",
+    "BIT 2, [HL]",
+    "BIT 2, A",
+    "BIT 3, B",
+    "BIT 3, C",
+    "BIT 3, D",
+    "BIT 3, E",
+    "BIT 3, H",
+    "BIT 3, L",
+    "BIT 3, [HL]",
+    "BIT 3, A",
+    "BIT 4, B",
+    "BIT 4, C",
+    "BIT 4, D",
+    "BIT 4, E",
+    "BIT 4, H",
+    "BIT 4, L",
+    "BIT 4, [HL]",
+    "BIT 4, A",
+    "BIT 5, B",
+    "BIT 5, C",
+    "BIT 5, D",
+    "BIT 5, E",
+    "BIT 5, H",
+    "BIT 5, L",
+    "BIT 5, [HL]",
+    "BIT 5, A",
+    "BIT 6, B",
+    "BIT 6, C",
+    "BIT 6, D",
+    "BIT 6, E",
+    "BIT 6, H",
+    "BIT 6, L",
+    "BIT 6, [HL]",
+    "BIT 6, A",
+    "BIT 7, B",
+    "BIT 7, C",
+    "BIT 7, D",
+    "BIT 7, E",
+    "BIT 7, H",
+    "BIT 7, L",
+    "BIT 7, [HL]",
+    "BIT 7, A",
+    "RES 0, B",
+    "RES 0, C",
+    "RES 0, D",
+    "RES 0, E",
+    "RES 0, H",
+    "RES 0, L",
+    "RES 0, [HL]",
+    "RES 0, A",
+    "RES 1, B",
+    "RES 1, C",
+    "RES 1, D",
+    "RES 1, E",
+    "RES 1, H",
+    "RES 1, L",
+    "RES 1, [HL]",
+    "RES 1, A",
+    "RES 2, B",
+    "RES 2, C",
+    "RES 2, D",
+    "RES 2, E",
+    "RES 2, H",
+    "RES 2, L",
+    "RES 2, [HL]",
+    "RES 2, A",
+    "RES 3, B",
+    "RES 3, C",
+    "RES 3, D",
+    "RES 3, E",
+    "RES 3, H",
+    "RES 3, L",
+    "RES 3, [HL]",
+    "RES 3, A",
+    "RES 4, B",
+    "RES 4, C",
+    "RES 4, D",
+    "RES 4, E",
+    "RES 4, H",
+    "RES 4, L",
+    "RES 4, [HL]",
+    "RES 4, A",
+    "RES 5, B",
+    "RES 5, C",
+    "RES 5, D",
+    "RES 5, E",
+    "RES 5, H",
+    "RES 5, L",
+    "RES 5, [HL]",
+    "RES 5, A",
+    "RES 6, B",
+    "RES 6, C",
+    "RES 6, D",
+    "RES 6, E",
+    "RES 6, H",
+    "RES 6, L",
+    "RES 6, [HL]",
+    "RES 6, A",
+    "RES 7, B",
+    "RES 7, C",
+    "RES 7, D",
+    "RES 7, E",
+    "RES 7, H",
+    "RES 7, L",
+    "RES 7, [HL]",
+    "RES 7, A",
+    "SET 0, B",
+    "SET 0, C",
+    "SET 0, D",
+    "SET 0, E",
+    "SET 0, H",
+    "SET 0, L",
+    "SET 0, [HL]",
+    "SET 0, A",
+    "SET 1, B",
+    "SET 1, C",
+    "SET 1, D",
+    "SET 1, E",
+    "SET 1, H",
+    "SET 1, L",
+    "SET 1, [HL]",
+    "SET 1, A",
+    "SET 2, B",
+    "SET 2, C",
+    "SET 2, D",
+    "SET 2, E",
+    "SET 2, H",
+    "SET 2, L",
+    "SET 2, [HL]",
+    "SET 2, A",
+    "SET 3, B",
+    "SET 3, C",
+    "SET 3, D",
+    "SET 3, E",
+    "SET 3, H",
+    "SET 3, L",
+    "SET 3, [HL]",
+    "SET 3, A",
+    "SET 4, B",
+    "SET 4, C",
+    "SET 4, D",
+    "SET 4, E",
+    "SET 4, H",
+    "SET 4, L",
+    "SET 4, [HL]",
+    "SET 4, A",
+    "SET 5, B",
+    "SET 5, C",
+    "SET 5, D",
+    "SET 5, E",
+    "SET 5, H",
+    "SET 5, L",
+    "SET 5, [HL]",
+    "SET 5, A",
+    "SET 6, B",
+    "SET 6, C",
+    "SET 6, D",
+    "SET 6, E",
+    "SET 6, H",
+    "SET 6, L",
+    "SET 6, [HL]",
+    "SET 6, A",
+    "SET 7, B",
+    "SET 7, C",
+    "SET 7, D",
+    "SET 7, E",
+    "SET 7, H",
+    "SET 7, L",
+    "SET 7, [HL]",
+    "SET 7, A",
 ];

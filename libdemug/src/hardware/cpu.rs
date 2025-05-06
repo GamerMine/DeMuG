@@ -1,7 +1,7 @@
 mod opcodes;
 
+use crate::hardware::cpu::opcodes::{OPCODES, OPCODES_STRING};
 use crate::Demug;
-use crate::hardware::cpu::opcodes::OPCODES;
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -21,17 +21,18 @@ pub(crate) enum Interrupts {
     Vblank = 0,
 }
 
-struct CpuRegisters {
-    a: u8,
-    f: u8,
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    pc: u16,
-    sp: u16,
+#[derive(Clone)]
+pub struct CpuRegisters {
+    pub a: u8,
+    pub f: u8,
+    pub b: u8,
+    pub c: u8,
+    pub d: u8,
+    pub e: u8,
+    pub h: u8,
+    pub l: u8,
+    pub pc: u16,
+    pub sp: u16,
 }
 
 pub struct Cpu {
@@ -47,14 +48,14 @@ impl Cpu {
             bus,
             registers: CpuRegisters {
                 a: 0x01,
-                f: 0x00,
+                f: 0x80,
                 b: 0x00,
                 c: 0x13,
                 d: 0x00,
                 e: 0xd8,
                 h: 0x01,
                 l: 0x4d,
-                pc: 0x0100,
+                pc: 0x0000,
                 sp: 0xfffe,
             },
             m_cycles: 0,
@@ -80,6 +81,19 @@ impl Cpu {
         }
     }
 
+    #[cfg(feature = "debug")]
+    pub fn gather_debug_info(&self) -> CpuDebugInfo {
+        let opcode = self.bus.borrow().read(self.registers.pc);
+        let prefixed_opcode = self.bus.borrow().read(self.registers.pc + 1);
+        
+        CpuDebugInfo {
+            registers: self.registers.clone(),
+            next_instr: OPCODES_STRING[opcode as usize](prefixed_opcode),
+            next_instr_opcode: opcode,
+            next_instr_pfx_opcode: prefixed_opcode,
+        }
+    }
+
     fn check_interrupts(&mut self) {
         let mut interrupt_triggered = (false, 0x0000);
         if self.bus.borrow().interrupt_enable.get().bit(Interrupts::Vblank as u8) == 0b1
@@ -87,14 +101,18 @@ impl Cpu {
         {
             interrupt_triggered.0 = true;
             interrupt_triggered.1 = 0x0040;
-            self.bus.borrow_mut().interrupt_flags.get().clear(Interrupts::Vblank as u8);
+            let mut register_new = self.bus.borrow().interrupt_flags.get();
+            register_new.clear(Interrupts::Vblank as u8);
+            self.bus.borrow().interrupt_flags.set(register_new);
         }
         else if self.bus.borrow().interrupt_enable.get().bit(Interrupts::Lcd as u8) == 0b1
             && self.bus.borrow().interrupt_flags.get().bit(Interrupts::Lcd as u8) == 0b1
         {
             interrupt_triggered.0 = true;
             interrupt_triggered.1 = 0x0048;
-            self.bus.borrow_mut().interrupt_flags.get().clear(Interrupts::Lcd as u8);
+            let mut register_new = self.bus.borrow().interrupt_flags.get();
+            register_new.clear(Interrupts::Lcd as u8);
+            self.bus.borrow().interrupt_flags.set(register_new);
         }
 
         if interrupt_triggered.0 {
@@ -212,9 +230,9 @@ impl Cpu {
         self.write_byte(addr_hi, (data >> 8) as u8);
     }
 
-    fn increment8_flag(&mut self, value: u8) {
-        self.set_zero(value == 0x00);
-        self.set_half_carry(value & 0x0F == 0x00);
+    fn increment8_flag(&mut self, res_value: u8) {
+        self.set_zero(res_value == 0x00);
+        self.set_half_carry(res_value - 0b1 & 0x0F == 0x0F);
         self.set_negative(false);
     }
 
@@ -292,8 +310,16 @@ impl Cpu {
     }
 
     fn bit8_flag(&mut self, bit: u8, value: u8) {
-        self.set_zero(value & 1 << bit == 0);
+        self.set_zero(value >> bit & 0b1 == 0b0);
         self.set_half_carry(true);
         self.set_negative(false);
     }
+}
+
+#[cfg(feature = "debug")]
+pub struct CpuDebugInfo {
+    pub registers: CpuRegisters,
+    pub next_instr: &'static str,
+    pub next_instr_opcode: u8, 
+    pub next_instr_pfx_opcode: u8,
 }

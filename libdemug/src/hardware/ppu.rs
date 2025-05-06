@@ -183,6 +183,9 @@ impl Ppu {
                         && x_pos < SCREEN_WIDTH as u16
                         && y_pos < SCREEN_HEIGHT as u32
                     {
+                        if self.registers.lcdc.bit(LcdcReg::WindowEnable as u8) == 0b1 {
+                            println!("WINDOW SHOULD BE DISPLAYED");
+                        }
                         let mut tile_data_loc: u16 =
                             if self.registers.lcdc.bit(LcdcReg::BgWindowTileMapDataArea as u8)
                                 == 0b0
@@ -198,8 +201,10 @@ impl Ppu {
                                 0x9C00
                             };
 
-                        tile_map_loc += x_pos / 8u16 + (y_pos as u16 / 8u16 * 32u16); // Address to Tile Data ID in Background/Window Tile Map    
+                        tile_map_loc += (x_pos + self.registers.scx as u16) / 8u16 % 32u16
+                            + ((y_pos as u16 + self.registers.scy as u16) / 8u16 % 32u16) * 32u16; // Address to Tile Data ID in Background/Window Tile Map
                         let tile_data_id = self.bus.borrow().read(tile_map_loc); // Tile Data ID from Background/Window map
+                        if tile_data_id > 127 { tile_data_loc = 0x8000; }
                         tile_data_loc += tile_data_id as u16 * 8 * 2 + (y_pos as u16 % 8) * 2; // Base Data Location + position of Tile Data ID in Tile Data, and because a tile as a width of 8 pixels but is 2 byte wide
 
                         let pixels_hi =
@@ -233,22 +238,25 @@ impl Ppu {
                     && self.registers.stat.bit(StatReg::LycEqualLy as u8) == 0b1
                 {
                     self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
-                } else if self.registers.stat.bit(StatReg::Mode2Select as u8) == 0b1
+                }
+                else if self.registers.stat.bit(StatReg::Mode2Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                        == 0b10
+                    | self.registers.stat.bit(StatReg::PpuModeLo as u8)
+                    == 0b10
                 {
                     self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
-                } else if self.registers.stat.bit(StatReg::Mode1Select as u8) == 0b1
+                }
+                else if self.registers.stat.bit(StatReg::Mode1Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                        == 0b01
+                    | self.registers.stat.bit(StatReg::PpuModeLo as u8)
+                    == 0b01
                 {
                     self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
-                } else if self.registers.stat.bit(StatReg::Mode0Select as u8) == 0b1
+                }
+                else if self.registers.stat.bit(StatReg::Mode0Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                        == 0b00
+                    | self.registers.stat.bit(StatReg::PpuModeLo as u8)
+                    == 0b00
                 {
                     self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
                 }

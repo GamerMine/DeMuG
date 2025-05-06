@@ -1,9 +1,10 @@
-use crate::hardware::cpu::{Cpu, Interrupts};
+use crate::hardware::cpu::{Cpu, CpuDebugInfo, Interrupts};
 use crate::hardware::memory::Memory;
 use crate::hardware::ppu::Ppu;
 use crate::utils::Register;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
+use std::process::exit;
 use std::sync::Arc;
 
 mod hardware;
@@ -61,6 +62,14 @@ impl Demug {
         if let Some(ppu) = &*self.ppu.borrow() { ppu.is_frame_ready() } else { unreachable!() }
     }
 
+    #[cfg(feature = "debug")]
+    pub fn gather_debug_info(&self) -> CpuDebugInfo {
+        let cpu_debug_info = 
+            if let Some(cpu) = &*self.cpu.borrow() { cpu.gather_debug_info() } else { unreachable!() };
+
+        cpu_debug_info
+    }
+
     pub fn disable_boot_rom(&mut self, disabled: bool) {
         self.disable_boot_rom.set(disabled);
     }
@@ -107,7 +116,7 @@ impl Demug {
         } else if addr == 0xFFFF {
             data = self.interrupt_enable.get().value();
         } else {
-            println!("Read from {:#X} is not implemented!", addr);
+            //println!("Read from {:#X} is not implemented!", addr);
             //exit(0)
         }
 
@@ -126,23 +135,30 @@ impl Demug {
                 mem.wram[addr - 0xC000] = data;
             }
         } else if addr == 0xFF0F {
-            self.interrupt_flags.get().set_value(data);
+            let mut new_register = self.interrupt_flags.get();
+            new_register.set_value(data);
+            self.interrupt_flags.set(new_register);
         } else if addr >= 0xFF40 && addr <= 0xFF4B {
             if let Some(ppu) = &mut *self.ppu.borrow_mut() {
                 ppu.write(addr as u16, data);
             }
         } else if addr == 0xFF50 && data != 0x00 {
             self.disable_boot_rom.set(true);
-            self.interrupt_flags.get().set_value(data);
+            let mut new_register = self.interrupt_flags.get();
+            new_register.set_value(data);
+            self.interrupt_flags.set(new_register);
             println!("Disabling Boot Rom");
+            exit(666);
         } else if addr >= 0xFF80 && addr <= 0xFFFE {
             if let Some(mem) = &mut *self.memory.borrow_mut() {
                 mem.hram[addr - 0xFF80] = data;
             }
         } else if addr == 0xFFFF {
-            self.interrupt_enable.get().set_value(data);
+            let mut new_register = self.interrupt_enable.get();
+            new_register.set_value(data);
+            self.interrupt_enable.set(new_register);
         } else {
-            println!("Write to {:#X} is not implemented!", addr);
+            //println!("Write to {:#X} is not implemented!", addr);
         }
     }
 
@@ -153,6 +169,8 @@ impl Demug {
     }
 
     fn trigger_interrupt(&self, interrupt: Interrupts) {
-        self.interrupt_flags.get().set(interrupt as u8);
+        let mut new_register = self.interrupt_flags.get();
+        new_register.set(interrupt as u8);
+        self.interrupt_flags.set(new_register);
     }
 }

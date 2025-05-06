@@ -13,7 +13,7 @@ impl Memory {
     pub(crate) fn init() -> Self {
         Self {
             boot_rom: *include_bytes!("../../resources/dmg_boot.bin"),
-            game_rom: vec![0x00; 0x8000],
+            game_rom: vec![0xFF; 0x8000],
             vram: [0x00; 0x2000],
             wram: [0x00; 0x2000],
             hram: [0x00; 0x007F],
