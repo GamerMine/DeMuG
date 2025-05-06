@@ -1,8 +1,9 @@
 use raylib::color::Color;
-use raylib::consts::{KeyboardKey, PixelFormat};
+use raylib::consts::{GuiControl, GuiDefaultProperty, KeyboardKey, PixelFormat};
 use raylib::drawing::RaylibDraw;
 use raylib::math::{Rectangle, Vector2};
 use raylib::prelude::Image;
+use raylib::rgui::RaylibDrawGui;
 use raylib::texture::RaylibTexture2D;
 
 const SCALE_FACTOR: f32 = 5.0;
@@ -30,15 +31,18 @@ fn main() {
         .borrow_mut()
         .insert_cartridge(PathBuf::from("./demug-gui/resources/01-special.gb"));*/
 
+    let mut should_exit = false;
     let mut is_paused = true;
     let mut goto_next = false;
+    let mut buffer: String = String::from("0000\0");
     
     if let Ok(mut texture) = rl.load_texture_from_image(&thread, &game_render) {
         
         let mut cpu_debug = demug.borrow().gather_debug_info();
-        while !rl.window_should_close() {
-            let mut d = rl.begin_drawing(&thread);
-            if let Some(key) = d.get_key_pressed() {
+        while !should_exit {
+            should_exit = rl.window_should_close();
+
+            if let Some(key) = rl.get_key_pressed() {
                 match key {
                     KeyboardKey::KEY_SPACE => {is_paused ^= true}
                     KeyboardKey::KEY_N => {goto_next = true}
@@ -46,8 +50,20 @@ fn main() {
                 }
             }
 
+            let bp_buffer = &buffer.trim_end_matches('\0').to_lowercase();
+            if let Ok(bp) = u16::from_str_radix(bp_buffer, 16) {
+                println!("{:#X}", bp);
+                if bp == cpu_debug.registers.pc {
+                    is_paused = true;
+                }
+            }
+
             {
+                let mut d = rl.begin_drawing(&thread);
                 d.clear_background(Color::BLACK);
+
+                d.gui_set_style(GuiControl::DEFAULT, GuiDefaultProperty::TEXT_SIZE, 20);
+                d.gui_text_box(Rectangle::new(950.0, 70.0, 80.0, 60.0), &mut buffer, true);
 
                 // Draw next cpu instruction
                 if cpu_debug.next_instr_opcode == 0xCB {
