@@ -40,6 +40,12 @@ enum PaletteRegisters {
     ColorId0Lo = 0,
 }
 
+enum Palettes {
+    BGP,
+    OBP0,
+    OBP1,
+}
+
 struct PpuRegisters {
     lcdc: Register, // LCD Control register             at 0xFF40
     stat: Register, // LCD status                       at 0xFF41
@@ -72,11 +78,28 @@ impl Pixel {
     }
 }
 
+#[repr(u8)]
+enum ObjectAttributes {
+    Priority = 7,
+    YFlip = 6,
+    XFlip = 5,
+    DMGPalette = 4,
+}
+
+#[derive(Copy, Clone)]
+struct Object {
+    y_position: u8,
+    x_position: u8,
+    tile_index: u8,
+    attributes: Register,
+}
+
 pub struct Ppu {
     bus: Arc<RefCell<Demug>>,
     registers: PpuRegisters,
     screen_pixel_array: [Pixel; SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize],
     dots: u32,
+    objects_in_line: ([Option<Object>; 10], u8),
     frame_ready: bool,
 }
 
@@ -100,6 +123,7 @@ impl Ppu {
             },
             screen_pixel_array: [Pixel::new(); SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize],
             dots: 0,
+            objects_in_line: ([None; 10], 0),
             frame_ready: false,
         }
     }
@@ -132,7 +156,10 @@ impl Ppu {
             0xFF43 => self.registers.scx = value,
             0xFF44 => {}
             0xFF45 => self.registers.lyc = value,
-            0xFF46 => self.registers.dma = value,
+            0xFF46 => {
+                self.registers.dma = value;
+                self.start_dma();
+            }
             0xFF47 => self.registers.bgp.set_value(value),
             0xFF48 => self.registers.obp0.set_value(value),
             0xFF49 => self.registers.obp1.set_value(value),
@@ -160,16 +187,43 @@ impl Ppu {
     pub fn tick(&mut self, m_cycles: u64) {
         if self.registers.lcdc.bit(LcdcReg::LcdPpuEnable as u8) == 0b1 {
             for _ in 0..m_cycles * 4 {
-                let y_pos = self.dots / 456u32;
-                let dot_x = self.dots - y_pos * 456u32;
+                let y_pos = (self.dots / 456u32) as u8;
+                let dot_x = (self.dots - y_pos as u32 * 456u32) as u8;
 
                 if dot_x < 80 {
                     self.registers.stat.clear(StatReg::PpuModeLo as u8);
                     self.registers.stat.set(StatReg::PpuModeHi as u8);
-                    // TODO: Manage OAM Scan (Mode 2)
+
+                    // TODO: Handle 8x16 pixels objects
+                    if dot_x % 2 == 0 {
+                        let offset = (dot_x as u16 / 2) * 4;
+                        let y_position = self.bus.borrow().read(0xFE00 | offset);
+
+                        let big_obj = self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1;
+                        if self.objects_in_line.1 < 10
+                            && y_position > if big_obj { 0 } else { 8 }
+                            && y_position <= 160u8
+                            && y_pos + 8 * 2 < y_position + if big_obj { 16 } else { 8 }
+                            && y_pos + 8 * 2 >= y_position
+                        {
+                            let x_position = self.bus.borrow().read(0xFE00 | offset + 1);
+                            let tile_index = self.bus.borrow().read(0xFE00 | offset + 2);
+                            let attributes = self.bus.borrow().read(0xFE00 | offset + 3);
+
+                            self.objects_in_line.0[self.objects_in_line.1 as usize] =
+                                Some(Object {
+                                    y_position,
+                                    x_position,
+                                    tile_index,
+                                    attributes: Register::new(attributes),
+                                });
+
+                            self.objects_in_line.1 += 1;
+                        }
+                    }
                 } else {
                     // TODO: Manage Mode 3 Length "penalties"
-                    let x_pos: u16 = dot_x as u16 - 80u16;
+                    let x_pos = dot_x - 80u8;
 
                     self.registers.ly = y_pos as u8;
                     self.registers.stat.set_conditional(
@@ -179,51 +233,148 @@ impl Ppu {
                     self.registers.stat.set(StatReg::PpuModeLo as u8);
                     self.registers.stat.set(StatReg::PpuModeHi as u8);
 
-                    if self.registers.lcdc.bit(LcdcReg::BgWindowEnable as u8) == 0b1
-                        && x_pos < SCREEN_WIDTH as u16
-                        && y_pos < SCREEN_HEIGHT as u32
-                    {
-                        if self.registers.lcdc.bit(LcdcReg::WindowEnable as u8) == 0b1 {
-                            println!("WINDOW SHOULD BE DISPLAYED");
+                    if x_pos < SCREEN_WIDTH && y_pos < SCREEN_HEIGHT {
+                        if self.registers.lcdc.bit(LcdcReg::BgWindowEnable as u8) == 0b1 {
+                            let mut tile_data_loc: u16 = {
+                                if self.registers.lcdc.bit(LcdcReg::BgWindowTileMapDataArea as u8)
+                                    == 0b0
+                                {
+                                    0x9000
+                                } else {
+                                    0x8000
+                                }
+                            };
+                            let mut tile_map_loc: u16 = {
+                                if self.registers.lcdc.bit(LcdcReg::WindowEnable as u8) == 0b1
+                                    && x_pos + 7 >= self.registers.wx
+                                    && y_pos > self.registers.wy
+                                {
+                                    if self.registers.lcdc.bit(LcdcReg::WindowTileMapArea as u8)
+                                        == 0b0
+                                    {
+                                        0x9800
+                                    } else {
+                                        0x9C00
+                                    }
+                                } else {
+                                    if self.registers.lcdc.bit(LcdcReg::BgTileMapArea as u8) == 0b0
+                                    {
+                                        0x9800
+                                    } else {
+                                        0x9C00
+                                    }
+                                }
+                            };
+                            let window_on_screen =
+                                self.registers.lcdc.bit(LcdcReg::WindowEnable as u8) == 0b1
+                                    && self.registers.wx >= 7
+                                    && self.registers.wx < 166
+                                    && x_pos + 7 >= self.registers.wx
+                                    && self.registers.wy <= 143
+                                    && y_pos >= self.registers.wy;
+
+                            if window_on_screen {
+                                tile_map_loc += (x_pos as u16 - (self.registers.wx as u16 - 7))
+                                    / 8u16
+                                    + ((y_pos as u16 - self.registers.wy as u16) / 8u16) * 32u16; // Address to Tile Data ID in Window Tile Map
+                            } else {
+                                tile_map_loc += (x_pos as u16 + self.registers.scx as u16) / 8u16
+                                    % 32u16
+                                    + ((y_pos as u16 + self.registers.scy as u16) / 8u16 % 32u16)
+                                        * 32u16; // Address to Tile Data ID in Background Tile Map
+                            }
+
+                            let tile_data_id = self.bus.borrow().read(tile_map_loc); // Tile Data ID from Background/Window map
+                            if tile_data_id > 127 {
+                                tile_data_loc = 0x8000;
+                            }
+
+                            if window_on_screen {
+                                tile_data_loc += tile_data_id as u16 * 8 * 2
+                                    + ((y_pos as u16 - self.registers.wy as u16) % 8) * 2;
+                            } else {
+                                tile_data_loc += tile_data_id as u16 * 8 * 2
+                                    + ((y_pos as u16 + self.registers.scy as u16 % 256) % 8) * 2;
+                            }
+
+                            let pixels_hi =
+                                self.bus.borrow().read(tile_data_loc) >> 7 - x_pos % 8 & 0x1;
+                            let pixels_lo =
+                                self.bus.borrow().read(tile_data_loc + 1) >> 7 - x_pos % 8 & 0x1;
+                            let color_index = pixels_hi << 1 | pixels_lo;
+
+                            self.screen_pixel_array
+                                [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
+                                self.get_pixel_from_index(color_index, Palettes::BGP);
                         }
-                        let mut tile_data_loc: u16 =
-                            if self.registers.lcdc.bit(LcdcReg::BgWindowTileMapDataArea as u8)
-                                == 0b0
-                            {
-                                0x9000
-                            } else {
-                                0x8000
-                            };
-                        let mut tile_map_loc: u16 =
-                            if self.registers.lcdc.bit(LcdcReg::BgTileMapArea as u8) == 0b0 {
-                                0x9800
-                            } else {
-                                0x9C00
-                            };
 
-                        tile_map_loc += (x_pos + self.registers.scx as u16) / 8u16 % 32u16
-                            + ((y_pos as u16 + self.registers.scy as u16) / 8u16 % 32u16) * 32u16; // Address to Tile Data ID in Background/Window Tile Map
-                        let tile_data_id = self.bus.borrow().read(tile_map_loc); // Tile Data ID from Background/Window map
-                        if tile_data_id > 127 { tile_data_loc = 0x8000; }
-                        tile_data_loc += tile_data_id as u16 * 8 * 2 + ((y_pos as u16 + self.registers.scy as u16 % 256) % 8) * 2; // Base Data Location + position of Tile Data ID in Tile Data, and because a tile as a width of 8 pixels but is 2 byte wide
+                        if self.registers.lcdc.bit(LcdcReg::ObjEnable as u8) == 0b1 {
+                            let mut last_found_xpos: u8 = 0xFF;
+                            let mut found_obj: Option<Object> = None;
+                            for o in self.objects_in_line.0 {
+                                if let Some(obj) = o {
+                                    if x_pos < obj.x_position
+                                        && x_pos >= obj.x_position - 8
+                                        && obj.x_position < last_found_xpos
+                                    {
+                                        last_found_xpos = obj.x_position;
+                                        found_obj = Some(obj);
+                                    }
+                                }
+                            }
 
-                        let pixels_hi =
-                            self.bus.borrow().read(tile_data_loc) >> 7 - x_pos % 8 & 0x1;
-                        let pixels_lo =
-                            self.bus.borrow().read(tile_data_loc + 1) >> 7 - x_pos % 8 & 0x1;
-                        let color_index = pixels_hi << 1 | pixels_lo;
+                            if let Some(obj) = found_obj {
+                                if obj.attributes.bit(ObjectAttributes::Priority as u8) == 0b0 {
+                                    // TODO: Handle X flip & Y flip
+                                    // TODO: Handle Transparent pixels
+                                    let offset_obj: u16 =
+                                        if self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1 {
+                                            if (obj.attributes.bit(ObjectAttributes::YFlip as u8) == 0b0 && y_pos + 8 >= obj.y_position - 8) 
+                                                || (obj.attributes.bit(ObjectAttributes::YFlip as u8) == 0b1 && y_pos + 8 < obj.y_position - 8) {
+                                                (obj.tile_index as u16 + 1) | 0x01
+                                            } else {
+                                                obj.tile_index as u16 & 0xFE
+                                            }
+                                        } else {
+                                            obj.tile_index as u16
+                                        };
+                                    let tile_data_loc =
+                                        0x8000 + offset_obj * 8 * 2 + y_pos as u16 % 8 * 2;
 
-                        self.screen_pixel_array
-                            [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
-                            self.get_pixel_from_index(color_index);
+                                    let pixels_hi = self.bus.borrow().read(tile_data_loc)
+                                        >> 7 - x_pos % 8
+                                        & 0x1;
+                                    let pixels_lo = self.bus.borrow().read(tile_data_loc + 1)
+                                        >> 7 - x_pos % 8
+                                        & 0x1;
+                                    let color_index = pixels_hi << 1 | pixels_lo;
+
+                                    self.screen_pixel_array
+                                        [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
+                                        self.get_pixel_from_index(
+                                            color_index,
+                                            if obj
+                                                .attributes
+                                                .bit(ObjectAttributes::DMGPalette as u8)
+                                                == 0b0
+                                            {
+                                                Palettes::OBP0
+                                            } else {
+                                                Palettes::OBP1
+                                            },
+                                        );
+                                }
+                            }
+                        }
                     }
 
-                    if x_pos == SCREEN_WIDTH as u16 {
+                    if x_pos == SCREEN_WIDTH {
+                        self.objects_in_line = ([None; 10], 0);
                         self.registers.stat.clear(StatReg::PpuModeLo as u8);
                         self.registers.stat.clear(StatReg::PpuModeHi as u8);
                     }
 
-                    if y_pos == SCREEN_HEIGHT as u32 {
+                    if y_pos == SCREEN_HEIGHT {
                         self.bus.borrow().trigger_interrupt(Interrupts::Vblank);
                         self.registers.stat.set(StatReg::PpuModeLo as u8);
                         self.registers.stat.clear(StatReg::PpuModeHi as u8);
@@ -238,25 +389,22 @@ impl Ppu {
                     && self.registers.stat.bit(StatReg::LycEqualLy as u8) == 0b1
                 {
                     self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
-                }
-                else if self.registers.stat.bit(StatReg::Mode2Select as u8) == 0b1
+                } else if self.registers.stat.bit(StatReg::Mode2Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                    | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                    == 0b10
+                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
+                        == 0b10
                 {
                     self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
-                }
-                else if self.registers.stat.bit(StatReg::Mode1Select as u8) == 0b1
+                } else if self.registers.stat.bit(StatReg::Mode1Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                    | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                    == 0b01
+                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
+                        == 0b01
                 {
                     self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
-                }
-                else if self.registers.stat.bit(StatReg::Mode0Select as u8) == 0b1
+                } else if self.registers.stat.bit(StatReg::Mode0Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                    | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                    == 0b00
+                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
+                        == 0b00
                 {
                     self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
                 }
@@ -272,29 +420,73 @@ impl Ppu {
         self.frame_ready
     }
 
-    fn get_pixel_from_index(&self, index: u8) -> Pixel {
+    fn get_pixel_from_index(&self, index: u8, palette: Palettes) -> Pixel {
         let color: u8;
 
-        match index {
-            0b00 => {
-                color = self.registers.bgp.bit(PaletteRegisters::ColorId0Hi as u8) << 1
-                    | self.registers.bgp.bit(PaletteRegisters::ColorId0Lo as u8);
-            }
-            0b01 => {
-                color = self.registers.bgp.bit(PaletteRegisters::ColorId1Hi as u8) << 1
-                    | self.registers.bgp.bit(PaletteRegisters::ColorId1Lo as u8);
-            }
-            0b10 => {
-                color = self.registers.bgp.bit(PaletteRegisters::ColorId2Hi as u8) << 1
-                    | self.registers.bgp.bit(PaletteRegisters::ColorId2Lo as u8);
-            }
-            0b11 => {
-                color = self.registers.bgp.bit(PaletteRegisters::ColorId3Hi as u8) << 1
-                    | self.registers.bgp.bit(PaletteRegisters::ColorId3Lo as u8);
-            }
-            _ => {
-                unreachable!()
-            }
+        match palette {
+            Palettes::BGP => match index {
+                0b00 => {
+                    color = self.registers.bgp.bit(PaletteRegisters::ColorId0Hi as u8) << 1
+                        | self.registers.bgp.bit(PaletteRegisters::ColorId0Lo as u8);
+                }
+                0b01 => {
+                    color = self.registers.bgp.bit(PaletteRegisters::ColorId1Hi as u8) << 1
+                        | self.registers.bgp.bit(PaletteRegisters::ColorId1Lo as u8);
+                }
+                0b10 => {
+                    color = self.registers.bgp.bit(PaletteRegisters::ColorId2Hi as u8) << 1
+                        | self.registers.bgp.bit(PaletteRegisters::ColorId2Lo as u8);
+                }
+                0b11 => {
+                    color = self.registers.bgp.bit(PaletteRegisters::ColorId3Hi as u8) << 1
+                        | self.registers.bgp.bit(PaletteRegisters::ColorId3Lo as u8);
+                }
+                _ => {
+                    unreachable!()
+                }
+            },
+            Palettes::OBP0 => match index {
+                0b00 => {
+                    color = self.registers.obp0.bit(PaletteRegisters::ColorId0Hi as u8) << 1
+                        | self.registers.obp0.bit(PaletteRegisters::ColorId0Lo as u8);
+                }
+                0b01 => {
+                    color = self.registers.obp0.bit(PaletteRegisters::ColorId1Hi as u8) << 1
+                        | self.registers.obp0.bit(PaletteRegisters::ColorId1Lo as u8);
+                }
+                0b10 => {
+                    color = self.registers.obp0.bit(PaletteRegisters::ColorId2Hi as u8) << 1
+                        | self.registers.obp0.bit(PaletteRegisters::ColorId2Lo as u8);
+                }
+                0b11 => {
+                    color = self.registers.obp0.bit(PaletteRegisters::ColorId3Hi as u8) << 1
+                        | self.registers.obp0.bit(PaletteRegisters::ColorId3Lo as u8);
+                }
+                _ => {
+                    unreachable!()
+                }
+            },
+            Palettes::OBP1 => match index {
+                0b00 => {
+                    color = self.registers.obp1.bit(PaletteRegisters::ColorId0Hi as u8) << 1
+                        | self.registers.obp1.bit(PaletteRegisters::ColorId0Lo as u8);
+                }
+                0b01 => {
+                    color = self.registers.obp1.bit(PaletteRegisters::ColorId1Hi as u8) << 1
+                        | self.registers.obp1.bit(PaletteRegisters::ColorId1Lo as u8);
+                }
+                0b10 => {
+                    color = self.registers.obp1.bit(PaletteRegisters::ColorId2Hi as u8) << 1
+                        | self.registers.obp1.bit(PaletteRegisters::ColorId2Lo as u8);
+                }
+                0b11 => {
+                    color = self.registers.obp1.bit(PaletteRegisters::ColorId3Hi as u8) << 1
+                        | self.registers.obp1.bit(PaletteRegisters::ColorId3Lo as u8);
+                }
+                _ => {
+                    unreachable!()
+                }
+            },
         }
 
         match color {
@@ -321,6 +513,15 @@ impl Ppu {
             _ => {
                 unreachable!()
             }
+        }
+    }
+
+    fn start_dma(&self) {
+        //FIXME: To make a cycle accurate emulator, a DMA OAM transfer should not be handled like that.
+        //  While transferring, the cpu should continue to execute instructions and tick other devices.
+        for obj_attr in 0..0x00A0 {
+            let addr: u16 = (self.registers.dma as u16) << 8 | obj_attr;
+            self.bus.borrow().write(0xFE00 | obj_attr, self.bus.borrow().read(addr));
         }
     }
 }

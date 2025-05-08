@@ -1,6 +1,9 @@
 mod opcodes;
 
-use crate::hardware::cpu::opcodes::{OPCODES, OPCODES_STRING};
+#[cfg(feature = "debug")]
+use crate::hardware::cpu::opcodes::OPCODES_STRING;
+
+use crate::hardware::cpu::opcodes::OPCODES;
 use crate::Demug;
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -76,6 +79,24 @@ impl Cpu {
             self.check_interrupts()
         }
     }
+    
+    pub fn execute_frame(&mut self) {
+        self.m_cycles = 0;
+        while self.m_cycles <= 17556 {
+            let opcode = self.fetch_byte();
+
+            let old_m_cycles = self.m_cycles;
+
+            OPCODES[opcode as usize](self);
+
+            self.bus.borrow().tick(self.m_cycles - old_m_cycles);
+
+            if self.ime {
+                self.check_interrupts()
+            }
+        }
+        self.m_cycles -= 17556;
+    }
 
     #[cfg(feature = "debug")]
     pub fn gather_debug_info(&self) -> CpuDebugInfo {
@@ -111,7 +132,7 @@ impl Cpu {
             self.bus.borrow().interrupt_flags.set(register_new);
         }
 
-        if interrupt_triggered.0 {
+        if interrupt_triggered.0 && self.ime {
             self.ime = false;
             self.m_cycles += 2;
             self.write_word(self.registers.sp - 2, self.registers.sp - 1, self.registers.pc);
@@ -305,7 +326,7 @@ impl Cpu {
     }
 
     fn rotate8_flag(&mut self, value: u8, is_left: bool, set_carry: bool) -> bool {
-        let mut carry = false;
+        let carry;
         if is_left {
             carry = value >> 7 == 0x1;
         } else {

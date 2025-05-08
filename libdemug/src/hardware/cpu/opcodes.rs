@@ -759,10 +759,18 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* LD [HL], L */
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), cpu.registers.l);
     },
-    |_| {
+    |cpu| {
         /* 0x76 */
         /* HALT */
-        unimplemented!();
+        while cpu.bus.borrow().interrupt_enable.get().value() & cpu.bus.borrow().interrupt_flags.get().value() == 0x00 {
+            cpu.bus.borrow().tick(1);
+        }
+        
+        if cpu.ime {
+            cpu.check_interrupts();
+        } else {
+            unimplemented!()
+        }
     },
     |cpu| {
         /* 0x77 */

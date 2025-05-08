@@ -1,5 +1,8 @@
-use crate::hardware::cpu::{Cpu, CpuDebugInfo, Interrupts};
-use crate::hardware::memory::{Memory, MemoryDebugInfo};
+#[cfg(feature = "debug")]use crate::hardware::cpu::CpuDebugInfo;
+#[cfg(feature = "debug")]use crate::hardware::memory::MemoryDebugInfo;
+
+use crate::hardware::cpu::{Cpu, Interrupts};
+use crate::hardware::memory::Memory;
 use crate::hardware::ppu::Ppu;
 use crate::utils::Register;
 use std::cell::{Cell, RefCell};
@@ -19,7 +22,7 @@ pub struct Demug {
     disable_boot_rom: Cell<bool>,
     interrupt_flags: Cell<Register>,
     interrupt_enable: Cell<Register>,
-    bus_debug_info: RefCell<Option<BusDebugInfo>>,
+    #[cfg(feature = "debug")]bus_debug_info: RefCell<Option<BusDebugInfo>>,
 }
 
 impl Demug {
@@ -31,7 +34,7 @@ impl Demug {
             disable_boot_rom: Cell::new(false),
             interrupt_flags: Cell::new(Register::new(0xE1)),
             interrupt_enable: Cell::new(Register::new(0x00)),
-            bus_debug_info: RefCell::new(None),
+            #[cfg(feature = "debug")]bus_debug_info: RefCell::new(None),
         }));
 
         // Create all necessary 'devices'
@@ -61,6 +64,12 @@ impl Demug {
             cpu.execute();
         }
         if let Some(ppu) = &*self.ppu.borrow() { ppu.is_frame_ready() } else { unreachable!() }
+    }
+
+    pub fn step_frame(&self) {
+        if let Some(cpu) = &mut *self.cpu.borrow_mut() {
+            cpu.execute_frame();
+        }
     }
 
     #[cfg(feature = "debug")]
@@ -107,6 +116,10 @@ impl Demug {
             if let Some(mem) = &*self.memory.borrow() {
                 data = mem.wram[addr - 0xE000];
             }
+        } else if addr >= 0xFE00 && addr <= 0xFE9F {
+            if let Some(mem) = &*self.memory.borrow() {
+                data = mem.oam[addr - 0xFE00];
+            }
         } else if addr == 0xFF0F {
             data = self.interrupt_flags.get().value()
         } else if addr >= 0xFF40 && addr <= 0xFF4B {
@@ -124,6 +137,7 @@ impl Demug {
             //exit(0)
         }
         
+        #[cfg(feature = "debug")]
         if cfg!(feature = "debug") {
             let debug_info = BusDebugInfo {
                 last_accessed_addr: addr as u16,
@@ -146,6 +160,10 @@ impl Demug {
         } else if addr >= 0xC000 && addr <= 0xDFFF {
             if let Some(mem) = &mut *self.memory.borrow_mut() {
                 mem.wram[addr - 0xC000] = data;
+            }
+        } else if addr >= 0xFE00 && addr <= 0xFE9F { 
+            if let Some(mem) = &mut *self.memory.borrow_mut() {
+                mem.oam[addr - 0xFE00] = data;
             }
         } else if addr == 0xFF0F {
             let mut new_register = self.interrupt_flags.get();
@@ -173,6 +191,7 @@ impl Demug {
             //println!("Write to {:#X} is not implemented!", addr);
         }
 
+        #[cfg(feature = "debug")]
         if cfg!(feature = "debug") {
             let debug_info = BusDebugInfo {
                 last_accessed_addr: addr as u16,
