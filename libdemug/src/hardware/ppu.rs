@@ -325,44 +325,49 @@ impl Ppu {
 
                             if let Some(obj) = found_obj {
                                 if obj.attributes.bit(ObjectAttributes::Priority as u8) == 0b0 {
-                                    // TODO: Handle X flip & Y flip
-                                    // TODO: Handle Transparent pixels
+                                    // TODO: Handle Y flip for 8x16 objects
+                                    let x_flip = obj.attributes.bit(ObjectAttributes::XFlip as u8) == 0b1;
+                                    let y_flip = obj.attributes.bit(ObjectAttributes::YFlip as u8) == 0b1;
+
                                     let offset_obj: u16 =
                                         if self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1 {
-                                            if (obj.attributes.bit(ObjectAttributes::YFlip as u8) == 0b0 && y_pos + 8 >= obj.y_position - 8) 
-                                                || (obj.attributes.bit(ObjectAttributes::YFlip as u8) == 0b1 && y_pos + 8 < obj.y_position - 8) {
-                                                (obj.tile_index as u16 + 1) | 0x01
+                                            if (obj.y_position - y_pos >= 8)
+                                                /*|| (y_flip && obj.y_position - y_pos < 8)*/ {
+                                                    (obj.tile_index as u16 + 1) | 0x01
                                             } else {
                                                 obj.tile_index as u16 & 0xFE
                                             }
                                         } else {
                                             obj.tile_index as u16
                                         };
+
                                     let tile_data_loc =
-                                        0x8000 + offset_obj * 8 * 2 + y_pos as u16 % 8 * 2;
+                                        0x8000 + (offset_obj * 8 * 2 + ( if y_flip { obj.y_position as u16 - y_pos as u16 - 8 - 1 } else { 16 - (obj.y_position as u16 - y_pos as u16) } ) * 2);
 
                                     let pixels_hi = self.bus.borrow().read(tile_data_loc)
-                                        >> 7 - x_pos % 8
+                                        >> 7 - (if x_flip { obj.x_position - x_pos - 1 } else { 7 - (obj.x_position - x_pos - 1) })
                                         & 0x1;
                                     let pixels_lo = self.bus.borrow().read(tile_data_loc + 1)
-                                        >> 7 - x_pos % 8
+                                        >> 7 - (if x_flip { obj.x_position - x_pos - 1 } else { 7 - (obj.x_position - x_pos - 1) })
                                         & 0x1;
                                     let color_index = pixels_hi << 1 | pixels_lo;
-
-                                    self.screen_pixel_array
-                                        [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
-                                        self.get_pixel_from_index(
-                                            color_index,
-                                            if obj
-                                                .attributes
-                                                .bit(ObjectAttributes::DMGPalette as u8)
-                                                == 0b0
-                                            {
-                                                Palettes::OBP0
-                                            } else {
-                                                Palettes::OBP1
-                                            },
-                                        );
+                                    
+                                    if color_index != 0x00 {
+                                        self.screen_pixel_array
+                                            [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
+                                            self.get_pixel_from_index(
+                                                color_index,
+                                                if obj
+                                                    .attributes
+                                                    .bit(ObjectAttributes::DMGPalette as u8)
+                                                    == 0b0
+                                                {
+                                                    Palettes::OBP0
+                                                } else {
+                                                    Palettes::OBP1
+                                                },
+                                            );
+                                    }
                                 }
                             }
                         }
