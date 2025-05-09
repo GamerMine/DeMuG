@@ -86,7 +86,7 @@ enum ObjectAttributes {
     DMGPalette = 4,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct Object {
     y_position: u8,
     x_position: u8,
@@ -188,7 +188,7 @@ impl Ppu {
         if self.registers.lcdc.bit(LcdcReg::LcdPpuEnable as u8) == 0b1 {
             for _ in 0..m_cycles * 4 {
                 let y_pos = (self.dots / 456u32) as u8;
-                let dot_x = (self.dots - y_pos as u32 * 456u32) as u8;
+                let dot_x = (self.dots - y_pos as u32 * 456u32) as u16;
 
                 if dot_x < 80 {
                     self.registers.stat.clear(StatReg::PpuModeLo as u8);
@@ -196,7 +196,7 @@ impl Ppu {
 
                     // TODO: Handle 8x16 pixels objects
                     if dot_x % 2 == 0 {
-                        let offset = (dot_x as u16 / 2) * 4;
+                        let offset = (dot_x / 2) * 4;
                         let y_position = self.bus.borrow().read(0xFE00 | offset);
 
                         let big_obj = self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1;
@@ -223,9 +223,9 @@ impl Ppu {
                     }
                 } else {
                     // TODO: Manage Mode 3 Length "penalties"
-                    let x_pos = dot_x - 80u8;
+                    let x_pos = (dot_x - 80u16) as u8;
 
-                    self.registers.ly = y_pos as u8;
+                    self.registers.ly = y_pos;
                     self.registers.stat.set_conditional(
                         StatReg::LycEqualLy as u8,
                         self.registers.ly == self.registers.lyc,
@@ -324,6 +324,7 @@ impl Ppu {
                             }
 
                             if let Some(obj) = found_obj {
+                                println!("{:?}", obj);
                                 if obj.attributes.bit(ObjectAttributes::Priority as u8) == 0b0 {
                                     // TODO: Handle Y flip for 8x16 objects
                                     let x_flip = obj.attributes.bit(ObjectAttributes::XFlip as u8) == 0b1;
