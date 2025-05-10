@@ -1,9 +1,8 @@
 use crate::hardware::cpu::Interrupts;
 use crate::utils::Register;
 use crate::{Demug, SCREEN_HEIGHT, SCREEN_WIDTH};
-use bincode::{Encode, config};
 use std::cell::RefCell;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[repr(u8)]
 enum LcdcReg {
@@ -61,7 +60,7 @@ struct PpuRegisters {
     wx: u8,         // Window X Position                at 0xFF4B
 }
 
-#[derive(Encode, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Pixel {
     r: u8,
     g: u8,
@@ -95,7 +94,7 @@ struct Object {
 }
 
 pub struct Ppu {
-    bus: Arc<RefCell<Demug>>,
+    bus: Rc<RefCell<Demug>>,
     registers: PpuRegisters,
     screen_pixel_array: [Pixel; SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize],
     dots: u32,
@@ -104,7 +103,7 @@ pub struct Ppu {
 }
 
 impl Ppu {
-    pub fn init(bus: Arc<RefCell<Demug>>) -> Self {
+    pub fn init(bus: Rc<RefCell<Demug>>) -> Self {
         Self {
             bus,
             registers: PpuRegisters {
@@ -172,16 +171,16 @@ impl Ppu {
     }
 
     pub fn get_frame(&mut self) -> Vec<u8> {
-        let config = config::standard();
+        let mut vec_d = Vec::new();
 
         self.frame_ready = false;
 
-        // TODO: Don't rely on bincode
-        if let Ok(vec) = bincode::encode_to_vec(self.screen_pixel_array, config) {
-            vec
-        } else {
-            unreachable!()
+        for pixel in self.screen_pixel_array {
+            vec_d.push(pixel.r);
+            vec_d.push(pixel.g);
+            vec_d.push(pixel.b);
         }
+        vec_d
     }
 
     pub fn tick(&mut self, m_cycles: u64) {
@@ -194,7 +193,6 @@ impl Ppu {
                     self.registers.stat.clear(StatReg::PpuModeLo as u8);
                     self.registers.stat.set(StatReg::PpuModeHi as u8);
 
-                    // TODO: Handle 8x16 pixels objects
                     if dot_x % 2 == 0 {
                         let offset = (dot_x / 2) * 4;
                         let y_position = self.bus.borrow().read(0xFE00 | offset);
@@ -206,9 +204,9 @@ impl Ppu {
                             && y_pos + 8 * 2 < y_position + if big_obj { 16 } else { 8 }
                             && y_pos + 8 * 2 >= y_position
                         {
-                            let x_position = self.bus.borrow().read(0xFE00 | offset + 1);
-                            let tile_index = self.bus.borrow().read(0xFE00 | offset + 2);
-                            let attributes = self.bus.borrow().read(0xFE00 | offset + 3);
+                            let x_position = self.bus.borrow().read(0xFE00 | (offset + 1));
+                            let tile_index = self.bus.borrow().read(0xFE00 | (offset + 2));
+                            let attributes = self.bus.borrow().read(0xFE00 | (offset + 3));
 
                             self.objects_in_line.0[self.objects_in_line.1 as usize] =
                                 Some(Object {
@@ -233,7 +231,7 @@ impl Ppu {
                     self.registers.stat.set(StatReg::PpuModeLo as u8);
                     self.registers.stat.set(StatReg::PpuModeHi as u8);
 
-                    if x_pos < SCREEN_WIDTH && y_pos < SCREEN_HEIGHT {
+                    if dot_x - 80u16 < SCREEN_WIDTH as u16 && y_pos < SCREEN_HEIGHT {
                         if self.registers.lcdc.bit(LcdcReg::BgWindowEnable as u8) == 0b1 {
                             let mut tile_data_loc: u16 = {
                                 if self.registers.lcdc.bit(LcdcReg::BgWindowTileMapDataArea as u8)
@@ -256,13 +254,12 @@ impl Ppu {
                                     } else {
                                         0x9C00
                                     }
+                                } else if self.registers.lcdc.bit(LcdcReg::BgTileMapArea as u8)
+                                    == 0b0
+                                {
+                                    0x9800
                                 } else {
-                                    if self.registers.lcdc.bit(LcdcReg::BgTileMapArea as u8) == 0b0
-                                    {
-                                        0x9800
-                                    } else {
-                                        0x9C00
-                                    }
+                                    0x9C00
                                 }
                             };
                             let window_on_screen =
@@ -298,43 +295,46 @@ impl Ppu {
                             }
 
                             let pixels_hi =
-                                self.bus.borrow().read(tile_data_loc) >> 7 - x_pos % 8 & 0x1;
+                                self.bus.borrow().read(tile_data_loc) >> (7 - x_pos % 8) & 0x1;
                             let pixels_lo =
-                                self.bus.borrow().read(tile_data_loc + 1) >> 7 - x_pos % 8 & 0x1;
+                                self.bus.borrow().read(tile_data_loc + 1) >> (7 - x_pos % 8) & 0x1;
                             let color_index = pixels_hi << 1 | pixels_lo;
 
                             self.screen_pixel_array
                                 [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
                                 self.get_pixel_from_index(color_index, Palettes::BGP);
+                        } else {
+                            self.screen_pixel_array
+                                [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
+                                Pixel{r: 0x97, g: 0x9b, b: 0x3e}
                         }
 
                         if self.registers.lcdc.bit(LcdcReg::ObjEnable as u8) == 0b1 {
                             let mut last_found_xpos: u8 = 0xFF;
                             let mut found_obj: Option<Object> = None;
-                            for o in self.objects_in_line.0 {
-                                if let Some(obj) = o {
-                                    if x_pos < obj.x_position
-                                        && x_pos >= obj.x_position - 8
-                                        && obj.x_position < last_found_xpos
-                                    {
-                                        last_found_xpos = obj.x_position;
-                                        found_obj = Some(obj);
-                                    }
+                            for o in self.objects_in_line.0.into_iter().flatten() {
+                                if x_pos < o.x_position
+                                    && x_pos >= o.x_position - 8
+                                    && o.x_position < last_found_xpos
+                                {
+                                    last_found_xpos = o.x_position;
+                                    found_obj = Some(o);
                                 }
                             }
 
                             if let Some(obj) = found_obj {
-                                println!("{:?}", obj);
                                 if obj.attributes.bit(ObjectAttributes::Priority as u8) == 0b0 {
-                                    // TODO: Handle Y flip for 8x16 objects
-                                    let x_flip = obj.attributes.bit(ObjectAttributes::XFlip as u8) == 0b1;
-                                    let y_flip = obj.attributes.bit(ObjectAttributes::YFlip as u8) == 0b1;
+                                    let x_flip =
+                                        obj.attributes.bit(ObjectAttributes::XFlip as u8) == 0b1;
+                                    let y_flip =
+                                        obj.attributes.bit(ObjectAttributes::YFlip as u8) == 0b1;
 
                                     let offset_obj: u16 =
                                         if self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1 {
-                                            if (obj.y_position - y_pos >= 8)
-                                                /*|| (y_flip && obj.y_position - y_pos < 8)*/ {
-                                                    (obj.tile_index as u16 + 1) | 0x01
+                                            if (!y_flip && obj.y_position - y_pos <= 8)
+                                                || (y_flip && obj.y_position - y_pos > 8)
+                                            {
+                                                obj.tile_index as u16
                                             } else {
                                                 obj.tile_index as u16 & 0xFE
                                             }
@@ -342,21 +342,36 @@ impl Ppu {
                                             obj.tile_index as u16
                                         };
 
-                                    let tile_data_loc =
-                                        0x8000 + (offset_obj * 8 * 2 + ( if y_flip { obj.y_position as u16 - y_pos as u16 - 8 - 1 } else { 16 - (obj.y_position as u16 - y_pos as u16) } ) * 2);
+                                    let tile_data_loc = 0x8000
+                                        + (offset_obj * 8 * 2
+                                            + (if y_flip {
+                                                obj.y_position as u16 - y_pos as u16 - if self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1 { 0 } else { 8 } - 1
+                                            } else {
+                                                16 - (obj.y_position as u16 - y_pos as u16)
+                                            }) * 2);
 
                                     let pixels_hi = self.bus.borrow().read(tile_data_loc)
-                                        >> 7 - (if x_flip { obj.x_position - x_pos - 1 } else { 7 - (obj.x_position - x_pos - 1) })
+                                        >> (7
+                                            - (if x_flip {
+                                                obj.x_position - x_pos - 1
+                                            } else {
+                                                7 - (obj.x_position - x_pos - 1)
+                                            }))
                                         & 0x1;
                                     let pixels_lo = self.bus.borrow().read(tile_data_loc + 1)
-                                        >> 7 - (if x_flip { obj.x_position - x_pos - 1 } else { 7 - (obj.x_position - x_pos - 1) })
+                                        >> (7
+                                            - (if x_flip {
+                                                obj.x_position - x_pos - 1
+                                            } else {
+                                                7 - (obj.x_position - x_pos - 1)
+                                            }))
                                         & 0x1;
                                     let color_index = pixels_hi << 1 | pixels_lo;
-                                    
+
                                     if color_index != 0x00 {
-                                        self.screen_pixel_array
-                                            [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
-                                            self.get_pixel_from_index(
+                                        self.screen_pixel_array[x_pos as usize
+                                            + y_pos as usize * SCREEN_WIDTH as usize] = self
+                                            .get_pixel_from_index(
                                                 color_index,
                                                 if obj
                                                     .attributes
@@ -419,6 +434,7 @@ impl Ppu {
             // When disabled, the ppu is in Mode 0
             self.registers.stat.clear(StatReg::PpuModeLo as u8);
             self.registers.stat.clear(StatReg::PpuModeHi as u8);
+            //self.screen_pixel_array = [Pixel{r: 0x97, g: 0x9b, b: 0x3e}; SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize]
         }
     }
 
@@ -523,7 +539,7 @@ impl Ppu {
     }
 
     fn start_dma(&self) {
-        //FIXME: To make a cycle accurate emulator, a DMA OAM transfer should not be handled like that.
+        // FIXME: To make a cycle accurate emulator, a DMA OAM transfer should not be handled like that.
         //  While transferring, the cpu should continue to execute instructions and tick other devices.
         for obj_attr in 0..0x00A0 {
             let addr: u16 = (self.registers.dma as u16) << 8 | obj_attr;

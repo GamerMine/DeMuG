@@ -27,7 +27,7 @@ fn main() {
 
     game_render.set_format(PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8);
     demug.borrow_mut().disable_boot_rom(false);
-    demug.borrow_mut().insert_cartridge(PathBuf::from("./demug-gui/resources/Dr. Mario.gb"));
+    demug.borrow_mut().insert_cartridge(PathBuf::from("./demug-gui/resources/instr_timing.gb"));
 
     let mut should_exit = false;
 

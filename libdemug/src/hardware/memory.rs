@@ -32,7 +32,7 @@ impl Memory {
     #[cfg(feature = "debug")]
     pub(crate) fn gather_debug_info(&self) -> MemoryDebugInfo {
         MemoryDebugInfo {
-            vram: self.vram.clone(),
+            vram: self.vram,
         }
     }
 }

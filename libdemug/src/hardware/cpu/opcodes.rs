@@ -82,7 +82,8 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.set_16bit_register(
             Registers16Bit::BC,
             cpu.get_16bit_register(Registers16Bit::BC).wrapping_sub(1),
-        )
+        );
+        cpu.m_cycles += 1;
     },
     |cpu| {
         /* 0x0C */
@@ -194,7 +195,8 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.set_16bit_register(
             Registers16Bit::DE,
             cpu.get_16bit_register(Registers16Bit::DE).wrapping_sub(1),
-        )
+        );
+        cpu.m_cycles += 1;
     },
     |cpu| {
         /* 0x1C */
@@ -336,7 +338,8 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.set_16bit_register(
             Registers16Bit::HL,
             cpu.get_16bit_register(Registers16Bit::HL).wrapping_sub(1),
-        )
+        );
+        cpu.m_cycles += 1;
     },
     |cpu| {
         /* 0x2C */
@@ -457,6 +460,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* 0x3B */
         /* DEC SP */
         cpu.registers.sp = cpu.registers.sp.wrapping_sub(1);
+        cpu.m_cycles += 1;
     },
     |cpu| {
         /* 0x3C */
@@ -483,10 +487,9 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.set_half_carry(false);
         cpu.set_negative(false);
     },
-    |cpu| {
+    |_| {
         /* 0x40 */
         /* LD B, B */
-        cpu.registers.b = cpu.registers.b;
     },
     |cpu| {
         /* 0x41 */
@@ -529,10 +532,9 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* LD C, B */
         cpu.registers.c = cpu.registers.b;
     },
-    |cpu| {
+    |_| {
         /* 0x49 */
         /* LD C, C */
-        cpu.registers.c = cpu.registers.c;
     },
     |cpu| {
         /* 0x4A */
@@ -575,10 +577,9 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* LD D, C */
         cpu.registers.d = cpu.registers.c;
     },
-    |cpu| {
+    |_| {
         /* 0x52 */
         /* LD D, D */
-        cpu.registers.d = cpu.registers.d;
     },
     |cpu| {
         /* 0x53 */
@@ -621,10 +622,9 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* LD E, D */
         cpu.registers.e = cpu.registers.d;
     },
-    |cpu| {
+    |_| {
         /* 0x5B */
         /* LD E, E */
-        cpu.registers.e = cpu.registers.e;
     },
     |cpu| {
         /* 0x5C */
@@ -667,10 +667,9 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* LD H, E */
         cpu.registers.h = cpu.registers.e;
     },
-    |cpu| {
+    |_| {
         /* 0x64 */
         /* LD H, H */
-        cpu.registers.h = cpu.registers.h;
     },
     |cpu| {
         /* 0x65 */
@@ -713,10 +712,9 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* LD L, H */
         cpu.registers.l = cpu.registers.h;
     },
-    |cpu| {
+    |_| {
         /* 0x6D */
         /* LD L, L */
-        cpu.registers.l = cpu.registers.l;
     },
     |cpu| {
         /* 0x6E */
@@ -764,6 +762,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* HALT */
         while cpu.bus.borrow().interrupt_enable.get().value() & cpu.bus.borrow().interrupt_flags.get().value() == 0x00 {
             cpu.bus.borrow().tick(1);
+            //cpu.m_cycles += 1;
         }
         
         if cpu.ime {
@@ -813,10 +812,9 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         let data = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
         cpu.registers.a = data;
     },
-    |cpu| {
+    |_| {
         /* 0x7F */
         /* LD A, A */
-        cpu.registers.a = cpu.registers.a;
     },
     |cpu| {
         /* 0x80 */
@@ -1490,6 +1488,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
             cpu.registers.pc = (pc_hi as u16) << 8 | pc_lo as u16;
             cpu.m_cycles += 1;
         }
+        cpu.m_cycles += 1;
     },
     |cpu| {
         /* 0xD9 */
@@ -1599,6 +1598,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
 
         cpu.registers.sp = cpu.registers.sp.wrapping_add_signed(data);
         cpu.add_signed16_flag(original_value, data);
+        cpu.m_cycles += 2;
     },
     |cpu| {
         /* 0xE9 */
@@ -1693,11 +1693,13 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
 
         cpu.set_16bit_register(Registers16Bit::HL, cpu.registers.sp.wrapping_add_signed(value));
         cpu.add_signed16_flag(original_value, value);
+        cpu.m_cycles += 1;
     },
     |cpu| {
         /* 0xF9 */
         /* LD SP, HL */
         cpu.registers.sp = cpu.get_16bit_register(Registers16Bit::HL);
+        cpu.m_cycles += 1;
     },
     |cpu| {
         /* 0xFA */
@@ -1989,7 +1991,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SLA B */
         cpu.rotate8_flag(cpu.registers.b, true, true);
 
-        cpu.registers.b = cpu.registers.b << 1;
+        cpu.registers.b <<= 1;
         cpu.set_zero(cpu.registers.b == 0x00);
     },
     |cpu| {
@@ -1997,7 +1999,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SLA C */
         cpu.rotate8_flag(cpu.registers.c, true, true);
 
-        cpu.registers.c = cpu.registers.c << 1;
+        cpu.registers.c <<= 1;
         cpu.set_zero(cpu.registers.c == 0x00);
     },
     |cpu| {
@@ -2005,7 +2007,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SLA D */
         cpu.rotate8_flag(cpu.registers.d, true, true);
 
-        cpu.registers.d = cpu.registers.d << 1;
+        cpu.registers.d <<= 1;
         cpu.set_zero(cpu.registers.d == 0x00);
     },
     |cpu| {
@@ -2013,7 +2015,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SLA E */
         cpu.rotate8_flag(cpu.registers.e, true, true);
 
-        cpu.registers.e = cpu.registers.e << 1;
+        cpu.registers.e <<= 1;
         cpu.set_zero(cpu.registers.e == 0x00);
     },
     |cpu| {
@@ -2021,7 +2023,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SLA H */
         cpu.rotate8_flag(cpu.registers.h, true, true);
 
-        cpu.registers.h = cpu.registers.h << 1;
+        cpu.registers.h <<= 1;
         cpu.set_zero(cpu.registers.h == 0x00);
     },
     |cpu| {
@@ -2029,7 +2031,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SLA L */
         cpu.rotate8_flag(cpu.registers.l, true, true);
 
-        cpu.registers.l = cpu.registers.l << 1;
+        cpu.registers.l <<= 1;
         cpu.set_zero(cpu.registers.l == 0x00);
     },
     |cpu| {
@@ -2038,7 +2040,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
         cpu.rotate8_flag(value, true, true);
 
-        value = value << 1;
+        value <<= 1;
 
         cpu.set_zero(value == 0x00);
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
@@ -2048,7 +2050,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SLA A */
         cpu.rotate8_flag(cpu.registers.a, true, true);
 
-        cpu.registers.a = cpu.registers.a << 1;
+        cpu.registers.a <<= 1;
         cpu.set_zero(cpu.registers.a == 0x00);
     },
     |cpu| {
@@ -2206,7 +2208,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SRL B */
         cpu.rotate8_flag(cpu.registers.b, false, true);
 
-        cpu.registers.b = cpu.registers.b >> 1;
+        cpu.registers.b >>= 1;
         cpu.set_zero(cpu.registers.b == 0x00);
     },
     |cpu| {
@@ -2214,7 +2216,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SRL C */
         cpu.rotate8_flag(cpu.registers.c, false, true);
 
-        cpu.registers.c = cpu.registers.c >> 1;
+        cpu.registers.c >>= 1;
         cpu.set_zero(cpu.registers.c == 0x00);
     },
     |cpu| {
@@ -2222,7 +2224,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SRL D */
         cpu.rotate8_flag(cpu.registers.d, false, true);
 
-        cpu.registers.d = cpu.registers.d >> 1;
+        cpu.registers.d >>= 1;
         cpu.set_zero(cpu.registers.d == 0x00);
     },
     |cpu| {
@@ -2230,7 +2232,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SRL E */
         cpu.rotate8_flag(cpu.registers.e, false, true);
 
-        cpu.registers.e = cpu.registers.e >> 1;
+        cpu.registers.e >>= 1;
         cpu.set_zero(cpu.registers.e == 0x00);
     },
     |cpu| {
@@ -2238,7 +2240,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SRL H */
         cpu.rotate8_flag(cpu.registers.h, false, true);
 
-        cpu.registers.h = cpu.registers.h >> 1;
+        cpu.registers.h >>= 1;
         cpu.set_zero(cpu.registers.h == 0x00);
     },
     |cpu| {
@@ -2246,7 +2248,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SRL L */
         cpu.rotate8_flag(cpu.registers.l, false, true);
 
-        cpu.registers.l = cpu.registers.l >> 1;
+        cpu.registers.l >>= 1;
         cpu.set_zero(cpu.registers.l == 0x00);
     },
     |cpu| {
@@ -2255,7 +2257,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
         cpu.rotate8_flag(value, false, true);
 
-        value = value >> 1;
+        value >>= 1;
 
         cpu.set_zero(value == 0x00);
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
@@ -2265,7 +2267,7 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SRL A */
         cpu.rotate8_flag(cpu.registers.a, false, true);
 
-        cpu.registers.a = cpu.registers.a >> 1;
+        cpu.registers.a >>= 1;
         cpu.set_zero(cpu.registers.a == 0x00);
     },
     |cpu| {
@@ -2599,706 +2601,706 @@ pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x80 */
         /* RES 0, B */
-        cpu.registers.b = cpu.registers.b & !(1 << 0);
+        cpu.registers.b &= !(1 << 0);
     },
     |cpu| {
         /* 0x81 */
         /* RES 0, C */
-        cpu.registers.c = cpu.registers.c & !(1 << 0);
+        cpu.registers.c &= !(1 << 0);
     },
     |cpu| {
         /* 0x82 */
         /* RES 0, D */
-        cpu.registers.d = cpu.registers.d & !(1 << 0);
+        cpu.registers.d &= !(1 << 0);
     },
     |cpu| {
         /* 0x83 */
         /* RES 0, E */
-        cpu.registers.e = cpu.registers.e & !(1 << 0);
+        cpu.registers.e &= !(1 << 0);
     },
     |cpu| {
         /* 0x84 */
         /* RES 0, H */
-        cpu.registers.h = cpu.registers.h & !(1 << 0);
+        cpu.registers.h &= !(1 << 0);
     },
     |cpu| {
         /* 0x85 */
         /* RES 0, L */
-        cpu.registers.l = cpu.registers.l & !(1 << 0);
+        cpu.registers.l &= !(1 << 0);
     },
     |cpu| {
         /* 0x86 */
         /* RES 0, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value & !(1 << 0);
+        value &= !(1 << 0);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0x87 */
         /* RES 0, A */
-        cpu.registers.a = cpu.registers.a & !(1 << 0);
+        cpu.registers.a &= !(1 << 0);
     },
     |cpu| {
         /* 0x88 */
         /* RES 1, B */
-        cpu.registers.b = cpu.registers.b & !(1 << 1);
+        cpu.registers.b &= !(1 << 1);
     },
     |cpu| {
         /* 0x89 */
         /* RES 1, C */
-        cpu.registers.c = cpu.registers.c & !(1 << 1);
+        cpu.registers.c &= !(1 << 1);
     },
     |cpu| {
         /* 0x8A */
         /* RES 1, D */
-        cpu.registers.d = cpu.registers.d & !(1 << 1);
+        cpu.registers.d &= !(1 << 1);
     },
     |cpu| {
         /* 0x8B */
         /* RES 1, E */
-        cpu.registers.e = cpu.registers.e & !(1 << 1);
+        cpu.registers.e &= !(1 << 1);
     },
     |cpu| {
         /* 0x8C */
         /* RES 1, H */
-        cpu.registers.h = cpu.registers.h & !(1 << 1);
+        cpu.registers.h &= !(1 << 1);
     },
     |cpu| {
         /* 0x8D */
         /* RES 1, L */
-        cpu.registers.l = cpu.registers.l & !(1 << 1);
+        cpu.registers.l &= !(1 << 1);
     },
     |cpu| {
         /* 0x8E */
         /* RES 1, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value & !(1 << 1);
+        value &= !(1 << 1);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0x8F */
         /* RES 1, A */
-        cpu.registers.a = cpu.registers.a & !(1 << 1);
+        cpu.registers.a &= !(1 << 1);
     },
     |cpu| {
         /* 0x90 */
         /* RES 2, B */
-        cpu.registers.b = cpu.registers.b & !(1 << 2);
+        cpu.registers.b &= !(1 << 2);
     },
     |cpu| {
         /* 0x91 */
         /* RES 2, C */
-        cpu.registers.c = cpu.registers.c & !(1 << 2);
+        cpu.registers.c &= !(1 << 2);
     },
     |cpu| {
         /* 0x92 */
         /* RES 2, D */
-        cpu.registers.d = cpu.registers.d & !(1 << 2);
+        cpu.registers.d &= !(1 << 2);
     },
     |cpu| {
         /* 0x93 */
         /* RES 2, E */
-        cpu.registers.e = cpu.registers.e & !(1 << 2);
+        cpu.registers.e &= !(1 << 2);
     },
     |cpu| {
         /* 0x94 */
         /* RES 2, H */
-        cpu.registers.h = cpu.registers.h & !(1 << 2);
+        cpu.registers.h &= !(1 << 2);
     },
     |cpu| {
         /* 0x95 */
         /* RES 2, L */
-        cpu.registers.l = cpu.registers.l & !(1 << 2);
+        cpu.registers.l &= !(1 << 2);
     },
     |cpu| {
         /* 0x96 */
         /* RES 2, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value & !(1 << 2);
+        value &= !(1 << 2);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0x97 */
         /* RES 2, A */
-        cpu.registers.a = cpu.registers.a & !(1 << 2);
+        cpu.registers.a &= !(1 << 2);
     },
     |cpu| {
         /* 0x98 */
         /* RES 3, B */
-        cpu.registers.b = cpu.registers.b & !(1 << 3);
+        cpu.registers.b &= !(1 << 3);
     },
     |cpu| {
         /* 0x99 */
         /* RES 3, C */
-        cpu.registers.c = cpu.registers.c & !(1 << 3);
+        cpu.registers.c &= !(1 << 3);
     },
     |cpu| {
         /* 0x9A */
         /* RES 3, D */
-        cpu.registers.d = cpu.registers.d & !(1 << 3);
+        cpu.registers.d &= !(1 << 3);
     },
     |cpu| {
         /* 0x9B */
         /* RES 3, E */
-        cpu.registers.e = cpu.registers.e & !(1 << 3);
+        cpu.registers.e &= !(1 << 3);
     },
     |cpu| {
         /* 0x9C */
         /* RES 3, H */
-        cpu.registers.h = cpu.registers.h & !(1 << 3);
+        cpu.registers.h &= !(1 << 3);
     },
     |cpu| {
         /* 0x9D */
         /* RES 3, L */
-        cpu.registers.l = cpu.registers.l & !(1 << 3);
+        cpu.registers.l &= !(1 << 3);
     },
     |cpu| {
         /* 0x9E */
         /* RES 3, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value & !(1 << 3);
+        value &= !(1 << 3);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0x9F */
         /* RES 3, A */
-        cpu.registers.a = cpu.registers.a & !(1 << 3);
+        cpu.registers.a &= !(1 << 3);
     },
     |cpu| {
         /* 0xA0 */
         /* RES 4, B */
-        cpu.registers.b = cpu.registers.b & !(1 << 4);
+        cpu.registers.b &= !(1 << 4);
     },
     |cpu| {
         /* 0xA1 */
         /* RES 4, C */
-        cpu.registers.c = cpu.registers.c & !(1 << 4);
+        cpu.registers.c &= !(1 << 4);
     },
     |cpu| {
         /* 0xA2 */
         /* RES 4, D */
-        cpu.registers.d = cpu.registers.d & !(1 << 4);
+        cpu.registers.d &= !(1 << 4);
     },
     |cpu| {
         /* 0xA3 */
         /* RES 4, E */
-        cpu.registers.e = cpu.registers.e & !(1 << 4);
+        cpu.registers.e &= !(1 << 4);
     },
     |cpu| {
         /* 0xA4 */
         /* RES 4, H */
-        cpu.registers.h = cpu.registers.h & !(1 << 4);
+        cpu.registers.h &= !(1 << 4);
     },
     |cpu| {
         /* 0xA5 */
         /* RES 4, L */
-        cpu.registers.l = cpu.registers.l & !(1 << 4);
+        cpu.registers.l &= !(1 << 4);
     },
     |cpu| {
         /* 0xA6 */
         /* RES 4, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value & !(1 << 4);
+        value &= !(1 << 4);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xA7 */
         /* RES 4, A */
-        cpu.registers.a = cpu.registers.a & !(1 << 4);
+        cpu.registers.a &= !(1 << 4);
     },
     |cpu| {
         /* 0xA8 */
         /* RES 5, B */
-        cpu.registers.b = cpu.registers.b & !(1 << 5);
+        cpu.registers.b &= !(1 << 5);
     },
     |cpu| {
         /* 0xA9 */
         /* RES 5, C */
-        cpu.registers.c = cpu.registers.c & !(1 << 5);
+        cpu.registers.c &= !(1 << 5);
     },
     |cpu| {
         /* 0xAA */
         /* RES 5, D */
-        cpu.registers.d = cpu.registers.d & !(1 << 5);
+        cpu.registers.d &= !(1 << 5);
     },
     |cpu| {
         /* 0xAB */
         /* RES 5, E */
-        cpu.registers.e = cpu.registers.e & !(1 << 5);
+        cpu.registers.e &= !(1 << 5);
     },
     |cpu| {
         /* 0xAC */
         /* RES 5, H */
-        cpu.registers.h = cpu.registers.h & !(1 << 5);
+        cpu.registers.h &= !(1 << 5);
     },
     |cpu| {
         /* 0xAD */
         /* RES 5, L */
-        cpu.registers.l = cpu.registers.l & !(1 << 5);
+        cpu.registers.l &= !(1 << 5);
     },
     |cpu| {
         /* 0xAE */
         /* RES 5, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value & !(1 << 5);
+        value &= !(1 << 5);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xAF */
         /* RES 5, A */
-        cpu.registers.a = cpu.registers.a & !(1 << 5);
+        cpu.registers.a &= !(1 << 5);
     },
     |cpu| {
         /* 0xB0 */
         /* RES 6, B */
-        cpu.registers.b = cpu.registers.b & !(1 << 6);
+        cpu.registers.b &= !(1 << 6);
     },
     |cpu| {
         /* 0xB1 */
         /* RES 6, C */
-        cpu.registers.c = cpu.registers.c & !(1 << 6);
+        cpu.registers.c &= !(1 << 6);
     },
     |cpu| {
         /* 0xB2 */
         /* RES 6, D */
-        cpu.registers.d = cpu.registers.d & !(1 << 6);
+        cpu.registers.d &= !(1 << 6);
     },
     |cpu| {
         /* 0xB3 */
         /* RES 6, E */
-        cpu.registers.e = cpu.registers.e & !(1 << 6);
+        cpu.registers.e &= !(1 << 6);
     },
     |cpu| {
         /* 0xB4 */
         /* RES 6, H */
-        cpu.registers.h = cpu.registers.h & !(1 << 6);
+        cpu.registers.h &= !(1 << 6);
     },
     |cpu| {
         /* 0xB5 */
         /* RES 6, L */
-        cpu.registers.l = cpu.registers.l & !(1 << 6);
+        cpu.registers.l &= !(1 << 6);
     },
     |cpu| {
         /* 0xB6 */
         /* RES 6, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value & !(1 << 6);
+        value &= !(1 << 6);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xB7 */
         /* RES 6, A */
-        cpu.registers.a = cpu.registers.a & !(1 << 6);
+        cpu.registers.a &= !(1 << 6);
     },
     |cpu| {
         /* 0xB8 */
         /* RES 7, B */
-        cpu.registers.b = cpu.registers.b & !(1 << 7);
+        cpu.registers.b &= !(1 << 7);
     },
     |cpu| {
         /* 0xB9 */
         /* RES 7, C */
-        cpu.registers.c = cpu.registers.c & !(1 << 7);
+        cpu.registers.c &= !(1 << 7);
     },
     |cpu| {
         /* 0xBA */
         /* RES 7, D */
-        cpu.registers.d = cpu.registers.d & !(1 << 7);
+        cpu.registers.d &= !(1 << 7);
     },
     |cpu| {
         /* 0xBB */
         /* RES 7, E */
-        cpu.registers.e = cpu.registers.e & !(1 << 7);
+        cpu.registers.e &= !(1 << 7);
     },
     |cpu| {
         /* 0xBC */
         /* RES 7, H */
-        cpu.registers.h = cpu.registers.h & !(1 << 7);
+        cpu.registers.h &= !(1 << 7);
     },
     |cpu| {
         /* 0xBD */
         /* RES 7, L */
-        cpu.registers.l = cpu.registers.l & !(1 << 7);
+        cpu.registers.l &= !(1 << 7);
     },
     |cpu| {
         /* 0xBE */
         /* RES 7, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value & !(1 << 7);
+        value &= !(1 << 7);
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xBF */
         /* RES 7, A */
-        cpu.registers.a = cpu.registers.a & !(1 << 7);
+        cpu.registers.a &= !(1 << 7);
     },
     |cpu| {
         /* 0xC0 */
         /* SET 0, B */
-        cpu.registers.b = cpu.registers.b | (1 << 0);
+        cpu.registers.b |= 1 << 0;
     },
     |cpu| {
         /* 0xC1 */
         /* SET 0, C */
-        cpu.registers.c = cpu.registers.c | (1 << 0);
+        cpu.registers.c |= 1 << 0;
     },
     |cpu| {
         /* 0xC2 */
         /* SET 0, D */
-        cpu.registers.d = cpu.registers.d | (1 << 0);
+        cpu.registers.d |= 1 << 0;
     },
     |cpu| {
         /* 0xC3 */
         /* SET 0, E */
-        cpu.registers.e = cpu.registers.e | (1 << 0);
+        cpu.registers.e |= 1 << 0;
     },
     |cpu| {
         /* 0xC4 */
         /* SET 0, H */
-        cpu.registers.h = cpu.registers.h | (1 << 0);
+        cpu.registers.h |= 1 << 0;
     },
     |cpu| {
         /* 0xC5 */
         /* SET 0, L */
-        cpu.registers.l = cpu.registers.l | (1 << 0);
+        cpu.registers.l |= 1 << 0;
     },
     |cpu| {
         /* 0xC6 */
         /* SET 0, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value | (1 << 0);
+        value |= 1 << 0;
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xC7 */
         /* SET 0, A */
-        cpu.registers.a = cpu.registers.a | (1 << 0);
+        cpu.registers.a |= 1 << 0;
     },
     |cpu| {
         /* 0xC8 */
         /* SET 1, B */
-        cpu.registers.b = cpu.registers.b | (1 << 1);
+        cpu.registers.b |= 1 << 1;
     },
     |cpu| {
         /* 0xC9 */
         /* SET 1, C */
-        cpu.registers.c = cpu.registers.c | (1 << 1);
+        cpu.registers.c |= 1 << 1;
     },
     |cpu| {
         /* 0xCA */
         /* SET 1, D */
-        cpu.registers.d = cpu.registers.d | (1 << 1);
+        cpu.registers.d |= 1 << 1;
     },
     |cpu| {
         /* 0xCB */
         /* SET 1, E */
-        cpu.registers.e = cpu.registers.e | (1 << 1);
+        cpu.registers.e |= 1 << 1;
     },
     |cpu| {
         /* 0xCC */
         /* SET 1, H */
-        cpu.registers.h = cpu.registers.h | (1 << 1);
+        cpu.registers.h |= 1 << 1;
     },
     |cpu| {
         /* 0xCD */
         /* SET 1, L */
-        cpu.registers.l = cpu.registers.l | (1 << 1);
+        cpu.registers.l |= 1 << 1;
     },
     |cpu| {
         /* 0xCE */
         /* SET 1, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value | (1 << 1);
+        value |= 1 << 1;
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xCF */
         /* SET 1, A */
-        cpu.registers.a = cpu.registers.a | (1 << 1);
+        cpu.registers.a |= 1 << 1;
     },
     |cpu| {
         /* 0xD0 */
         /* SET 2, B */
-        cpu.registers.b = cpu.registers.b | (1 << 2);
+        cpu.registers.b |= 1 << 2;
     },
     |cpu| {
         /* 0xD1 */
         /* SET 2, C */
-        cpu.registers.c = cpu.registers.c | (1 << 2);
+        cpu.registers.c |= 1 << 2;
     },
     |cpu| {
         /* 0xD2 */
         /* SET 2, D */
-        cpu.registers.d = cpu.registers.d | (1 << 2);
+        cpu.registers.d |= 1 << 2;
     },
     |cpu| {
         /* 0xD3 */
         /* SET 2, E */
-        cpu.registers.e = cpu.registers.e | (1 << 2);
+        cpu.registers.e |= 1 << 2;
     },
     |cpu| {
         /* 0xD4 */
         /* SET 2, H */
-        cpu.registers.h = cpu.registers.h | (1 << 2);
+        cpu.registers.h |= 1 << 2;
     },
     |cpu| {
         /* 0xD5 */
         /* SET 2, L */
-        cpu.registers.l = cpu.registers.l | (1 << 2);
+        cpu.registers.l |= 1 << 2;
     },
     |cpu| {
         /* 0xD6 */
         /* SET 2, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value | (1 << 2);
+        value |= 1 << 2;
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xD7 */
         /* SET 2, A */
-        cpu.registers.a = cpu.registers.a | (1 << 2);
+        cpu.registers.a |= 1 << 2;
     },
     |cpu| {
         /* 0xD8 */
         /* SET 3, B */
-        cpu.registers.b = cpu.registers.b | (1 << 3);
+        cpu.registers.b |= 1 << 3;
     },
     |cpu| {
         /* 0xD9 */
         /* SET 3, C */
-        cpu.registers.c = cpu.registers.c | (1 << 3);
+        cpu.registers.c |= 1 << 3;
     },
     |cpu| {
         /* 0xDA */
         /* SET 3, D */
-        cpu.registers.d = cpu.registers.d | (1 << 3);
+        cpu.registers.d |= 1 << 3;
     },
     |cpu| {
         /* 0xDB */
         /* SET 3, E */
-        cpu.registers.e = cpu.registers.e | (1 << 3);
+        cpu.registers.e |= 1 << 3;
     },
     |cpu| {
         /* 0xDC */
         /* SET 3, H */
-        cpu.registers.h = cpu.registers.h | (1 << 3);
+        cpu.registers.h |= 1 << 3;
     },
     |cpu| {
         /* 0xDD */
         /* SET 3, L */
-        cpu.registers.l = cpu.registers.l | (1 << 3);
+        cpu.registers.l |= 1 << 3;
     },
     |cpu| {
         /* 0xDE */
         /* SET 3, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value | (1 << 3);
+        value |= 1 << 3;
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xDF */
         /* SET 3, A */
-        cpu.registers.a = cpu.registers.a | (1 << 3);
+        cpu.registers.a |= 1 << 3;
     },
     |cpu| {
         /* 0xE0 */
         /* SET 4, B */
-        cpu.registers.b = cpu.registers.b | (1 << 4);
+        cpu.registers.b |= 1 << 4;
     },
     |cpu| {
         /* 0xE1 */
         /* SET 4, C */
-        cpu.registers.c = cpu.registers.c | (1 << 4);
+        cpu.registers.c |= 1 << 4;
     },
     |cpu| {
         /* 0xE2 */
         /* SET 4, D */
-        cpu.registers.d = cpu.registers.d | (1 << 4);
+        cpu.registers.d |= 1 << 4;
     },
     |cpu| {
         /* 0xE3 */
         /* SET 4, E */
-        cpu.registers.e = cpu.registers.e | (1 << 4);
+        cpu.registers.e |= 1 << 4;
     },
     |cpu| {
         /* 0xE4 */
         /* SET 4, H */
-        cpu.registers.h = cpu.registers.h | (1 << 4);
+        cpu.registers.h |= 1 << 4;
     },
     |cpu| {
         /* 0xE5 */
         /* SET 4, L */
-        cpu.registers.l = cpu.registers.l | (1 << 4);
+        cpu.registers.l |= 1 << 4;
     },
     |cpu| {
         /* 0xE6 */
         /* SET 4, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value | (1 << 4);
+        value |= 1 << 4;
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xE7 */
         /* SET 4, A */
-        cpu.registers.a = cpu.registers.a | (1 << 4);
+        cpu.registers.a |= 1 << 4;
     },
     |cpu| {
         /* 0xE8 */
         /* SET 5, B */
-        cpu.registers.b = cpu.registers.b | (1 << 5);
+        cpu.registers.b |= 1 << 5;
     },
     |cpu| {
         /* 0xE9 */
         /* SET 5, C */
-        cpu.registers.c = cpu.registers.c | (1 << 5);
+        cpu.registers.c |= 1 << 5;
     },
     |cpu| {
         /* 0xEA */
         /* SET 5, D */
-        cpu.registers.d = cpu.registers.d | (1 << 5);
+        cpu.registers.d |= 1 << 5;
     },
     |cpu| {
         /* 0xEB */
         /* SET 5, E */
-        cpu.registers.e = cpu.registers.e | (1 << 5);
+        cpu.registers.e |= 1 << 5;
     },
     |cpu| {
         /* 0xEC */
         /* SET 5, H */
-        cpu.registers.h = cpu.registers.h | (1 << 5);
+        cpu.registers.h |= 1 << 5;
     },
     |cpu| {
         /* 0xED */
         /* SET 5, L */
-        cpu.registers.l = cpu.registers.l | (1 << 5);
+        cpu.registers.l |= 1 << 5;
     },
     |cpu| {
         /* 0xEE */
         /* SET 5, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value | (1 << 5);
+        value |= 1 << 5;
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xEF */
         /* SET 5, A */
-        cpu.registers.a = cpu.registers.a | (1 << 5);
+        cpu.registers.a |= 1 << 5;
     },
     |cpu| {
         /* 0xF0 */
         /* SET 6, B */
-        cpu.registers.b = cpu.registers.b | (1 << 6);
+        cpu.registers.b |= 1 << 6;
     },
     |cpu| {
         /* 0xF1 */
         /* SET 6, C */
-        cpu.registers.c = cpu.registers.c | (1 << 6);
+        cpu.registers.c |= 1 << 6;
     },
     |cpu| {
         /* 0xF2 */
         /* SET 6, D */
-        cpu.registers.d = cpu.registers.d | (1 << 6);
+        cpu.registers.d |= 1 << 6;
     },
     |cpu| {
         /* 0xF3 */
         /* SET 6, E */
-        cpu.registers.e = cpu.registers.e | (1 << 6);
+        cpu.registers.e |= 1 << 6;
     },
     |cpu| {
         /* 0xF4 */
         /* SET 6, H */
-        cpu.registers.h = cpu.registers.h | (1 << 6);
+        cpu.registers.h |= 1 << 6;
     },
     |cpu| {
         /* 0xF5 */
         /* SET 6, L */
-        cpu.registers.l = cpu.registers.l | (1 << 6);
+        cpu.registers.l |= 1 << 6;
     },
     |cpu| {
         /* 0xF6 */
         /* SET 6, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value | (1 << 6);
+        value |= 1 << 6;
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xF7 */
         /* SET 6, A */
-        cpu.registers.a = cpu.registers.a | (1 << 6);
+        cpu.registers.a |= 1 << 6;
     },
     |cpu| {
         /* 0xF8 */
         /* SET 7, B */
-        cpu.registers.b = cpu.registers.b | (1 << 7);
+        cpu.registers.b |= 1 << 7;
     },
     |cpu| {
         /* 0xF9 */
         /* SET 7, C */
-        cpu.registers.c = cpu.registers.c | (1 << 7);
+        cpu.registers.c |= 1 << 7;
     },
     |cpu| {
         /* 0xFA */
         /* SET 7, D */
-        cpu.registers.d = cpu.registers.d | (1 << 7);
+        cpu.registers.d |= 1 << 7;
     },
     |cpu| {
         /* 0xFB */
         /* SET 7, E */
-        cpu.registers.e = cpu.registers.e | (1 << 7);
+        cpu.registers.e |= 1 << 7;
     },
     |cpu| {
         /* 0xFC */
         /* SET 7, H */
-        cpu.registers.h = cpu.registers.h | (1 << 7);
+        cpu.registers.h |= 1 << 7;
     },
     |cpu| {
         /* 0xFD */
         /* SET 7, L */
-        cpu.registers.l = cpu.registers.l | (1 << 7);
+        cpu.registers.l |= 1 << 7;
     },
     |cpu| {
         /* 0xFE */
         /* SET 7, [HL] */
         let mut value = cpu.read_byte(cpu.get_16bit_register(Registers16Bit::HL));
 
-        value = value | (1 << 7);
+        value |= 1 << 7;
 
         cpu.write_byte(cpu.get_16bit_register(Registers16Bit::HL), value);
     },
     |cpu| {
         /* 0xFF */
         /* SET 7, A */
-        cpu.registers.a = cpu.registers.a | (1 << 7);
+        cpu.registers.a |= 1 << 7;
     },
 ];
 
@@ -3563,7 +3565,7 @@ pub static OPCODES_STRING: [fn(pfx: u8) -> &'static str; 0x100] = [
 ];
 
 #[cfg(feature = "debug")]
-pub static PREFIXED_OPCODES_STRING: [&'static str; 0x100] = [
+pub static PREFIXED_OPCODES_STRING: [&str; 0x100] = [
     "RLC B",
     "RLC C",
     "RLC D",

@@ -6,7 +6,7 @@ use crate::hardware::cpu::opcodes::OPCODES_STRING;
 use crate::hardware::cpu::opcodes::OPCODES;
 use crate::Demug;
 use std::cell::RefCell;
-use std::sync::Arc;
+use std::rc::Rc;
 
 enum Registers16Bit {
     BC,
@@ -39,14 +39,14 @@ pub struct CpuRegisters {
 }
 
 pub struct Cpu {
-    bus: Arc<RefCell<Demug>>,
+    bus: Rc<RefCell<Demug>>,
     registers: CpuRegisters,
     m_cycles: u64,
     ime: bool,
 }
 
 impl Cpu {
-    pub fn init(bus: Arc<RefCell<Demug>>) -> Self {
+    pub fn init(bus: Rc<RefCell<Demug>>) -> Self {
         Self {
             bus,
             registers: CpuRegisters {
@@ -81,11 +81,9 @@ impl Cpu {
     }
     
     pub fn execute_frame(&mut self) {
-        self.m_cycles = 0;
         while self.m_cycles <= 17556 {
-            let opcode = self.fetch_byte();
-
             let old_m_cycles = self.m_cycles;
+            let opcode = self.fetch_byte();
 
             OPCODES[opcode as usize](self);
 
@@ -113,33 +111,46 @@ impl Cpu {
 
     fn check_interrupts(&mut self) {
         let mut interrupt_triggered = (false, 0x0000);
-        if self.bus.borrow().interrupt_enable.get().bit(Interrupts::Vblank as u8) == 0b1
-            && self.bus.borrow().interrupt_flags.get().bit(Interrupts::Vblank as u8) == 0b1
+        let ite = self.bus.borrow().interrupt_enable.get();
+        let itf = self.bus.borrow().interrupt_flags.get();
+        
+        if ite.bit(Interrupts::Vblank as u8) == 0b1
+            && itf.bit(Interrupts::Vblank as u8) == 0b1
         {
             interrupt_triggered.0 = true;
             interrupt_triggered.1 = 0x0040;
-            let mut register_new = self.bus.borrow().interrupt_flags.get();
+            let mut register_new = ite;
             register_new.clear(Interrupts::Vblank as u8);
             self.bus.borrow().interrupt_flags.set(register_new);
         }
-        else if self.bus.borrow().interrupt_enable.get().bit(Interrupts::Lcd as u8) == 0b1
-            && self.bus.borrow().interrupt_flags.get().bit(Interrupts::Lcd as u8) == 0b1
+        else if ite.bit(Interrupts::Lcd as u8) == 0b1
+            && itf.bit(Interrupts::Lcd as u8) == 0b1
         {
             interrupt_triggered.0 = true;
             interrupt_triggered.1 = 0x0048;
-            let mut register_new = self.bus.borrow().interrupt_flags.get();
+            let mut register_new = ite;
             register_new.clear(Interrupts::Lcd as u8);
             self.bus.borrow().interrupt_flags.set(register_new);
         }
-
+        else if ite.bit(Interrupts::Timer as u8) == 0b1
+            && itf.bit(Interrupts::Timer as u8) == 0b1
+        {
+            interrupt_triggered.0 = true;
+            interrupt_triggered.1 = 0x0050;
+            let mut register_new = ite;
+            register_new.clear(Interrupts::Timer as u8);
+            self.bus.borrow().interrupt_flags.set(register_new);
+        }
+        
         if interrupt_triggered.0 && self.ime {
             self.ime = false;
-            self.m_cycles += 2;
             self.write_word(self.registers.sp - 2, self.registers.sp - 1, self.registers.pc);
             self.registers.sp -= 2;
             self.registers.pc = interrupt_triggered.1;
+            self.m_cycles += 3;
+            self.bus.borrow().tick(5);
         }
-        // TODO: Implements Timer, Serial, Joypad interrupts
+        // TODO: Implements Serial, Joypad interrupts
     }
 
     fn get_16bit_register(&self, register: Registers16Bit) -> u16 {
@@ -284,8 +295,8 @@ impl Cpu {
     fn add_signed16_flag(&mut self, base_value: u16, value: i16) {
         let result: u16 = base_value.wrapping_add_signed(value);
         
-        self.set_carry((base_value ^ value as u16 ^ result & 0xFFFF) & 0x100 == 0x100);
-        self.set_half_carry((base_value ^ value as u16 ^ result & 0xFFFF) & 0x10 == 0x10);
+        self.set_carry((base_value ^ value as u16 ^ result) & 0x100 == 0x100);
+        self.set_half_carry((base_value ^ value as u16 ^ result) & 0x10 == 0x10);
         self.set_negative(false);
         self.set_zero(false);
     }
@@ -326,12 +337,11 @@ impl Cpu {
     }
 
     fn rotate8_flag(&mut self, value: u8, is_left: bool, set_carry: bool) -> bool {
-        let carry;
-        if is_left {
-            carry = value >> 7 == 0x1;
+        let carry = if is_left {
+            value >> 7 == 0x1
         } else {
-            carry = value & 0x1 == 0x1;
-        }
+            value & 0x1 == 0x1
+        };
 
         if set_carry {
             self.set_carry(carry);
