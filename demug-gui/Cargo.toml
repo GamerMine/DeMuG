@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-libdemug = {path = "../libdemug" }
-raylib = "5.5.1"
+libdemug = {path = "../libdemug", features = ["debug"]}
+winit = "0.30.10"
+softbuffer = "0.4.6"

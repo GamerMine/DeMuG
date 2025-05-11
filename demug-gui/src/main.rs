@@ -1,63 +1,46 @@
-use raylib::color::Color;
-use raylib::consts::PixelFormat;
-use raylib::drawing::RaylibDraw;
-use raylib::math::{Rectangle, Vector2};
-use raylib::prelude::Image;
-use raylib::texture::RaylibTexture2D;
+use crate::app::{App, AppStatus, DemugEvent};
+use libdemug::Demug;
 use std::path::PathBuf;
+use std::sync::mpsc;
+use std::thread;
+use winit::event_loop::{ControlFlow, EventLoop};
 
-const SCALE_FACTOR: f32 = 5.0;
+mod app;
+mod debug;
 
 fn main() {
-    let demug = libdemug::Demug::init();
-    let (mut rl, thread) = raylib::init()
-        .size(
-            (libdemug::SCREEN_WIDTH as u64 * SCALE_FACTOR as u64) as i32,
-            (libdemug::SCREEN_HEIGHT as u64 * SCALE_FACTOR as u64) as i32,
-        )
-        .title("DeMuG")
-        .build();
-    let mut game_render = Image::gen_image_color(
-        libdemug::SCREEN_WIDTH as i32,
-        libdemug::SCREEN_HEIGHT as i32,
-        Color::BLACK,
-    );
+    let demug = Demug::init();
+    let event_loop = EventLoop::<DemugEvent>::with_user_event().build().unwrap();
 
-    rl.set_target_fps(60);
+    demug.write().unwrap().insert_cartridge(PathBuf::from("./demug-gui/resources/Tetris.gb"));
 
-    game_render.set_format(PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8);
-    demug.borrow_mut().disable_boot_rom(false);
-    demug.borrow_mut().insert_cartridge(PathBuf::from("./demug-gui/resources/instr_timing.gb"));
+    let (tx, rx) = mpsc::channel::<AppStatus>();
+    let event_loop_proxy = event_loop.create_proxy();
+    let demug_clone = demug.clone();
+    let h = thread::spawn(move || {
+        loop {
+            let d = demug_clone.read();
+            let mut frame_ready: bool = false;
 
-    let mut should_exit = false;
-
-    if let Ok(mut texture) = rl.load_texture_from_image(&thread, &game_render) {
-        while !should_exit {
-            should_exit = rl.window_should_close();
-
-            demug.borrow().step_frame();
-
-            if let Err(err) = texture.update_texture(demug.borrow().get_frame().as_slice()) {
-                println!("Error while updating texture: {err}");
+            if let Ok(demug) = &d {
+                frame_ready = demug.step();
             }
 
-            let mut d = rl.begin_drawing(&thread);
-            d.clear_background(Color::BLACK);
-
-            d.draw_texture_pro(
-                &texture,
-                Rectangle::new(0.0, 0.0, texture.width as f32, texture.height as f32),
-                Rectangle::new(
-                    0.0,
-                    0.0,
-                    texture.width as f32 * SCALE_FACTOR,
-                    texture.height as f32 * SCALE_FACTOR,
-                ),
-                Vector2::new(0.0, 0.0),
-                0.0,
-                Color::WHITE,
-            );
-            d.draw_fps(5, 5);
+            if frame_ready {
+                drop(d);
+                if event_loop_proxy.send_event(DemugEvent::FrameReady).is_err() {
+                    break;
+                }
+                if rx.recv().is_err() {
+                    break;
+                }
+            }
         }
-    }
+    });
+
+    event_loop.set_control_flow(ControlFlow::Wait);
+
+    let mut app = App::new(demug, tx);
+    let _ = event_loop.run_app(&mut app);
+    let _ = h.join();
 }

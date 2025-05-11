@@ -3,10 +3,9 @@ mod opcodes;
 #[cfg(feature = "debug")]
 use crate::hardware::cpu::opcodes::OPCODES_STRING;
 
-use crate::hardware::cpu::opcodes::OPCODES;
 use crate::Demug;
-use std::cell::RefCell;
-use std::rc::Rc;
+use crate::hardware::cpu::opcodes::OPCODES;
+use std::sync::{Arc, RwLock};
 
 enum Registers16Bit {
     BC,
@@ -38,15 +37,15 @@ pub struct CpuRegisters {
     pub sp: u16,
 }
 
-pub struct Cpu {
-    bus: Rc<RefCell<Demug>>,
+pub(crate) struct Cpu {
+    bus: Arc<RwLock<Demug>>,
     registers: CpuRegisters,
     m_cycles: u64,
     ime: bool,
 }
 
 impl Cpu {
-    pub fn init(bus: Rc<RefCell<Demug>>) -> Self {
+    pub(crate) fn init(bus: Arc<RwLock<Demug>>) -> Self {
         Self {
             bus,
             registers: CpuRegisters {
@@ -66,41 +65,35 @@ impl Cpu {
         }
     }
 
-    pub fn execute(&mut self) {
-        let opcode = self.fetch_byte();
-
+    pub(crate) fn execute(&mut self) -> bool {
         let old_m_cycles = self.m_cycles;
+        let opcode = self.fetch_byte();
 
         OPCODES[opcode as usize](self);
 
-        self.bus.borrow().tick(self.m_cycles - old_m_cycles);
+        if opcode == 0x76 {
+            self.bus.read().unwrap().tick(1);
+        } else {
+            self.bus.read().unwrap().tick(self.m_cycles - old_m_cycles);
+        }
 
         if self.ime {
             self.check_interrupts()
         }
-    }
-    
-    pub fn execute_frame(&mut self) {
-        while self.m_cycles <= 17556 {
-            let old_m_cycles = self.m_cycles;
-            let opcode = self.fetch_byte();
 
-            OPCODES[opcode as usize](self);
-
-            self.bus.borrow().tick(self.m_cycles - old_m_cycles);
-
-            if self.ime {
-                self.check_interrupts()
-            }
+        if self.m_cycles >= 17556 {
+            self.m_cycles -= 17556;
+            true
+        } else {
+            false
         }
-        self.m_cycles -= 17556;
     }
 
     #[cfg(feature = "debug")]
-    pub fn gather_debug_info(&self) -> CpuDebugInfo {
-        let opcode = self.bus.borrow().read(self.registers.pc);
-        let prefixed_opcode = self.bus.borrow().read(self.registers.pc + 1);
-        
+    pub(crate) fn gather_debug_info(&self) -> CpuDebugInfo {
+        let opcode = self.bus.read().unwrap().read(self.registers.pc);
+        let prefixed_opcode = self.bus.read().unwrap().read(self.registers.pc + 1);
+
         CpuDebugInfo {
             registers: self.registers.clone(),
             next_instr: OPCODES_STRING[opcode as usize](prefixed_opcode),
@@ -111,44 +104,37 @@ impl Cpu {
 
     fn check_interrupts(&mut self) {
         let mut interrupt_triggered = (false, 0x0000);
-        let ite = self.bus.borrow().interrupt_enable.get();
-        let itf = self.bus.borrow().interrupt_flags.get();
-        
-        if ite.bit(Interrupts::Vblank as u8) == 0b1
-            && itf.bit(Interrupts::Vblank as u8) == 0b1
         {
-            interrupt_triggered.0 = true;
-            interrupt_triggered.1 = 0x0040;
-            let mut register_new = ite;
-            register_new.clear(Interrupts::Vblank as u8);
-            self.bus.borrow().interrupt_flags.set(register_new);
+            let bus = self.bus.read().unwrap();
+            let ite = bus.interrupt_enable.read().unwrap();
+            let itf = bus.interrupt_flags.read().unwrap();
+
+            if ite.bit(Interrupts::Vblank as u8) == 0b1 && itf.bit(Interrupts::Vblank as u8) == 0b1
+            {
+                interrupt_triggered.0 = true;
+                interrupt_triggered.1 = 0x0040;
+                bus.interrupt_flags.write().unwrap().clear(Interrupts::Vblank as u8);
+            } else if ite.bit(Interrupts::Lcd as u8) == 0b1 && itf.bit(Interrupts::Lcd as u8) == 0b1
+            {
+                interrupt_triggered.0 = true;
+                interrupt_triggered.1 = 0x0048;
+                bus.interrupt_flags.write().unwrap().clear(Interrupts::Lcd as u8);
+            } else if ite.bit(Interrupts::Timer as u8) == 0b1
+                && itf.bit(Interrupts::Timer as u8) == 0b1
+            {
+                interrupt_triggered.0 = true;
+                interrupt_triggered.1 = 0x0050;
+                bus.interrupt_flags.write().unwrap().clear(Interrupts::Timer as u8);
+            }
         }
-        else if ite.bit(Interrupts::Lcd as u8) == 0b1
-            && itf.bit(Interrupts::Lcd as u8) == 0b1
-        {
-            interrupt_triggered.0 = true;
-            interrupt_triggered.1 = 0x0048;
-            let mut register_new = ite;
-            register_new.clear(Interrupts::Lcd as u8);
-            self.bus.borrow().interrupt_flags.set(register_new);
-        }
-        else if ite.bit(Interrupts::Timer as u8) == 0b1
-            && itf.bit(Interrupts::Timer as u8) == 0b1
-        {
-            interrupt_triggered.0 = true;
-            interrupt_triggered.1 = 0x0050;
-            let mut register_new = ite;
-            register_new.clear(Interrupts::Timer as u8);
-            self.bus.borrow().interrupt_flags.set(register_new);
-        }
-        
+
         if interrupt_triggered.0 && self.ime {
             self.ime = false;
             self.write_word(self.registers.sp - 2, self.registers.sp - 1, self.registers.pc);
             self.registers.sp -= 2;
             self.registers.pc = interrupt_triggered.1;
             self.m_cycles += 3;
-            self.bus.borrow().tick(5);
+            self.bus.read().unwrap().tick(5);
         }
         // TODO: Implements Serial, Joypad interrupts
     }
@@ -226,7 +212,7 @@ impl Cpu {
     }
 
     fn fetch_byte(&mut self) -> u8 {
-        let data: u8 = self.bus.borrow().read(self.registers.pc);
+        let data: u8 = self.bus.read().unwrap().read(self.registers.pc);
         self.registers.pc += 1;
         self.m_cycles += 1;
 
@@ -241,7 +227,7 @@ impl Cpu {
     }
 
     fn read_byte(&mut self, addr: u16) -> u8 {
-        let data = self.bus.borrow().read(addr);
+        let data = self.bus.read().unwrap().read(addr);
 
         self.m_cycles += 1;
 
@@ -249,7 +235,7 @@ impl Cpu {
     }
 
     fn write_byte(&mut self, addr: u16, data: u8) {
-        self.bus.borrow().write(addr, data);
+        self.bus.read().unwrap().write(addr, data);
         self.m_cycles += 1;
     }
 
@@ -279,9 +265,13 @@ impl Cpu {
 
     fn adc8_flag(&mut self, base_value: u8, value: u8) {
         let result = base_value.wrapping_add(value).wrapping_add(self.carry());
-        
-        self.set_half_carry((base_value & 0xF).wrapping_add(value & 0x0F).wrapping_add(self.carry()) > 0x0F);
-        self.set_carry((base_value as u16).wrapping_add(value as u16).wrapping_add(self.carry() as u16) > 0xFF);
+
+        self.set_half_carry(
+            (base_value & 0xF).wrapping_add(value & 0x0F).wrapping_add(self.carry()) > 0x0F,
+        );
+        self.set_carry(
+            (base_value as u16).wrapping_add(value as u16).wrapping_add(self.carry() as u16) > 0xFF,
+        );
         self.set_negative(false);
         self.set_zero(result == 0x00);
     }
@@ -294,7 +284,7 @@ impl Cpu {
 
     fn add_signed16_flag(&mut self, base_value: u16, value: i16) {
         let result: u16 = base_value.wrapping_add_signed(value);
-        
+
         self.set_carry((base_value ^ value as u16 ^ result) & 0x100 == 0x100);
         self.set_half_carry((base_value ^ value as u16 ^ result) & 0x10 == 0x10);
         self.set_negative(false);
@@ -307,7 +297,7 @@ impl Cpu {
         self.set_carry((base_value as u16) < (value as u16));
         self.set_negative(true);
     }
-    
+
     fn subtractc8_flag(&mut self, base_value: u8, value: u8) {
         self.set_zero(base_value.wrapping_sub(value).wrapping_sub(self.carry()) == 0x00);
         self.set_half_carry(base_value & 0x0F < (value & 0x0F) + self.carry());
@@ -337,11 +327,7 @@ impl Cpu {
     }
 
     fn rotate8_flag(&mut self, value: u8, is_left: bool, set_carry: bool) -> bool {
-        let carry = if is_left {
-            value >> 7 == 0x1
-        } else {
-            value & 0x1 == 0x1
-        };
+        let carry = if is_left { value >> 7 == 0x1 } else { value & 0x1 == 0x1 };
 
         if set_carry {
             self.set_carry(carry);
@@ -364,6 +350,6 @@ impl Cpu {
 pub struct CpuDebugInfo {
     pub registers: CpuRegisters,
     pub next_instr: &'static str,
-    pub next_instr_opcode: u8, 
+    pub next_instr_opcode: u8,
     pub next_instr_pfx_opcode: u8,
 }

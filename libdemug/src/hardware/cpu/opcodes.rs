@@ -1,6 +1,6 @@
 use crate::hardware::cpu::{Cpu, Registers16Bit};
 
-pub static OPCODES: [fn(&mut Cpu); 0x100] = [
+pub(crate) static OPCODES: [fn(&mut Cpu); 0x100] = [
     |_| {
         /* 0x00 */
         /* NOP */
@@ -760,11 +760,14 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x76 */
         /* HALT */
-        while cpu.bus.borrow().interrupt_enable.get().value() & cpu.bus.borrow().interrupt_flags.get().value() == 0x00 {
-            cpu.bus.borrow().tick(1);
-            //cpu.m_cycles += 1;
+        while (cpu.bus.read().unwrap().interrupt_enable.read().unwrap().value()
+            & cpu.bus.read().unwrap().interrupt_flags.read().unwrap().value())
+            == 0x00
+        {
+            cpu.bus.read().unwrap().tick(1);
+            cpu.m_cycles += 1;
         }
-        
+
         if cpu.ime {
             cpu.check_interrupts();
         } else {
@@ -1001,7 +1004,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SBC A, B */
         let old_carry = cpu.carry();
 
-        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.b );
+        cpu.subtractc8_flag(cpu.registers.a, cpu.registers.b);
         cpu.registers.a = cpu.registers.a.wrapping_sub(cpu.registers.b).wrapping_sub(old_carry);
     },
     |cpu| {
@@ -1733,7 +1736,7 @@ pub static OPCODES: [fn(&mut Cpu); 0x100] = [
     },
 ];
 
-pub static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
+pub(crate) static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x00 */
         /* RLC B */

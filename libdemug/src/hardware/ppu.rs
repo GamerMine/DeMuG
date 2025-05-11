@@ -1,8 +1,7 @@
 use crate::hardware::cpu::Interrupts;
 use crate::utils::Register;
 use crate::{Demug, SCREEN_HEIGHT, SCREEN_WIDTH};
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 #[repr(u8)]
 enum LcdcReg {
@@ -60,11 +59,11 @@ struct PpuRegisters {
     wx: u8,         // Window X Position                at 0xFF4B
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Pixel {
-    r: u8,
-    g: u8,
-    b: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl Pixel {
@@ -93,8 +92,8 @@ struct Object {
     attributes: Register,
 }
 
-pub struct Ppu {
-    bus: Rc<RefCell<Demug>>,
+pub(crate) struct Ppu {
+    bus: Arc<RwLock<Demug>>,
     registers: PpuRegisters,
     screen_pixel_array: [Pixel; SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize],
     dots: u32,
@@ -103,7 +102,7 @@ pub struct Ppu {
 }
 
 impl Ppu {
-    pub fn init(bus: Rc<RefCell<Demug>>) -> Self {
+    pub(crate) fn init(bus: Arc<RwLock<Demug>>) -> Self {
         Self {
             bus,
             registers: PpuRegisters {
@@ -127,7 +126,7 @@ impl Ppu {
         }
     }
 
-    pub fn read(&self, addr: u16) -> u8 {
+    pub(crate) fn read(&self, addr: u16) -> u8 {
         match addr {
             0xFF40 => self.registers.lcdc.value(),
             0xFF41 => self.registers.stat.value(),
@@ -147,7 +146,7 @@ impl Ppu {
         }
     }
 
-    pub fn write(&mut self, addr: u16, value: u8) {
+    pub(crate) fn write(&mut self, addr: u16, value: u8) {
         match addr {
             0xFF40 => self.registers.lcdc.set_value(value),
             0xFF41 => self.registers.stat.set_value(self.registers.stat.value() | value & 0xFC),
@@ -170,20 +169,11 @@ impl Ppu {
         }
     }
 
-    pub fn get_frame(&mut self) -> Vec<u8> {
-        let mut vec_d = Vec::new();
-
-        self.frame_ready = false;
-
-        for pixel in self.screen_pixel_array {
-            vec_d.push(pixel.r);
-            vec_d.push(pixel.g);
-            vec_d.push(pixel.b);
-        }
-        vec_d
+    pub(crate) fn get_frame(&self) -> Vec<Pixel> {
+        self.screen_pixel_array.to_vec()
     }
 
-    pub fn tick(&mut self, m_cycles: u64) {
+    pub(crate) fn tick(&mut self, m_cycles: u64) {
         if self.registers.lcdc.bit(LcdcReg::LcdPpuEnable as u8) == 0b1 {
             for _ in 0..m_cycles * 4 {
                 let y_pos = (self.dots / 456u32) as u8;
@@ -195,7 +185,7 @@ impl Ppu {
 
                     if dot_x % 2 == 0 {
                         let offset = (dot_x / 2) * 4;
-                        let y_position = self.bus.borrow().read(0xFE00 | offset);
+                        let y_position = self.bus.read().unwrap().read(0xFE00 | offset);
 
                         let big_obj = self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1;
                         if self.objects_in_line.1 < 10
@@ -204,9 +194,9 @@ impl Ppu {
                             && y_pos + 8 * 2 < y_position + if big_obj { 16 } else { 8 }
                             && y_pos + 8 * 2 >= y_position
                         {
-                            let x_position = self.bus.borrow().read(0xFE00 | (offset + 1));
-                            let tile_index = self.bus.borrow().read(0xFE00 | (offset + 2));
-                            let attributes = self.bus.borrow().read(0xFE00 | (offset + 3));
+                            let x_position = self.bus.read().unwrap().read(0xFE00 | (offset + 1));
+                            let tile_index = self.bus.read().unwrap().read(0xFE00 | (offset + 2));
+                            let attributes = self.bus.read().unwrap().read(0xFE00 | (offset + 3));
 
                             self.objects_in_line.0[self.objects_in_line.1 as usize] =
                                 Some(Object {
@@ -281,7 +271,7 @@ impl Ppu {
                                         * 32u16; // Address to Tile Data ID in Background Tile Map
                             }
 
-                            let tile_data_id = self.bus.borrow().read(tile_map_loc); // Tile Data ID from Background/Window map
+                            let tile_data_id = self.bus.read().unwrap().read(tile_map_loc); // Tile Data ID from Background/Window map
                             if tile_data_id > 127 {
                                 tile_data_loc = 0x8000;
                             }
@@ -294,10 +284,12 @@ impl Ppu {
                                     + ((y_pos as u16 + self.registers.scy as u16 % 256) % 8) * 2;
                             }
 
-                            let pixels_hi =
-                                self.bus.borrow().read(tile_data_loc) >> (7 - x_pos % 8) & 0x1;
-                            let pixels_lo =
-                                self.bus.borrow().read(tile_data_loc + 1) >> (7 - x_pos % 8) & 0x1;
+                            let pixels_hi = self.bus.read().unwrap().read(tile_data_loc)
+                                >> (7 - x_pos % 8)
+                                & 0x1;
+                            let pixels_lo = self.bus.read().unwrap().read(tile_data_loc + 1)
+                                >> (7 - x_pos % 8)
+                                & 0x1;
                             let color_index = pixels_hi << 1 | pixels_lo;
 
                             self.screen_pixel_array
@@ -305,8 +297,11 @@ impl Ppu {
                                 self.get_pixel_from_index(color_index, Palettes::BGP);
                         } else {
                             self.screen_pixel_array
-                                [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] =
-                                Pixel{r: 0x97, g: 0x9b, b: 0x3e}
+                                [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] = Pixel {
+                                r: 0x97,
+                                g: 0x9b,
+                                b: 0x3e,
+                            }
                         }
 
                         if self.registers.lcdc.bit(LcdcReg::ObjEnable as u8) == 0b1 {
@@ -345,12 +340,24 @@ impl Ppu {
                                     let tile_data_loc = 0x8000
                                         + (offset_obj * 8 * 2
                                             + (if y_flip {
-                                                obj.y_position as u16 - y_pos as u16 - if self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1 { 0 } else { 8 } - 1
+                                                obj.y_position as u16
+                                                    - y_pos as u16
+                                                    - if self
+                                                        .registers
+                                                        .lcdc
+                                                        .bit(LcdcReg::ObjSize as u8)
+                                                        == 0b1
+                                                    {
+                                                        0
+                                                    } else {
+                                                        8
+                                                    }
+                                                    - 1
                                             } else {
                                                 16 - (obj.y_position as u16 - y_pos as u16)
                                             }) * 2);
 
-                                    let pixels_hi = self.bus.borrow().read(tile_data_loc)
+                                    let pixels_hi = self.bus.read().unwrap().read(tile_data_loc)
                                         >> (7
                                             - (if x_flip {
                                                 obj.x_position - x_pos - 1
@@ -358,14 +365,15 @@ impl Ppu {
                                                 7 - (obj.x_position - x_pos - 1)
                                             }))
                                         & 0x1;
-                                    let pixels_lo = self.bus.borrow().read(tile_data_loc + 1)
-                                        >> (7
-                                            - (if x_flip {
-                                                obj.x_position - x_pos - 1
-                                            } else {
-                                                7 - (obj.x_position - x_pos - 1)
-                                            }))
-                                        & 0x1;
+                                    let pixels_lo =
+                                        self.bus.read().unwrap().read(tile_data_loc + 1)
+                                            >> (7
+                                                - (if x_flip {
+                                                    obj.x_position - x_pos - 1
+                                                } else {
+                                                    7 - (obj.x_position - x_pos - 1)
+                                                }))
+                                            & 0x1;
                                     let color_index = pixels_hi << 1 | pixels_lo;
 
                                     if color_index != 0x00 {
@@ -396,50 +404,42 @@ impl Ppu {
                     }
 
                     if y_pos == SCREEN_HEIGHT {
-                        self.bus.borrow().trigger_interrupt(Interrupts::Vblank);
+                        self.bus.read().unwrap().trigger_interrupt(Interrupts::Vblank);
                         self.registers.stat.set(StatReg::PpuModeLo as u8);
                         self.registers.stat.clear(StatReg::PpuModeHi as u8);
                     }
-                }
-                if self.dots == 70224 {
-                    self.frame_ready = true;
                 }
                 self.dots = if self.dots == 70224 { 0 } else { self.dots + 1 };
 
                 if self.registers.stat.bit(StatReg::LycSelect as u8) == 0b1
                     && self.registers.stat.bit(StatReg::LycEqualLy as u8) == 0b1
                 {
-                    self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
+                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
                 } else if self.registers.stat.bit(StatReg::Mode2Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
                         | self.registers.stat.bit(StatReg::PpuModeLo as u8)
                         == 0b10
                 {
-                    self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
+                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
                 } else if self.registers.stat.bit(StatReg::Mode1Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
                         | self.registers.stat.bit(StatReg::PpuModeLo as u8)
                         == 0b01
                 {
-                    self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
+                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
                 } else if self.registers.stat.bit(StatReg::Mode0Select as u8) == 0b1
                     && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
                         | self.registers.stat.bit(StatReg::PpuModeLo as u8)
                         == 0b00
                 {
-                    self.bus.borrow().trigger_interrupt(Interrupts::Lcd);
+                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
                 }
             }
         } else {
             // When disabled, the ppu is in Mode 0
             self.registers.stat.clear(StatReg::PpuModeLo as u8);
             self.registers.stat.clear(StatReg::PpuModeHi as u8);
-            //self.screen_pixel_array = [Pixel{r: 0x97, g: 0x9b, b: 0x3e}; SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize]
         }
-    }
-
-    pub fn is_frame_ready(&self) -> bool {
-        self.frame_ready
     }
 
     fn get_pixel_from_index(&self, index: u8, palette: Palettes) -> Pixel {
@@ -543,7 +543,7 @@ impl Ppu {
         //  While transferring, the cpu should continue to execute instructions and tick other devices.
         for obj_attr in 0..0x00A0 {
             let addr: u16 = (self.registers.dma as u16) << 8 | obj_attr;
-            self.bus.borrow().write(0xFE00 | obj_attr, self.bus.borrow().read(addr));
+            self.bus.read().unwrap().write(0xFE00 | obj_attr, self.bus.read().unwrap().read(addr));
         }
     }
 }

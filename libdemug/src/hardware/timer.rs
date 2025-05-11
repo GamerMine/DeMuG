@@ -1,8 +1,7 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use crate::Demug;
 use crate::hardware::cpu::Interrupts;
 use crate::utils::Register;
+use std::sync::{Arc, RwLock};
 
 const CLOCK_SPEEDS: [u16; 4] = [256, 4, 16, 64];
 
@@ -20,14 +19,14 @@ struct TimerRegisters {
     tac: Register,
 }
 
-pub struct Timer {
+pub(crate) struct Timer {
     registers: TimerRegisters,
-    bus: Rc<RefCell<Demug>>,
+    bus: Arc<RwLock<Demug>>,
     counter: u16,
 }
 
 impl Timer {
-    pub fn init(bus: Rc<RefCell<Demug>>) -> Self {
+    pub(crate) fn init(bus: Arc<RwLock<Demug>>) -> Self {
         Self {
             registers: TimerRegisters {
                 div: 0xAB,
@@ -40,28 +39,32 @@ impl Timer {
         }
     }
 
-    pub fn read(&self, addr: u16) -> u8 {
+    pub(crate) fn read(&self, addr: u16) -> u8 {
         match addr {
             0xFF04 => (self.registers.div >> 8) as u8,
             0xFF05 => self.registers.tima,
             0xFF06 => self.registers.tma,
             0xFF07 => self.registers.tac.value(),
-            _ => { unreachable!() }
+            _ => {
+                unreachable!()
+            }
         }
     }
 
-    pub fn write(&mut self, addr: u16, data: u8) {
+    pub(crate) fn write(&mut self, addr: u16, data: u8) {
         match addr {
             0xFF04 => self.registers.div = 0x0000,
             0xFF05 => self.registers.tima = data,
             0xFF06 => self.registers.tma = data,
             0xFF07 => self.registers.tac.set_value(data),
-            _ => { unreachable!() }
+            _ => {
+                unreachable!()
+            }
         }
     }
 
     // FIXME: DOES NOT WORK AND I DON'T KNOW WHY.
-    pub fn tick(&mut self, m_cycles: u64) {
+    pub(crate) fn tick(&mut self, m_cycles: u64) {
         for _ in 0..m_cycles * 4 {
             self.registers.div = self.registers.div.wrapping_add(1);
         }
@@ -70,12 +73,17 @@ impl Timer {
             for _ in 0..m_cycles {
                 self.counter += 1;
 
-                let clock_select = self.registers.tac.bit(TacRegister::ClockSelectHi as u8) << 1 | self.registers.tac.bit(TacRegister::ClockSelectLo as u8); 
-                
-                if self.counter % CLOCK_SPEEDS[clock_select as usize] == 0 { self.registers.tima += 1 }
-                if self.counter == CLOCK_SPEEDS[clock_select as usize] { self.counter = 0x0000 }
+                let clock_select = self.registers.tac.bit(TacRegister::ClockSelectHi as u8) << 1
+                    | self.registers.tac.bit(TacRegister::ClockSelectLo as u8);
+
+                if self.counter % CLOCK_SPEEDS[clock_select as usize] == 0 {
+                    self.registers.tima += 1
+                }
+                if self.counter == CLOCK_SPEEDS[clock_select as usize] {
+                    self.counter = 0x0000
+                }
                 if self.registers.tima == 0xFF {
-                    self.bus.borrow().trigger_interrupt(Interrupts::Timer);
+                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Timer);
                     self.registers.tima = self.registers.tma;
                 }
             }
