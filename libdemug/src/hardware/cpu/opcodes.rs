@@ -760,13 +760,17 @@ pub(crate) static OPCODES: [fn(&mut Cpu); 0x100] = [
     |cpu| {
         /* 0x76 */
         /* HALT */
-        while (cpu.bus.read().unwrap().interrupt_enable.read().unwrap().value()
-            & cpu.bus.read().unwrap().interrupt_flags.read().unwrap().value())
-            == 0x00
-        {
-            cpu.bus.read().unwrap().tick(1);
+        let bus = cpu.bus.read().unwrap();
+        let mut ite = bus.interrupt_enable.read().unwrap().value();
+        let mut itf = bus.interrupt_flags.read().unwrap().value();
+        while (ite & itf) == 0x00 {
+            bus.tick(1);
             cpu.m_cycles += 1;
+
+            ite = bus.interrupt_enable.read().unwrap().value();
+            itf = bus.interrupt_flags.read().unwrap().value();
         }
+        drop(bus);
 
         if cpu.ime {
             cpu.check_interrupts();

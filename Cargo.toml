@@ -1,3 +1,7 @@
 [workspace]
 resolver = "2"
 members = [ "demug-gui","libdemug"]
+
+[profile.release]
+overflow-checks = true
+opt-level = 3

@@ -9,6 +9,10 @@ mod app;
 mod debug;
 
 fn main() {
+    pollster::block_on(run());
+}
+
+async fn run() {
     let demug = Demug::init();
     let event_loop = EventLoop::<DemugEvent>::with_user_event().build().unwrap();
 

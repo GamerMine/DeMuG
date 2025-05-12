@@ -76,11 +76,12 @@ impl Cpu {
         } else {
             self.bus.read().unwrap().tick(self.m_cycles - old_m_cycles);
         }
-
+        
         if self.ime {
             self.check_interrupts()
         }
 
+        
         if self.m_cycles >= 17556 {
             self.m_cycles -= 17556;
             true
@@ -107,24 +108,24 @@ impl Cpu {
         {
             let bus = self.bus.read().unwrap();
             let ite = bus.interrupt_enable.read().unwrap();
-            let itf = bus.interrupt_flags.read().unwrap();
+            let mut itf = bus.interrupt_flags.write().unwrap();
 
             if ite.bit(Interrupts::Vblank as u8) == 0b1 && itf.bit(Interrupts::Vblank as u8) == 0b1
             {
                 interrupt_triggered.0 = true;
                 interrupt_triggered.1 = 0x0040;
-                bus.interrupt_flags.write().unwrap().clear(Interrupts::Vblank as u8);
+                itf.clear(Interrupts::Vblank as u8);
             } else if ite.bit(Interrupts::Lcd as u8) == 0b1 && itf.bit(Interrupts::Lcd as u8) == 0b1
             {
                 interrupt_triggered.0 = true;
                 interrupt_triggered.1 = 0x0048;
-                bus.interrupt_flags.write().unwrap().clear(Interrupts::Lcd as u8);
+                itf.clear(Interrupts::Lcd as u8);
             } else if ite.bit(Interrupts::Timer as u8) == 0b1
                 && itf.bit(Interrupts::Timer as u8) == 0b1
             {
                 interrupt_triggered.0 = true;
                 interrupt_triggered.1 = 0x0050;
-                bus.interrupt_flags.write().unwrap().clear(Interrupts::Timer as u8);
+                itf.clear(Interrupts::Timer as u8);
             }
         }
 
