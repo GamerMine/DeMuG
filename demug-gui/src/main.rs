@@ -6,7 +6,6 @@ use std::thread;
 use winit::event_loop::{ControlFlow, EventLoop};
 
 mod app;
-mod debug;
 
 fn main() {
     pollster::block_on(run());

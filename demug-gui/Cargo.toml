@@ -9,4 +9,5 @@ winit = "0.30.10"
 pixels = "0.15.0"
 egui = "0.31.1"
 egui-winit = "0.31.1"
+egui-wgpu = { version = "0.31.1", features = ["winit"] }
 pollster = "0.4.0"
