@@ -226,6 +226,6 @@ pub enum AccessMode {
 
 #[cfg(feature = "debug")]
 pub struct BusDebugInfo {
-    last_accessed_addr: u16,
-    last_accessed_addr_mode: AccessMode,
+    pub last_accessed_addr: u16,
+    pub last_accessed_addr_mode: AccessMode,
 }
