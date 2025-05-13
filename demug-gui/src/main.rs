@@ -1,10 +1,10 @@
 use crate::app::{App, AppStatus, DemugEvent};
+use crate::debug::DebuggerControls;
 use libdemug::Demug;
 use std::path::PathBuf;
-use std::sync::{mpsc, Arc, RwLock};
+use std::sync::{Arc, RwLock, mpsc};
 use std::thread;
 use winit::event_loop::{ControlFlow, EventLoop};
-use crate::debug::DebuggerControls;
 
 mod app;
 mod debug;
@@ -18,6 +18,7 @@ async fn run() {
     let dbg_controls = Arc::new(RwLock::new(DebuggerControls {
         pause: true,
         goto_next: false,
+        breakpoints: Vec::new(),
     }));
     let event_loop = EventLoop::<DemugEvent>::with_user_event().build().unwrap();
 
@@ -27,25 +28,45 @@ async fn run() {
     let event_loop_proxy = event_loop.create_proxy();
     let demug_clone = demug.clone();
     let dbg_controls_clone = dbg_controls.clone();
-    let h = thread::spawn(move || {
-        loop {
-            let d = demug_clone.read();
-            let mut frame_ready: bool = false;
 
-            if !dbg_controls_clone.read().unwrap().pause || dbg_controls_clone.read().unwrap().goto_next {
-                if let Ok(demug) = &d {
+    let h = thread::spawn(move || {
+        let mut pause_moment = false;
+        loop {
+            let mut frame_ready = false;
+
+            let mut controls = dbg_controls_clone.write().unwrap();
+            if let Ok(demug) = demug_clone.read() {
+                let pc = demug.gather_cpu_debug().registers.pc;
+                if controls.breakpoints.contains(&pc) {
+                    controls.pause = true;
+                }
+
+                if !controls.pause || controls.goto_next {
+                    if controls.goto_next {
+                        if event_loop_proxy.send_event(DemugEvent::DebugDataReady).is_err() {
+                            break;
+                        }
+                        controls.goto_next = false;
+                    } else {
+                        pause_moment = false;
+                    }
+
                     frame_ready = demug.step();
-                    if event_loop_proxy.send_event(DemugEvent::DebugDataReady).is_err() {
+                } else {
+                    if !pause_moment
+                        && event_loop_proxy.send_event(DemugEvent::DebugDataReady).is_err()
+                    {
                         break;
                     }
-                    if dbg_controls_clone.read().unwrap().goto_next {
-                        dbg_controls_clone.write().unwrap().goto_next = false;
-                    }
+                    pause_moment = true;
                 }
             }
-
+            drop(controls);
+            
             if frame_ready {
-                drop(d);
+                if event_loop_proxy.send_event(DemugEvent::DebugDataReady).is_err() {
+                    break;
+                }
                 if event_loop_proxy.send_event(DemugEvent::FrameReady).is_err() {
                     break;
                 }

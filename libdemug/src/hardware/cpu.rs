@@ -1,4 +1,4 @@
-mod opcodes;
+pub mod opcodes;
 
 #[cfg(feature = "debug")]
 use crate::hardware::cpu::opcodes::OPCODES_STRING;

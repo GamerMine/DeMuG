@@ -5,6 +5,7 @@ use libdemug::hardware::memory::MemoryDebugInfo;
 pub struct DebuggerControls {
     pub pause: bool,
     pub goto_next: bool,
+    pub breakpoints: Vec<u16>,
 }
 
 pub struct DemugDebugData {
@@ -35,10 +36,13 @@ impl DemugDebugData {
             },
             bus: BusDebugInfo {
                 last_accessed_addr: 0x0000,
-                last_accessed_addr_mode: AccessMode::READ
+                last_accessed_addr_mode: AccessMode::READ,
+                boot_rom_disabled: false,
             },
             mem: MemoryDebugInfo {
-                vram: [0x00; 8192]
+                boot_rom: [0x00; 256],
+                game_rom: vec![0x00; 0x4000],
+                vram: [0x00; 8192],
             }
         }
     }

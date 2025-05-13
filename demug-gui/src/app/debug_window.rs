@@ -1,10 +1,11 @@
 use crate::app::AppResources;
 use crate::debug::{DebuggerControls, DemugDebugData};
-use egui::{Align, Button, Color32, Direction, Layout};
+use egui::{Align, Button, Color32, Direction, Layout, Sense, TextEdit};
 use egui_extras::{Column, TableBuilder};
+use libdemug::hardware::cpu::opcodes::OPCODES_STRING;
 use libdemug::hardware::cpu::CpuDebugInfo;
 use libdemug::hardware::memory::MemoryDebugInfo;
-use libdemug::{BusDebugInfo, Demug};
+use libdemug::BusDebugInfo;
 use std::sync::{Arc, RwLock};
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
@@ -12,9 +13,9 @@ use winit::window::Window;
 
 const COLOR_RED: Color32 = Color32::from_rgb(0xFF, 0x00, 0x33);
 const COLOR_GREEN: Color32 = Color32::from_rgb(0x53, 0xF9, 0x8D);
+const COLOR_BLUE: Color32 = Color32::from_rgb(0x1C, 0x71, 0xD8);
 
 pub struct DebuggerWindowState {
-    demug: Arc<RwLock<Demug>>,
     app_resources: Arc<AppResources>,
     egui_renderer: egui_wgpu::Renderer,
     egui_state: egui_winit::State,
@@ -23,13 +24,17 @@ pub struct DebuggerWindowState {
 
     demug_debug_data: DemugDebugData,
     dbg_controls: Arc<RwLock<DebuggerControls>>,
+    goto_address_string: String,
+    goto_address: bool,
+    goto_pc: bool,
 
     pub window: Arc<Window>,
 }
 
 impl DebuggerWindowState {
     pub async fn new(
-        window: Arc<Window>, demug: Arc<RwLock<Demug>>, app_resources: Arc<AppResources>, dbg_controls: Arc<RwLock<DebuggerControls>>
+        window: Arc<Window>, app_resources: Arc<AppResources>,
+        dbg_controls: Arc<RwLock<DebuggerControls>>,
     ) -> Self {
         let surface = app_resources.instance.create_surface(window.clone()).unwrap();
 
@@ -43,7 +48,7 @@ impl DebuggerWindowState {
             width: window.inner_size().width,
             height: window.inner_size().height,
             present_mode: egui_wgpu::wgpu::PresentMode::AutoNoVsync,
-            desired_maximum_frame_latency: 2,
+            desired_maximum_frame_latency: 0,
             alpha_mode: swapchain_capabilities.alpha_modes[0],
             view_formats: vec![],
         };
@@ -59,14 +64,13 @@ impl DebuggerWindowState {
             Some(window.scale_factor() as f32),
             None,
             Some(2 * 1024),
-        ); // FIXME: Why ? (Apparently tht is default dimension ?
+        );
         let egui_renderer =
             egui_wgpu::Renderer::new(&app_resources.device, surface_config.format, None, 1, true);
 
         let demug_debug_data = DemugDebugData::new_empty();
 
         Self {
-            demug,
             app_resources,
             egui_renderer,
             egui_state,
@@ -75,6 +79,9 @@ impl DebuggerWindowState {
 
             demug_debug_data,
             dbg_controls,
+            goto_address_string: String::from(""),
+            goto_address: false,
+            goto_pc: false,
 
             window,
         }
@@ -174,114 +181,6 @@ impl DebuggerWindowState {
         surface_texture.present();
     }
 
-    fn render_egui(&self) {
-        egui::TopBottomPanel::top("top panel").exact_height(50.0).show(self.egui_state.egui_ctx(), |ui| {
-            ui.horizontal_centered(|ui| {
-                if ui.add_sized([40.0, 40.0], Button::new("▶")).clicked() {
-                    self.dbg_controls.write().unwrap().pause ^= true;
-                }
-                if ui.add_sized([40.0, 40.0], Button::new("▶▶")).clicked() {
-                    self.dbg_controls.write().unwrap().goto_next = true;
-                }
-            });
-        });
-        egui::Window::new("Program")
-            .resizable(true)
-            .vscroll(true)
-            .default_open(true)
-            .default_pos([0.0, 0.0])
-            .default_height(self.window.inner_size().height as f32)
-            .show(self.egui_state.egui_ctx(), |ui| {
-                ui.visuals_mut().faint_bg_color = Color32::from_rgb(0x2B, 0x2B, 0x2B);
-                TableBuilder::new(ui)
-                    .striped(true)
-                    .column(Column::auto())
-                    .column(Column::remainder())
-                    .cell_layout(Layout::centered_and_justified(Direction::LeftToRight))
-                    .scroll_to_row(self.demug_debug_data.cpu.registers.pc as usize, Some(Align::Min))
-                    .header(20.0, |mut header| {
-                        header.col(|ui| {
-                            ui.heading("Address");
-                        });
-                        header.col(|ui| {
-                            ui.heading("Instruction");
-                        });
-                    })
-                    .body(|body| {
-                        body.rows(25.0, 0xFFFF, |mut row| {
-                            let row_index = row.index();
-                            row.col(|ui| {
-                                if self.demug_debug_data.cpu.registers.pc as usize == row_index {
-                                    ui.painter().rect_filled(ui.max_rect(), 2, Color32::from_rgba_unmultiplied(COLOR_GREEN.r(), COLOR_GREEN.g(), COLOR_GREEN.b(), 8));
-                                }
-                                ui.label(format!("{:#06X}", row_index));
-                            });
-                            row.col(|ui| {
-                                //ui.painter().rect_filled(ui.max_rect(), 2, bg_color);
-                                ui.label("NOP");
-                            });
-                        });
-                    });
-            });
-        egui::Window::new("CPU Registers").default_open(true).show(
-            self.egui_state.egui_ctx(),
-            |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("A:  ");
-                    ui.add(egui::Label::new(format!("{:#04X}", self.demug_debug_data.cpu.registers.a)));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("B:  ");
-                    ui.add(egui::Label::new(format!("{:#04X}", self.demug_debug_data.cpu.registers.b)));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("C:  ");
-                    ui.add(egui::Label::new(format!("{:#04X}", self.demug_debug_data.cpu.registers.c)));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("D:  ");
-                    ui.add(egui::Label::new(format!("{:#04X}", self.demug_debug_data.cpu.registers.d)));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("E:  ");
-                    ui.add(egui::Label::new(format!("{:#04X}", self.demug_debug_data.cpu.registers.e)));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("H:  ");
-                    ui.add(egui::Label::new(format!("{:#04X}", self.demug_debug_data.cpu.registers.h)));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("L:  ");
-                    ui.add(egui::Label::new(format!("{:#04X}", self.demug_debug_data.cpu.registers.l)));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("SP:  ");
-                    ui.add(egui::Label::new(format!("{:#04X}", self.demug_debug_data.cpu.registers.sp)));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("PC: ");
-                    ui.add(egui::Label::new(format!("{:#06X}", self.demug_debug_data.cpu.registers.pc)));
-                });
-            },
-        );
-        egui::Window::new("CPU Flags").default_open(true).show(
-            self.egui_state.egui_ctx(),
-            |ui| {
-                let c = self.demug_debug_data.cpu.registers.f >> 4 & 0x1;
-                let h = self.demug_debug_data.cpu.registers.f >> 5 & 0x1;
-                let n = self.demug_debug_data.cpu.registers.f >> 6 & 0x1;
-                let z = self.demug_debug_data.cpu.registers.f >> 7 & 0x1;
-
-                ui.horizontal(|ui| {
-                    ui.label(egui::RichText::new(" C ").color(if c == 0b1 { COLOR_GREEN } else { COLOR_RED }));
-                    ui.label(egui::RichText::new(" H ").color(if h == 0b1 { COLOR_GREEN } else { COLOR_RED }));
-                    ui.label(egui::RichText::new(" N ").color(if n == 0b1 { COLOR_GREEN } else { COLOR_RED }));
-                    ui.label(egui::RichText::new(" Z ").color(if z == 0b1 { COLOR_GREEN } else { COLOR_RED }));
-                });
-            },
-        );
-    }
-
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         self.surface_config.width = new_size.width;
         self.surface_config.height = new_size.height;
@@ -294,5 +193,204 @@ impl DebuggerWindowState {
 
     pub fn push_info(&mut self, dbg_data: (CpuDebugInfo, BusDebugInfo, MemoryDebugInfo)) {
         self.demug_debug_data = DemugDebugData::from(dbg_data);
+    }
+
+    fn render_egui(&mut self) {
+        self.control_bar();
+        self.program_window();
+        self.cpu_window();
+    }
+
+    fn control_bar(&mut self) {
+        egui::TopBottomPanel::top("top panel").exact_height(50.0).show(
+            self.egui_state.egui_ctx(),
+            |ui| {
+                ui.horizontal_centered(|ui| {
+                    let pause = self.dbg_controls.read().unwrap().pause;
+
+                    let play_button = Button::new(if pause { "▶" } else { "⏸" }).fill(
+                        Color32::from_rgba_unmultiplied(
+                            if pause { COLOR_RED } else { COLOR_GREEN }.r(),
+                            if pause { COLOR_RED } else { COLOR_GREEN }.g(),
+                            if pause { COLOR_RED } else { COLOR_GREEN }.b(),
+                            60,
+                        ),
+                    );
+                    if ui.add_sized([40.0, 40.0], play_button).clicked() {
+                        self.dbg_controls.write().unwrap().pause ^= true;
+                        self.goto_pc = true;
+                    }
+
+                    if ui
+                        .add_sized(
+                            [40.0, 40.0],
+                            Button::new("▶▶").fill(Color32::from_rgba_unmultiplied(
+                                COLOR_BLUE.r(),
+                                COLOR_BLUE.g(),
+                                COLOR_BLUE.b(),
+                                60,
+                            )),
+                        )
+                        .clicked()
+                    {
+                        self.dbg_controls.write().unwrap().goto_next = true;
+                        self.goto_pc = true;
+                    }
+                });
+            },
+        );
+    }
+
+    fn program_window(&mut self) {
+        let pc = self.demug_debug_data.cpu.registers.pc as usize;
+
+        egui::Window::new("Program")
+            .resizable(true)
+            .vscroll(true)
+            .default_open(true)
+            .default_height(self.window.inner_size().height as f32 - 100.0)
+            .default_pos([0.0, 50.0])
+            .show(self.egui_state.egui_ctx(), |ui| {
+                ui.columns(3, |ui| {
+                    ui[0].vertical_centered(|ui| {
+                        ui.label("Goto address : ");
+                    });
+                    ui[1].vertical_centered(|ui| {
+                        ui.add(TextEdit::singleline(&mut self.goto_address_string).char_limit(4));
+                    });
+                    ui[2].vertical_centered(|ui| {
+                        if ui.button("Go").clicked() {
+                            self.goto_address = true;
+                        }
+                    });
+                });
+                
+                ui.visuals_mut().faint_bg_color = Color32::from_rgb(0x2B, 0x2B, 0x2B);
+                ui.style_mut().interaction.selectable_labels = false;
+
+                let mut table = TableBuilder::new(ui)
+                    .sense(Sense::click())
+                    .striped(true)
+                    .column(Column::auto())
+                    .column(Column::remainder())
+                    .cell_layout(Layout::centered_and_justified(Direction::LeftToRight));
+
+                if !self.dbg_controls.read().unwrap().pause
+                    || self.goto_pc
+                {
+                    table = table.scroll_to_row(pc, Some(Align::Center));
+                    self.goto_pc = false;
+                } else if self.goto_address {
+                    self.goto_address = false;
+                    let str_usize = usize::from_str_radix(self.goto_address_string.as_str(), 16);
+                    if let Ok(n) = str_usize {
+                        table = table.scroll_to_row(n, Some(Align::Center));
+                    }
+                }
+
+                table
+                    .header(20.0, |mut header| {
+                        header.col(|ui| {
+                            ui.heading("Address");
+                        });
+                        header.col(|ui| {
+                            ui.heading("Instruction");
+                        });
+                    })
+                    .body(|body| {
+                        body.rows(25.0, 0xFFFF, |mut row| {
+                            let row_index = row.index();
+                            
+                            if row.col(|ui| {
+                                
+                                let str_usize = usize::from_str_radix(self.goto_address_string.as_str(), 16);
+                                if let Ok(n) = str_usize {
+                                    if n == row_index {
+                                        ui.painter().rect_filled(
+                                            ui.max_rect(),
+                                            2,
+                                            Color32::from_rgba_unmultiplied(
+                                                COLOR_BLUE.r(),
+                                                COLOR_BLUE.g(),
+                                                COLOR_BLUE.b(),
+                                                15,
+                                            ),
+                                        );
+                                    }
+                                }
+                                if pc == row_index {
+                                    ui.painter().rect_filled(
+                                        ui.max_rect(),
+                                        2,
+                                        Color32::from_rgba_unmultiplied(
+                                            COLOR_GREEN.r(),
+                                            COLOR_GREEN.g(),
+                                            COLOR_GREEN.b(),
+                                            8,
+                                        ),
+                                    );
+                                }
+                                ui.label(format!("{:#06X}", row_index));
+                            }).1.clicked() {println!("Row {row_index} clicked!")};
+                            row.col(|ui| {
+                                let op = if !self.demug_debug_data.bus.boot_rom_disabled
+                                    && row_index < 0x100
+                                {
+                                    self.demug_debug_data.mem.boot_rom[row_index]
+                                } else if row_index < 0x4000 {
+                                    self.demug_debug_data.mem.game_rom[row_index]
+                                } else {
+                                    0x00
+                                };
+                                if op == 0xCB {
+                                    ui.label("PREFIX");
+                                } else {
+                                    ui.label(OPCODES_STRING[op as usize](0x00));
+                                }
+                            });
+                        });
+                    });
+            });
+    }
+
+    fn cpu_window(&self) {
+        egui::Window::new("CPU").default_open(true).show(self.egui_state.egui_ctx(), |ui| {
+            let r = &self.demug_debug_data.cpu.registers;
+            let reg = |ui: &mut egui::Ui, name: &str, value: u8| {
+                ui.horizontal(|ui| {
+                    ui.label(format!("{:>3}:", name));
+                    ui.label(format!("{:#04X}", value));
+                });
+            };
+            reg(ui, "A", r.a);
+            reg(ui, "B", r.b);
+            reg(ui, "C", r.c);
+            reg(ui, "D", r.d);
+            reg(ui, "E", r.e);
+            reg(ui, "H", r.h);
+            reg(ui, "L", r.l);
+
+            ui.horizontal(|ui| {
+                ui.label("SP:");
+                ui.label(format!("{:#04X}", r.sp));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("PC:");
+                ui.label(format!("{:#06X}", r.pc));
+            });
+
+            let flags = [("C", 4u8), ("H", 5u8), ("N", 6u8), ("Z", 7u8)];
+            ui.horizontal(|ui| {
+                for (label, bit) in flags.iter() {
+                    let active = (r.f >> bit) & 1 == 1;
+                    ui.label(egui::RichText::new(format!(" {} ", label)).color(if active {
+                        COLOR_GREEN
+                    } else {
+                        COLOR_RED
+                    }));
+                }
+            });
+        });
     }
 }

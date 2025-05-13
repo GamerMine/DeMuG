@@ -32,6 +32,8 @@ impl Memory {
     #[cfg(feature = "debug")]
     pub(crate) fn gather_debug_info(&self) -> MemoryDebugInfo {
         MemoryDebugInfo {
+            boot_rom: self.boot_rom,
+            game_rom: self.game_rom.clone(),
             vram: self.vram,
         }
     }
@@ -39,5 +41,7 @@ impl Memory {
 
 #[cfg(feature = "debug")]
 pub struct MemoryDebugInfo {
+    pub boot_rom: [u8; 0x0100], // Boot Rom Data: Mapped at 0x0000 - 0x0100
+    pub game_rom: Vec<u8>,      // Game Rom Data: Mapped at 0x0000 - 0x3FFF
     pub vram: [u8; 0x2000],     // Video RAM    : Mapped at 0x8000 - 0x9FFF
 }

@@ -1,10 +1,11 @@
 mod debug_window;
 mod main_window;
 
-use std::process::exit;
 use crate::app::debug_window::DebuggerWindowState;
 use crate::app::main_window::MainWindowState;
+use crate::debug::DebuggerControls;
 use libdemug::Demug;
+use std::process::exit;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, RwLock};
 use winit::application::ApplicationHandler;
@@ -12,7 +13,6 @@ use winit::dpi::LogicalSize;
 use winit::event::WindowEvent;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::{Window, WindowId};
-use crate::debug::DebuggerControls;
 
 const SCALE_FACTOR: f32 = 5.0;
 
@@ -59,7 +59,6 @@ impl ApplicationHandler<DemugEvent> for App {
             Arc::new(event_loop.create_window(debugger_window_attributes).unwrap());
         let debugger_window_state = pollster::block_on(DebuggerWindowState::new(
             debugger_window.clone(),
-            self.demug.clone(),
             self.app_resources.clone(),
             self.dbg_controls.clone(),
         ));

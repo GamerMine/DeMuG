@@ -41,7 +41,11 @@ impl Demug {
             interrupt_flags: RwLock::new(Register::new(0xE1)),
             interrupt_enable: RwLock::new(Register::new(0x00)),
             #[cfg(feature = "debug")]
-            bus_debug_info: RwLock::new(None),
+            bus_debug_info: RwLock::new(Some(BusDebugInfo {
+                last_accessed_addr: 0x0000,
+                last_accessed_addr_mode: AccessMode::READ,
+                boot_rom_disabled: false,
+            })),
         }));
 
         // Create all necessary 'devices'
@@ -79,7 +83,7 @@ impl Demug {
         } else {
             unreachable!()
         };
-        let bus_debug_info = self.bus_debug_info.write().unwrap().take().unwrap();
+        let bus_debug_info = self.bus_debug_info.read().unwrap().unwrap();
         let memory_debug_info = if let Some(mem) = &*self.memory.read().unwrap() {
             mem.gather_debug_info()
         } else {
@@ -87,6 +91,15 @@ impl Demug {
         };
 
         (cpu_debug_info, bus_debug_info, memory_debug_info)
+    }
+    
+    #[cfg(feature = "debug")]
+    pub fn gather_cpu_debug(&self) -> CpuDebugInfo {
+        if let Some(cpu) = &*self.cpu.read().unwrap() {
+            cpu.gather_debug_info()
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn disable_boot_rom(&mut self, disabled: bool) {
@@ -149,6 +162,7 @@ impl Demug {
             let debug_info = BusDebugInfo {
                 last_accessed_addr: addr as u16,
                 last_accessed_addr_mode: AccessMode::READ,
+                boot_rom_disabled: self.disable_boot_rom.load(Ordering::SeqCst),
             };
 
             self.bus_debug_info.write().unwrap().replace(debug_info);
@@ -198,6 +212,7 @@ impl Demug {
             let debug_info = BusDebugInfo {
                 last_accessed_addr: addr as u16,
                 last_accessed_addr_mode: AccessMode::WRITE,
+                boot_rom_disabled: self.disable_boot_rom.load(Ordering::SeqCst),
             };
 
             self.bus_debug_info.write().unwrap().replace(debug_info);
@@ -219,13 +234,16 @@ impl Demug {
 }
 
 #[cfg(feature = "debug")]
+#[derive(Copy, Clone)]
 pub enum AccessMode {
     READ,
     WRITE,
 }
 
 #[cfg(feature = "debug")]
+#[derive(Copy, Clone)]
 pub struct BusDebugInfo {
     pub last_accessed_addr: u16,
     pub last_accessed_addr_mode: AccessMode,
+    pub boot_rom_disabled: bool,
 }
