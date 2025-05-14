@@ -1,11 +1,13 @@
 use crate::app::AppResources;
-use crate::debug::{DebuggerControls, DemugDebugData};
-use egui::{Align, Button, Color32, Direction, Layout, Sense, TextEdit};
+use crate::debug::analyzer::AnalyzedValue;
+use crate::debug::{analyzer, DebuggerControls, DemugDebugData};
+use egui::{Align, Button, Color32, Direction, Layout, RichText, Sense, TextEdit};
 use egui_extras::{Column, TableBuilder};
 use libdemug::hardware::cpu::opcodes::OPCODES_STRING;
 use libdemug::hardware::cpu::CpuDebugInfo;
 use libdemug::hardware::memory::MemoryDebugInfo;
 use libdemug::BusDebugInfo;
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
@@ -27,6 +29,8 @@ pub struct DebuggerWindowState {
     goto_address_string: String,
     goto_address: bool,
     goto_pc: bool,
+    raw_game_data: Vec<u8>,
+    analyzed_game_data: HashMap<u16, AnalyzedValue>,
 
     pub window: Arc<Window>,
 }
@@ -82,6 +86,8 @@ impl DebuggerWindowState {
             goto_address_string: String::from(""),
             goto_address: false,
             goto_pc: false,
+            raw_game_data: Vec::new(),
+            analyzed_game_data: HashMap::new(),
 
             window,
         }
@@ -195,6 +201,11 @@ impl DebuggerWindowState {
         self.demug_debug_data = DemugDebugData::from(dbg_data);
     }
 
+    pub fn set_game_data(&mut self, data: Vec<u8>) {
+        self.analyzed_game_data = analyzer::analyze(&data);
+        self.raw_game_data = data;
+    }
+
     fn render_egui(&mut self) {
         self.control_bar();
         self.program_window();
@@ -251,6 +262,7 @@ impl DebuggerWindowState {
             .default_height(self.window.inner_size().height as f32 - 100.0)
             .default_pos([0.0, 50.0])
             .show(self.egui_state.egui_ctx(), |ui| {
+                // GOTO ADDRESS SECTION
                 ui.columns(3, |ui| {
                     ui[0].vertical_centered(|ui| {
                         ui.label("Goto address : ");
@@ -264,10 +276,11 @@ impl DebuggerWindowState {
                         }
                     });
                 });
-                
+
                 ui.visuals_mut().faint_bg_color = Color32::from_rgb(0x2B, 0x2B, 0x2B);
                 ui.style_mut().interaction.selectable_labels = false;
 
+                // PROGRAM TABLE SECTION
                 let mut table = TableBuilder::new(ui)
                     .sense(Sense::click())
                     .striped(true)
@@ -275,9 +288,7 @@ impl DebuggerWindowState {
                     .column(Column::remainder())
                     .cell_layout(Layout::centered_and_justified(Direction::LeftToRight));
 
-                if !self.dbg_controls.read().unwrap().pause
-                    || self.goto_pc
-                {
+                if !self.dbg_controls.read().unwrap().pause || self.goto_pc {
                     table = table.scroll_to_row(pc, Some(Align::Center));
                     self.goto_pc = false;
                 } else if self.goto_address {
@@ -298,56 +309,146 @@ impl DebuggerWindowState {
                         });
                     })
                     .body(|body| {
+                        let mut consider_data: u8 = 0;
                         body.rows(25.0, 0xFFFF, |mut row| {
                             let row_index = row.index();
-                            
-                            if row.col(|ui| {
-                                
-                                let str_usize = usize::from_str_radix(self.goto_address_string.as_str(), 16);
-                                if let Ok(n) = str_usize {
-                                    if n == row_index {
+
+                            // LEFT COLUMN ( ADDRESSES )
+                            if row
+                                .col(|ui| {
+                                    // HANDLING OF GOTO FEATURE ( HIGHLIGHT THE ROW IN BLUE )
+                                    let str_usize = usize::from_str_radix(
+                                        self.goto_address_string.as_str(),
+                                        16,
+                                    );
+                                    if let Ok(n) = str_usize {
+                                        if n == row_index {
+                                            ui.painter().rect_filled(
+                                                ui.max_rect(),
+                                                2,
+                                                Color32::from_rgba_unmultiplied(
+                                                    COLOR_BLUE.r(),
+                                                    COLOR_BLUE.g(),
+                                                    COLOR_BLUE.b(),
+                                                    15,
+                                                ),
+                                            );
+                                        }
+                                    }
+
+                                    // HIGHLIGHT THE CURRENT PC POSITION IN GREEN
+                                    if pc == row_index {
                                         ui.painter().rect_filled(
                                             ui.max_rect(),
                                             2,
                                             Color32::from_rgba_unmultiplied(
-                                                COLOR_BLUE.r(),
-                                                COLOR_BLUE.g(),
-                                                COLOR_BLUE.b(),
+                                                COLOR_GREEN.r(),
+                                                COLOR_GREEN.g(),
+                                                COLOR_GREEN.b(),
                                                 15,
                                             ),
                                         );
                                     }
-                                }
-                                if pc == row_index {
-                                    ui.painter().rect_filled(
-                                        ui.max_rect(),
-                                        2,
-                                        Color32::from_rgba_unmultiplied(
-                                            COLOR_GREEN.r(),
-                                            COLOR_GREEN.g(),
-                                            COLOR_GREEN.b(),
-                                            8,
-                                        ),
-                                    );
-                                }
-                                ui.label(format!("{:#06X}", row_index));
-                            }).1.clicked() {println!("Row {row_index} clicked!")};
-                            row.col(|ui| {
-                                let op = if !self.demug_debug_data.bus.boot_rom_disabled
-                                    && row_index < 0x100
-                                {
-                                    self.demug_debug_data.mem.boot_rom[row_index]
-                                } else if row_index < 0x4000 {
-                                    self.demug_debug_data.mem.game_rom[row_index]
+
+                                    // HANDLING BREAKPOINTS FEATURE ( HIGHLIGHT BREAKPOINTS IN RED )
+                                    if self
+                                        .dbg_controls
+                                        .read()
+                                        .unwrap()
+                                        .breakpoints
+                                        .contains(&(row_index as u16))
+                                    {
+                                        ui.painter().rect_filled(
+                                            ui.max_rect(),
+                                            2,
+                                            Color32::from_rgba_unmultiplied(
+                                                COLOR_RED.r(),
+                                                COLOR_RED.g(),
+                                                COLOR_RED.b(),
+                                                15,
+                                            ),
+                                        );
+                                    }
+
+                                    ui.label(format!("{:#06X}", row_index));
+                                })
+                                .1
+                                .clicked()
+                            {
+                                let mut dbg_ctrl = self.dbg_controls.write().unwrap();
+                                if dbg_ctrl.breakpoints.contains(&(row_index as u16)) {
+                                    dbg_ctrl.breakpoints.retain(|addr| addr != &(row_index as u16))
                                 } else {
-                                    0x00
-                                };
-                                if op == 0xCB {
-                                    ui.label("PREFIX");
-                                } else {
-                                    ui.label(OPCODES_STRING[op as usize](0x00));
+                                    dbg_ctrl.breakpoints.push(row_index as u16)
                                 }
-                            });
+                            };
+
+                            // RIGHT COLUMN ( OPCODE STRINGS & DATA )
+                            if row
+                                .col(|ui| {
+                                    if row_index < 0x4000
+                                    /* && !self.raw_game_data.is_empty()*/
+                                    {
+                                        if let Some(data) =
+                                            self.analyzed_game_data.get(&(row_index as u16))
+                                        {
+                                            let opcode_str = {
+                                                let mut prefix = String::from("");
+                                                let format;
+                                                if ["[a16]", "[a8]"].contains(&data.value_type) {
+                                                    prefix.push('#');
+                                                }
+                                                if data.value_type.contains("8") {
+                                                    consider_data = 1;
+                                                    if data.value_type.contains("e") {
+                                                        format =
+                                                            format!("{prefix}{}", data.value as i8)
+                                                    } else if data.value_type.contains("a") {
+                                                        format = format!(
+                                                            "{prefix}{:#06X}",
+                                                            0xFF00 | data.value
+                                                        )
+                                                    } else {
+                                                        format =
+                                                            format!("{prefix}{:#04X}", data.value)
+                                                    }
+                                                } else {
+                                                    consider_data = 2;
+                                                    format = format!("{prefix}{:#06X}", data.value)
+                                                }
+                                                OPCODES_STRING[data.opcode as usize](0x00)
+                                                    .replace(data.value_type, format.as_str())
+                                            };
+                                            ui.label(RichText::new(opcode_str.as_str()).strong().color(Color32::LIGHT_BLUE));
+                                        } else if consider_data > 0 {
+                                            consider_data -= 1;
+                                            ui.label(RichText::new(format!(
+                                                "{:#04X}",
+                                                self.raw_game_data[row_index]
+                                            )).italics().color(Color32::ORANGE));
+                                        } else {
+                                            let opcode = self.raw_game_data[row_index] as usize;
+                                            if opcode == 0xCB {
+                                                consider_data = 1;
+                                                ui.label(RichText::new(OPCODES_STRING[opcode](self.raw_game_data[row_index + 1])).strong().color(Color32::LIGHT_BLUE));
+                                            } else {
+                                                ui.label(RichText::new(OPCODES_STRING[opcode](0x00)).strong().color(Color32::LIGHT_BLUE));
+                                            }
+                                        }
+                                    } else {
+                                        ui.label("TODO");
+                                    }
+                                })
+                                .1
+                                .clicked()
+                            {
+                                let mut dbg_ctrl = self.dbg_controls.write().unwrap();
+                                if dbg_ctrl.breakpoints.contains(&(row_index as u16)) {
+                                    dbg_ctrl.breakpoints.retain(|addr| addr != &(row_index as u16))
+                                } else {
+                                    dbg_ctrl.breakpoints.push(row_index as u16)
+                                }
+                            }
                         });
                     });
             });

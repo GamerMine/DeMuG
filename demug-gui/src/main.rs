@@ -1,8 +1,7 @@
 use crate::app::{App, AppStatus, DemugEvent};
 use crate::debug::DebuggerControls;
 use libdemug::Demug;
-use std::path::PathBuf;
-use std::sync::{Arc, RwLock, mpsc};
+use std::sync::{mpsc, Arc, RwLock};
 use std::thread;
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -21,8 +20,6 @@ async fn run() {
         breakpoints: Vec::new(),
     }));
     let event_loop = EventLoop::<DemugEvent>::with_user_event().build().unwrap();
-
-    demug.write().unwrap().insert_cartridge(PathBuf::from("./demug-gui/resources/Othello.gb"));
 
     let (tx, rx) = mpsc::channel::<AppStatus>();
     let event_loop_proxy = event_loop.create_proxy();

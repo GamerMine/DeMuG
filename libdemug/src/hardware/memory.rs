@@ -25,7 +25,7 @@ impl Memory {
     pub(crate) fn open_game(&mut self, path: PathBuf) {
         match fs::read(path.clone()) {
             Ok(data) => {self.game_rom = data;}
-            Err(err) => {println!("Cannot open ROM {}: {err}", path.display())}
+            Err(err) => {eprintln!("Cannot open ROM {}: {err}", path.display())}
         }
     }
     

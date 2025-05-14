@@ -1,6 +1,8 @@
 mod debug_window;
 mod main_window;
 
+use std::fs;
+use std::path::PathBuf;
 use crate::app::debug_window::DebuggerWindowState;
 use crate::app::main_window::MainWindowState;
 use crate::debug::DebuggerControls;
@@ -46,6 +48,14 @@ impl App {
             dbg_controls
         }
     }
+    
+    fn open_game(&mut self, path: PathBuf) {
+        self.demug.read().unwrap().insert_cartridge(path.clone());
+
+        if let (Ok(data), Some(dbg_window_main)) = (fs::read(path), self.debug_window_state.as_mut()) {
+            dbg_window_main.set_game_data(data);
+        }
+    }
 }
 
 impl ApplicationHandler<DemugEvent> for App {
@@ -77,6 +87,8 @@ impl ApplicationHandler<DemugEvent> for App {
 
         self.debug_window_state = Some(debugger_window_state);
         self.main_window_state = Some(main_window_state);
+        
+        self.open_game(PathBuf::from("./demug-gui/resources/Othello.gb"));
     }
 
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: DemugEvent) {

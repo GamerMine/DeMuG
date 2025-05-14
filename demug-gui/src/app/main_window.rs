@@ -1,6 +1,6 @@
 use crate::app::{AppStatus, SCALE_FACTOR};
 use libdemug::Demug;
-use pixels::{Pixels, PixelsBuilder, SurfaceTexture, wgpu};
+use pixels::{wgpu, Pixels, PixelsBuilder, SurfaceTexture};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, RwLock};
 use winit::window::Window;

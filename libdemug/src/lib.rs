@@ -62,7 +62,7 @@ impl Demug {
         demug
     }
 
-    pub fn insert_cartridge(&mut self, path: PathBuf) {
+    pub fn insert_cartridge(&self, path: PathBuf) {
         if let Some(mem) = &mut *self.memory.write().unwrap() {
             mem.open_game(path)
         }

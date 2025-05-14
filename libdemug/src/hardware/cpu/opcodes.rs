@@ -1,6 +1,6 @@
 use crate::hardware::cpu::{Cpu, Registers16Bit};
 
-pub(crate) static OPCODES: [fn(&mut Cpu); 0x100] = [
+pub(crate) static OPCODES: [fn(&mut Cpu); 0x100] = {[
     |_| {
         /* 0x00 */
         /* NOP */
@@ -1738,9 +1738,9 @@ pub(crate) static OPCODES: [fn(&mut Cpu); 0x100] = [
         cpu.registers.pc = 0x0038;
         cpu.m_cycles += 1;
     },
-];
+]};
 
-pub(crate) static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
+pub(crate) static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = {[
     |cpu| {
         /* 0x00 */
         /* RLC B */
@@ -3309,10 +3309,10 @@ pub(crate) static PREFIXED_OPCODES: [fn(&mut Cpu); 0x100] = [
         /* SET 7, A */
         cpu.registers.a |= 1 << 7;
     },
-];
+]};
 
 #[cfg(feature = "debug")]
-pub static OPCODES_STRING: [fn(pfx: u8) -> &'static str; 0x100] = [
+pub static OPCODES_STRING: [fn(pfx: u8) -> &'static str; 0x100] = {[
     |_| "NOP",
     |_| "LD BC, n16",
     |_| "LD [BC], A",
@@ -3539,7 +3539,7 @@ pub static OPCODES_STRING: [fn(pfx: u8) -> &'static str; 0x100] = [
     |_| "RST $18",
     |_| "LDH [a8], A",
     |_| "POP HL",
-    |_| "LDH [C], A",
+    |_| "LDH [0xFF00 + C], A",
     |_| "_",
     |_| "_",
     |_| "PUSH HL",
@@ -3555,7 +3555,7 @@ pub static OPCODES_STRING: [fn(pfx: u8) -> &'static str; 0x100] = [
     |_| "RST $28",
     |_| "LDH A, [a8]",
     |_| "POP AF",
-    |_| "LDH A, [C]",
+    |_| "LDH A, [0xFF00 + C]",
     |_| "DI",
     |_| "_",
     |_| "PUSH AF",
@@ -3569,10 +3569,10 @@ pub static OPCODES_STRING: [fn(pfx: u8) -> &'static str; 0x100] = [
     |_| "_",
     |_| "CP A, n8",
     |_| "RST $38",
-];
+]};
 
 #[cfg(feature = "debug")]
-pub static PREFIXED_OPCODES_STRING: [&str; 0x100] = [
+pub static PREFIXED_OPCODES_STRING: [&str; 0x100] = {[
     "RLC B",
     "RLC C",
     "RLC D",
@@ -3829,4 +3829,4 @@ pub static PREFIXED_OPCODES_STRING: [&str; 0x100] = [
     "SET 7, L",
     "SET 7, [HL]",
     "SET 7, A",
-];
+]};

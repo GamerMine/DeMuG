@@ -1,3 +1,5 @@
+pub mod analyzer;
+
 use libdemug::{AccessMode, BusDebugInfo};
 use libdemug::hardware::cpu::{CpuDebugInfo, CpuRegisters};
 use libdemug::hardware::memory::MemoryDebugInfo;
