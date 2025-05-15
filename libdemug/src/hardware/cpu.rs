@@ -1,8 +1,5 @@
 pub mod opcodes;
 
-#[cfg(feature = "debug")]
-use crate::hardware::cpu::opcodes::OPCODES_STRING;
-
 use crate::Demug;
 use crate::hardware::cpu::opcodes::OPCODES;
 use std::sync::{Arc, RwLock};
@@ -15,7 +12,7 @@ enum Registers16Bit {
 }
 
 #[repr(u8)]
-pub(crate) enum Interrupts {
+pub enum Interrupts {
     Joypad = 4,
     Serial = 3,
     Timer = 2,
@@ -92,14 +89,9 @@ impl Cpu {
 
     #[cfg(feature = "debug")]
     pub(crate) fn gather_debug_info(&self) -> CpuDebugInfo {
-        let opcode = self.bus.read().unwrap().read(self.registers.pc);
-        let prefixed_opcode = self.bus.read().unwrap().read(self.registers.pc + 1);
-
         CpuDebugInfo {
             registers: self.registers.clone(),
-            next_instr: OPCODES_STRING[opcode as usize](prefixed_opcode),
-            next_instr_opcode: opcode,
-            next_instr_pfx_opcode: prefixed_opcode,
+            ime: self.ime,
         }
     }
 
@@ -350,7 +342,5 @@ impl Cpu {
 #[cfg(feature = "debug")]
 pub struct CpuDebugInfo {
     pub registers: CpuRegisters,
-    pub next_instr: &'static str,
-    pub next_instr_opcode: u8,
-    pub next_instr_pfx_opcode: u8,
+    pub ime: bool,
 }

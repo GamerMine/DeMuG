@@ -3,6 +3,7 @@ pub mod analyzer;
 use libdemug::{AccessMode, BusDebugInfo};
 use libdemug::hardware::cpu::{CpuDebugInfo, CpuRegisters};
 use libdemug::hardware::memory::MemoryDebugInfo;
+use libdemug::utils::Register;
 
 pub struct DebuggerControls {
     pub pause: bool,
@@ -32,14 +33,14 @@ impl DemugDebugData {
                     pc: 0x0000,
                     sp: 0x0000,
                 },
-                next_instr: "",
-                next_instr_opcode: 0x00,
-                next_instr_pfx_opcode: 0x00,
+                ime: false,
             },
             bus: BusDebugInfo {
                 last_accessed_addr: 0x0000,
                 last_accessed_addr_mode: AccessMode::READ,
                 boot_rom_disabled: false,
+                interrupts_enable: Register::new(0x00),
+                interrupts_flags: Register::new(0x00),
             },
             mem: MemoryDebugInfo {
                 boot_rom: [0x00; 256],

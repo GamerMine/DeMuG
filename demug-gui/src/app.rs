@@ -25,7 +25,6 @@ pub enum DemugEvent {
 
 pub enum AppStatus {
     FrameDrawn,
-    DebugDataGathered,
 }
 
 pub struct App {

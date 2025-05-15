@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};
 
 pub mod hardware;
-mod utils;
+pub mod utils;
 
 pub const SCREEN_WIDTH: u8 = 160;
 pub const SCREEN_HEIGHT: u8 = 144;
@@ -45,6 +45,8 @@ impl Demug {
                 last_accessed_addr: 0x0000,
                 last_accessed_addr_mode: AccessMode::READ,
                 boot_rom_disabled: false,
+                interrupts_enable: Register::new(0),
+                interrupts_flags: Register::new(0),
             })),
         }));
 
@@ -163,6 +165,8 @@ impl Demug {
                 last_accessed_addr: addr as u16,
                 last_accessed_addr_mode: AccessMode::READ,
                 boot_rom_disabled: self.disable_boot_rom.load(Ordering::SeqCst),
+                interrupts_enable: *self.interrupt_enable.read().unwrap(),
+                interrupts_flags: *self.interrupt_flags.read().unwrap(),
             };
 
             self.bus_debug_info.write().unwrap().replace(debug_info);
@@ -213,6 +217,8 @@ impl Demug {
                 last_accessed_addr: addr as u16,
                 last_accessed_addr_mode: AccessMode::WRITE,
                 boot_rom_disabled: self.disable_boot_rom.load(Ordering::SeqCst),
+                interrupts_enable: *self.interrupt_enable.read().unwrap(),
+                interrupts_flags: *self.interrupt_flags.read().unwrap(),
             };
 
             self.bus_debug_info.write().unwrap().replace(debug_info);
@@ -246,4 +252,6 @@ pub struct BusDebugInfo {
     pub last_accessed_addr: u16,
     pub last_accessed_addr_mode: AccessMode,
     pub boot_rom_disabled: bool,
+    pub interrupts_enable: Register,
+    pub interrupts_flags: Register,
 }

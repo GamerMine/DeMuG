@@ -1,10 +1,13 @@
 use crate::app::AppResources;
 use crate::debug::analyzer::AnalyzedValue;
 use crate::debug::{analyzer, DebuggerControls, DemugDebugData};
-use egui::{Align, Button, Color32, Direction, Layout, RichText, Sense, TextEdit};
+use egui::{
+    Align, Align2, Button, Color32, Direction, Frame, Layout, RichText, Sense, Stroke,
+    Style, TextEdit, TextStyle,
+};
 use egui_extras::{Column, TableBuilder};
 use libdemug::hardware::cpu::opcodes::OPCODES_STRING;
-use libdemug::hardware::cpu::CpuDebugInfo;
+use libdemug::hardware::cpu::{CpuDebugInfo, Interrupts};
 use libdemug::hardware::memory::MemoryDebugInfo;
 use libdemug::BusDebugInfo;
 use std::collections::HashMap;
@@ -210,6 +213,7 @@ impl DebuggerWindowState {
         self.control_bar();
         self.program_window();
         self.cpu_window();
+        self.interrupts_window();
     }
 
     fn control_bar(&mut self) {
@@ -419,20 +423,38 @@ impl DebuggerWindowState {
                                                 OPCODES_STRING[data.opcode as usize](0x00)
                                                     .replace(data.value_type, format.as_str())
                                             };
-                                            ui.label(RichText::new(opcode_str.as_str()).strong().color(Color32::LIGHT_BLUE));
+                                            ui.label(
+                                                RichText::new(opcode_str.as_str())
+                                                    .strong()
+                                                    .color(Color32::LIGHT_BLUE),
+                                            );
                                         } else if consider_data > 0 {
                                             consider_data -= 1;
-                                            ui.label(RichText::new(format!(
-                                                "{:#04X}",
-                                                self.raw_game_data[row_index]
-                                            )).italics().color(Color32::ORANGE));
+                                            ui.label(
+                                                RichText::new(format!(
+                                                    "{:#04X}",
+                                                    self.raw_game_data[row_index]
+                                                ))
+                                                .italics()
+                                                .color(Color32::ORANGE),
+                                            );
                                         } else {
                                             let opcode = self.raw_game_data[row_index] as usize;
                                             if opcode == 0xCB {
                                                 consider_data = 1;
-                                                ui.label(RichText::new(OPCODES_STRING[opcode](self.raw_game_data[row_index + 1])).strong().color(Color32::LIGHT_BLUE));
+                                                ui.label(
+                                                    RichText::new(OPCODES_STRING[opcode](
+                                                        self.raw_game_data[row_index + 1],
+                                                    ))
+                                                    .strong()
+                                                    .color(Color32::LIGHT_BLUE),
+                                                );
                                             } else {
-                                                ui.label(RichText::new(OPCODES_STRING[opcode](0x00)).strong().color(Color32::LIGHT_BLUE));
+                                                ui.label(
+                                                    RichText::new(OPCODES_STRING[opcode](0x00))
+                                                        .strong()
+                                                        .color(Color32::LIGHT_BLUE),
+                                                );
                                             }
                                         }
                                     } else {
@@ -493,5 +515,230 @@ impl DebuggerWindowState {
                 }
             });
         });
+    }
+
+    fn interrupts_window(&self) {
+        egui::Window::new("Interrupts")
+            .default_open(true)
+            .default_width(140.0)
+            .frame(Frame::window(&Style::default()).inner_margin(0))
+            .show(self.egui_state.egui_ctx(), |ui| {
+                ui.visuals_mut().widgets.noninteractive.bg_stroke = Stroke::NONE;
+                ui.style_mut().spacing.item_spacing = egui::vec2(0.0, 3.0);
+                ui.group(|ui| {
+                    ui.vertical_centered(|ui| {
+                        let (rect, _response) =
+                            ui.allocate_exact_size(egui::vec2(124.0, 40.0), Sense::hover());
+                        ui.painter().rect_filled(
+                            rect,
+                            0.0,
+                            if self.demug_debug_data.cpu.ime {
+                                Color32::from_rgba_unmultiplied(
+                                    COLOR_GREEN.r(),
+                                    COLOR_GREEN.g(),
+                                    COLOR_GREEN.b(),
+                                    15,
+                                )
+                            } else {
+                                Color32::from_rgba_unmultiplied(
+                                    COLOR_RED.r(),
+                                    COLOR_RED.g(),
+                                    COLOR_RED.b(),
+                                    15,
+                                )
+                            },
+                        );
+                        ui.painter().text(
+                            rect.center(),
+                            Align2::CENTER_CENTER,
+                            "IME",
+                            TextStyle::Button.resolve(ui.style()),
+                            ui.visuals().text_color(),
+                        );
+                    });
+
+                    ui.columns(2, |cols| {
+                        cols[0].vertical_centered(|ui| {
+                            let (rect, _response) =
+                                ui.allocate_exact_size(egui::vec2(60.0, 40.0), Sense::hover());
+                            ui.painter().rect_filled(
+                                rect,
+                                0.0,
+                                if self
+                                    .demug_debug_data
+                                    .bus
+                                    .interrupts_enable
+                                    .bit(Interrupts::Vblank as u8)
+                                    == 0b0
+                                {
+                                    Color32::DARK_GRAY
+                                } else if self
+                                    .demug_debug_data
+                                    .bus
+                                    .interrupts_flags
+                                    .bit(Interrupts::Vblank as u8)
+                                    == 0b1
+                                {
+                                    Color32::from_rgba_unmultiplied(
+                                        COLOR_GREEN.r(),
+                                        COLOR_GREEN.g(),
+                                        COLOR_GREEN.b(),
+                                        15,
+                                    )
+                                } else {
+                                    Color32::from_rgba_unmultiplied(
+                                        COLOR_RED.r(),
+                                        COLOR_RED.g(),
+                                        COLOR_RED.b(),
+                                        15,
+                                    )
+                                },
+                            );
+                            ui.painter().text(
+                                rect.center(),
+                                Align2::CENTER_CENTER,
+                                "VBlank",
+                                TextStyle::Button.resolve(ui.style()),
+                                ui.visuals().text_color(),
+                            );
+                        });
+                        cols[1].vertical_centered(|ui| {
+                            let (rect, _response) =
+                                ui.allocate_exact_size(egui::vec2(60.0, 40.0), Sense::hover());
+                            ui.painter().rect_filled(
+                                rect,
+                                0.0,
+                                if self
+                                    .demug_debug_data
+                                    .bus
+                                    .interrupts_enable
+                                    .bit(Interrupts::Lcd as u8)
+                                    == 0b0
+                                {
+                                    Color32::DARK_GRAY
+                                } else if self
+                                    .demug_debug_data
+                                    .bus
+                                    .interrupts_flags
+                                    .bit(Interrupts::Lcd as u8)
+                                    == 0b1
+                                {
+                                    Color32::from_rgba_unmultiplied(
+                                        COLOR_GREEN.r(),
+                                        COLOR_GREEN.g(),
+                                        COLOR_GREEN.b(),
+                                        15,
+                                    )
+                                } else {
+                                    Color32::from_rgba_unmultiplied(
+                                        COLOR_RED.r(),
+                                        COLOR_RED.g(),
+                                        COLOR_RED.b(),
+                                        15,
+                                    )
+                                },
+                            );
+                            ui.painter().text(
+                                rect.center(),
+                                Align2::CENTER_CENTER,
+                                "LCD",
+                                TextStyle::Button.resolve(ui.style()),
+                                ui.visuals().text_color(),
+                            );
+                        });
+                    });
+
+                    ui.columns(2, |cols| {
+                        cols[0].vertical_centered(|ui| {
+                            let (rect, _response) =
+                                ui.allocate_exact_size(egui::vec2(60.0, 40.0), Sense::hover());
+                            ui.painter().rect_filled(
+                                rect,
+                                0.0,
+                                if self
+                                    .demug_debug_data
+                                    .bus
+                                    .interrupts_enable
+                                    .bit(Interrupts::Timer as u8)
+                                    == 0b0
+                                {
+                                    Color32::DARK_GRAY
+                                } else if self
+                                    .demug_debug_data
+                                    .bus
+                                    .interrupts_flags
+                                    .bit(Interrupts::Timer as u8)
+                                    == 0b1
+                                {
+                                    Color32::from_rgba_unmultiplied(
+                                        COLOR_GREEN.r(),
+                                        COLOR_GREEN.g(),
+                                        COLOR_GREEN.b(),
+                                        15,
+                                    )
+                                } else {
+                                    Color32::from_rgba_unmultiplied(
+                                        COLOR_RED.r(),
+                                        COLOR_RED.g(),
+                                        COLOR_RED.b(),
+                                        15,
+                                    )
+                                },
+                            );
+                            ui.painter().text(
+                                rect.center(),
+                                Align2::CENTER_CENTER,
+                                "Timer",
+                                TextStyle::Button.resolve(ui.style()),
+                                ui.visuals().text_color(),
+                            );
+                        });
+                        cols[1].vertical_centered(|ui| {
+                            let (rect, _response) =
+                                ui.allocate_exact_size(egui::vec2(60.0, 40.0), Sense::hover());
+                            ui.painter().rect_filled(
+                                rect,
+                                0.0,
+                                if self
+                                    .demug_debug_data
+                                    .bus
+                                    .interrupts_enable
+                                    .bit(Interrupts::Serial as u8)
+                                    == 0b0
+                                {
+                                    Color32::DARK_GRAY
+                                } else if self
+                                    .demug_debug_data
+                                    .bus
+                                    .interrupts_flags
+                                    .bit(Interrupts::Serial as u8)
+                                    == 0b1
+                                {
+                                    Color32::from_rgba_unmultiplied(
+                                        COLOR_GREEN.r(),
+                                        COLOR_GREEN.g(),
+                                        COLOR_GREEN.b(),
+                                        15,
+                                    )
+                                } else {
+                                    Color32::from_rgba_unmultiplied(
+                                        COLOR_RED.r(),
+                                        COLOR_RED.g(),
+                                        COLOR_RED.b(),
+                                        15,
+                                    )
+                                },
+                            );
+                            ui.painter().text(
+                                rect.center(),
+                                Align2::CENTER_CENTER,
+                                "Serial",
+                                TextStyle::Button.resolve(ui.style()),
+                                ui.visuals().text_color(),
+                            );
+                        });
+                    });
+                });
+            });
     }
 }

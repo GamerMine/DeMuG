@@ -98,7 +98,6 @@ pub(crate) struct Ppu {
     screen_pixel_array: [Pixel; SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize],
     dots: u32,
     objects_in_line: ([Option<Object>; 10], u8),
-    frame_ready: bool,
 }
 
 impl Ppu {
@@ -122,7 +121,6 @@ impl Ppu {
             screen_pixel_array: [Pixel::new(); SCREEN_WIDTH as usize * SCREEN_HEIGHT as usize],
             dots: 0,
             objects_in_line: ([None; 10], 0),
-            frame_ready: false,
         }
     }
 
