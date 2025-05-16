@@ -1,3 +1,28 @@
+/*
+ *           ____
+ *          /\  _`\                                       /'\_/`\  __
+ *          \ \ \L\_\     __      ___ ___      __   _ __ /\      \/\_\    ___      __
+ *           \ \ \L_L   /'__`\  /' __` __`\  /'__`\/\`'__\ \ \__\ \/\ \ /' _ `\  /'__`\
+ *            \ \ \/, \/\ \L\.\_/\ \/\ \/\ \/\  __/\ \ \/ \ \ \_/\ \ \ \/\ \/\ \/\  __/
+ *             \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
+ *              \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
+ *  
+ *      Copyright (C) 2025 GamerMine
+ *  
+ *      This program is free software: you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, either version 3 of the License, or
+ *      (at your option) any later version.
+ *  
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ *  
+ *      You should have received a copy of the GNU General Public License
+ *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 use crate::hardware::cpu::Interrupts;
 use crate::utils::Register;
 use crate::{Demug, SCREEN_HEIGHT, SCREEN_WIDTH};
@@ -171,6 +196,8 @@ impl Ppu {
         self.screen_pixel_array.to_vec()
     }
 
+    // FIXME: LCD Interrupts does not work correctly, maybe they have to be checked at frame start
+    //  instead of at the end of the frame ? (STAT register might be impacted too)
     pub(crate) fn tick(&mut self, m_cycles: u64) {
         if self.registers.lcdc.bit(LcdcReg::LcdPpuEnable as u8) == 0b1 {
             for _ in 0..m_cycles * 4 {

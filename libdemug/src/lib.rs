@@ -1,3 +1,28 @@
+/*
+ *           ____
+ *          /\  _`\                                       /'\_/`\  __
+ *          \ \ \L\_\     __      ___ ___      __   _ __ /\      \/\_\    ___      __
+ *           \ \ \L_L   /'__`\  /' __` __`\  /'__`\/\`'__\ \ \__\ \/\ \ /' _ `\  /'__`\
+ *            \ \ \/, \/\ \L\.\_/\ \/\ \/\ \/\  __/\ \ \/ \ \ \_/\ \ \ \/\ \/\ \/\  __/
+ *             \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
+ *              \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
+ *  
+ *      Copyright (C) 2025 GamerMine
+ *  
+ *      This program is free software: you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, either version 3 of the License, or
+ *      (at your option) any later version.
+ *  
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ *  
+ *      You should have received a copy of the GNU General Public License
+ *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #[cfg(feature = "debug")]
 use crate::hardware::cpu::CpuDebugInfo;
 #[cfg(feature = "debug")]
@@ -115,45 +140,65 @@ impl Demug {
         if addr <= 0x00FF && !self.disable_boot_rom.load(Ordering::SeqCst) {
             if let Some(mem) = &*self.memory.read().unwrap() {
                 data = mem.boot_rom[addr];
+            } else {
+                unreachable!();
             }
         } else if addr <= 0x00FF && self.disable_boot_rom.load(Ordering::SeqCst) {
             if let Some(mem) = &*self.memory.read().unwrap() {
                 data = mem.game_rom[addr];
+            } else {
+                unreachable!();
             }
         } else if (0x0100..=0x7FFF).contains(&addr) {
             // FIXME: This should not be handled like that, the game rom should be accessed through a read method of a cartridge management struct
             if let Some(mem) = &*self.memory.read().unwrap() {
                 data = mem.game_rom[addr];
+            } else {
+                unreachable!();
             }
         } else if (0x8000..=0x9FFF).contains(&addr) {
             if let Some(mem) = &*self.memory.read().unwrap() {
                 data = mem.vram[addr - 0x8000];
+            } else {
+                unreachable!();
             }
         } else if (0xC000..=0xDFFF).contains(&addr) {
             if let Some(mem) = &*self.memory.read().unwrap() {
                 data = mem.wram[addr - 0xC000];
+            } else {
+                unreachable!();
             }
         } else if (0xE000..=0xFDFF).contains(&addr) {
             if let Some(mem) = &*self.memory.read().unwrap() {
                 data = mem.wram[addr - 0xE000];
+            } else {
+                unreachable!();
             }
         } else if (0xFE00..=0xFE9F).contains(&addr) {
             if let Some(mem) = &*self.memory.read().unwrap() {
                 data = mem.oam[addr - 0xFE00];
+            } else {
+                unreachable!();
             }
         } else if (0xFF04..=0xFF07).contains(&addr) {
             if let Some(timer) = &*self.timer.read().unwrap() {
                 data = timer.read(addr as u16);
+            } else {
+                unreachable!();
             }
         } else if addr == 0xFF0F {
             data = self.interrupt_flags.read().unwrap().value()
         } else if (0xFF40..=0xFF4B).contains(&addr) {
             if let Some(ppu) = &*self.ppu.read().unwrap() {
                 data = ppu.read(addr as u16)
+            } else {
+                unreachable!();
             }
         } else if (0xFF80..=0xFFFE).contains(&addr) {
             if let Some(mem) = &*self.memory.read().unwrap() {
                 data = mem.hram[addr - 0xFF80];
+            } else {
+                unreachable!();
             }
         } else if addr == 0xFFFF {
             data = self.interrupt_enable.read().unwrap().value();
@@ -180,24 +225,34 @@ impl Demug {
         if (0x8000..=0x9FFF).contains(&addr) {
             if let Some(mem) = &mut *self.memory.write().unwrap() {
                 mem.vram[addr - 0x8000] = data;
+            } else {
+                unreachable!();
             }
         } else if (0xC000..=0xDFFF).contains(&addr) {
             if let Some(mem) = &mut *self.memory.write().unwrap() {
                 mem.wram[addr - 0xC000] = data;
+            } else {
+                unreachable!();
             }
         } else if (0xFE00..=0xFE9F).contains(&addr) {
             if let Some(mem) = &mut *self.memory.write().unwrap() {
                 mem.oam[addr - 0xFE00] = data;
+            } else {
+                unreachable!();
             }
         } else if (0xFF04..=0xFF07).contains(&addr) {
             if let Some(timer) = &mut *self.timer.write().unwrap() {
                 timer.write(addr as u16, data);
+            } else {
+                unreachable!();
             }
         } else if addr == 0xFF0F {
             self.interrupt_flags.write().unwrap().set_value(data);
         } else if (0xFF40..=0xFF4B).contains(&addr) {
             if let Some(ppu) = &mut *self.ppu.write().unwrap() {
                 ppu.write(addr as u16, data);
+            } else {
+                unreachable!();
             }
         } else if addr == 0xFF50 && data != 0x00 {
             self.disable_boot_rom.store(true, Ordering::SeqCst);
@@ -206,6 +261,8 @@ impl Demug {
         } else if (0xFF80..=0xFFFE).contains(&addr) {
             if let Some(mem) = &mut *self.memory.write().unwrap() {
                 mem.hram[addr - 0xFF80] = data;
+            } else {
+                unreachable!();
             }
         } else if addr == 0xFFFF {
             self.interrupt_enable.write().unwrap().set_value(data);
@@ -235,7 +292,7 @@ impl Demug {
     }
 
     fn trigger_interrupt(&self, interrupt: Interrupts) {
-        self.interrupt_flags.write().unwrap().set_value(interrupt as u8);
+        self.interrupt_flags.write().unwrap().set(interrupt as u8);
     }
 }
 
