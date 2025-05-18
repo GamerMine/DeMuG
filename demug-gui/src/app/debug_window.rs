@@ -593,16 +593,14 @@ impl DebuggerWindowState {
                                     .demug_debug_data
                                     .bus
                                     .interrupts_enable
-                                    .bit(Interrupts::Vblank as u8)
-                                    == 0b0
+                                    .is_clear(Interrupts::Vblank as u8)
                                 {
                                     Color32::DARK_GRAY
                                 } else if self
                                     .demug_debug_data
                                     .bus
                                     .interrupts_flags
-                                    .bit(Interrupts::Vblank as u8)
-                                    == 0b1
+                                    .is_set(Interrupts::Vblank as u8)
                                 {
                                     Color32::from_rgba_unmultiplied(
                                         COLOR_GREEN.r(),
@@ -637,16 +635,14 @@ impl DebuggerWindowState {
                                     .demug_debug_data
                                     .bus
                                     .interrupts_enable
-                                    .bit(Interrupts::Lcd as u8)
-                                    == 0b0
+                                    .is_clear(Interrupts::Lcd as u8)
                                 {
                                     Color32::DARK_GRAY
                                 } else if self
                                     .demug_debug_data
                                     .bus
                                     .interrupts_flags
-                                    .bit(Interrupts::Lcd as u8)
-                                    == 0b1
+                                    .is_set(Interrupts::Lcd as u8)
                                 {
                                     Color32::from_rgba_unmultiplied(
                                         COLOR_GREEN.r(),
@@ -684,16 +680,14 @@ impl DebuggerWindowState {
                                     .demug_debug_data
                                     .bus
                                     .interrupts_enable
-                                    .bit(Interrupts::Timer as u8)
-                                    == 0b0
+                                    .is_clear(Interrupts::Timer as u8)
                                 {
                                     Color32::DARK_GRAY
                                 } else if self
                                     .demug_debug_data
                                     .bus
                                     .interrupts_flags
-                                    .bit(Interrupts::Timer as u8)
-                                    == 0b1
+                                    .is_set(Interrupts::Timer as u8)
                                 {
                                     Color32::from_rgba_unmultiplied(
                                         COLOR_GREEN.r(),
@@ -728,16 +722,14 @@ impl DebuggerWindowState {
                                     .demug_debug_data
                                     .bus
                                     .interrupts_enable
-                                    .bit(Interrupts::Serial as u8)
-                                    == 0b0
+                                    .is_clear(Interrupts::Serial as u8)
                                 {
                                     Color32::DARK_GRAY
                                 } else if self
                                     .demug_debug_data
                                     .bus
                                     .interrupts_flags
-                                    .bit(Interrupts::Serial as u8)
-                                    == 0b1
+                                    .is_set(Interrupts::Serial as u8)
                                 {
                                     Color32::from_rgba_unmultiplied(
                                         COLOR_GREEN.r(),

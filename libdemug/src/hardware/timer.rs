@@ -94,7 +94,7 @@ impl Timer {
             self.registers.div = self.registers.div.wrapping_add(1);
         }
 
-        if self.registers.tac.bit(TacRegister::Enable as u8) == 0b1 {
+        if self.registers.tac.is_set(TacRegister::Enable as u8) {
             for _ in 0..m_cycles {
                 self.counter += 1;
 

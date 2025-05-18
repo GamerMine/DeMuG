@@ -6,19 +6,19 @@
  *            \ \ \/, \/\ \L\.\_/\ \/\ \/\ \/\  __/\ \ \/ \ \ \_/\ \ \ \/\ \/\ \/\  __/
  *             \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *              \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
- *  
+ *
  *      Copyright (C) 2025 GamerMine
- *  
+ *
  *      This program is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, either version 3 of the License, or
  *      (at your option) any later version.
- *  
+ *
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *      GNU General Public License for more details.
- *  
+ *
  *      You should have received a copy of the GNU General Public License
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -98,12 +98,11 @@ impl Cpu {
         } else {
             self.bus.read().unwrap().tick(self.m_cycles - old_m_cycles);
         }
-        
+
         if self.ime {
             self.check_interrupts()
         }
 
-        
         if self.m_cycles >= 17556 {
             self.m_cycles -= 17556;
             true
@@ -127,19 +126,15 @@ impl Cpu {
             let ite = bus.interrupt_enable.read().unwrap();
             let mut itf = bus.interrupt_flags.write().unwrap();
 
-            if ite.bit(Interrupts::Vblank as u8) == 0b1 && itf.bit(Interrupts::Vblank as u8) == 0b1
-            {
+            if ite.is_set(Interrupts::Vblank as u8) && itf.is_set(Interrupts::Vblank as u8) {
                 interrupt_triggered.0 = true;
                 interrupt_triggered.1 = 0x0040;
                 itf.clear(Interrupts::Vblank as u8);
-            } else if ite.bit(Interrupts::Lcd as u8) == 0b1 && itf.bit(Interrupts::Lcd as u8) == 0b1
-            {
+            } else if ite.is_set(Interrupts::Lcd as u8) && itf.is_set(Interrupts::Lcd as u8) {
                 interrupt_triggered.0 = true;
                 interrupt_triggered.1 = 0x0048;
                 itf.clear(Interrupts::Lcd as u8);
-            } else if ite.bit(Interrupts::Timer as u8) == 0b1
-                && itf.bit(Interrupts::Timer as u8) == 0b1
-            {
+            } else if ite.is_set(Interrupts::Timer as u8) && itf.is_set(Interrupts::Timer as u8) {
                 interrupt_triggered.0 = true;
                 interrupt_triggered.1 = 0x0050;
                 itf.clear(Interrupts::Timer as u8);

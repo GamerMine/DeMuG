@@ -37,6 +37,12 @@ impl Register {
     pub fn bit(&self, bit: u8) -> u8 {
         self.value >> bit & 0x01
     }
+    pub fn is_set(&self, bit: u8) -> bool {
+        self.value >> bit & 0x01 == 0b1
+    }
+    pub fn is_clear(&self, bit: u8) -> bool {
+        self.value >> bit & 0x01 == 0b0
+    }
     pub fn set(&mut self, bit: u8) {
         self.value |= 1 << bit;
     }

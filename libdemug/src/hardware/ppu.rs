@@ -6,19 +6,19 @@
  *            \ \ \/, \/\ \L\.\_/\ \/\ \/\ \/\  __/\ \ \/ \ \ \_/\ \ \ \/\ \/\ \/\  __/
  *             \ \____/\ \__/.\_\ \_\ \_\ \_\ \____\\ \_\  \ \_\\ \_\ \_\ \_\ \_\ \____\
  *              \/___/  \/__/\/_/\/_/\/_/\/_/\/____/ \/_/   \/_/ \/_/\/_/\/_/\/_/\/____/
- *  
+ *
  *      Copyright (C) 2025 GamerMine
- *  
+ *
  *      This program is free software: you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, either version 3 of the License, or
  *      (at your option) any later version.
- *  
+ *
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *      GNU General Public License for more details.
- *  
+ *
  *      You should have received a copy of the GNU General Public License
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -196,23 +196,41 @@ impl Ppu {
         self.screen_pixel_array.to_vec()
     }
 
-    // FIXME: LCD Interrupts does not work correctly, maybe they have to be checked at frame start
-    //  instead of at the end of the frame ? (STAT register might be impacted too)
     pub(crate) fn tick(&mut self, m_cycles: u64) {
-        if self.registers.lcdc.bit(LcdcReg::LcdPpuEnable as u8) == 0b1 {
+        if self.registers.lcdc.is_set(LcdcReg::LcdPpuEnable as u8) {
             for _ in 0..m_cycles * 4 {
                 let y_pos = (self.dots / 456u32) as u8;
                 let dot_x = (self.dots - y_pos as u32 * 456u32) as u16;
 
+                self.registers.ly = y_pos;
+                if self.registers.ly == self.registers.lyc {
+                    if !self.registers.stat.is_set(StatReg::LycEqualLy as u8) {
+                        self.registers.stat.set(StatReg::LycEqualLy as u8);
+                        if self.registers.stat.is_set(StatReg::LycSelect as u8) {
+                            self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
+                        }
+                    }
+                } else {
+                    self.registers.stat.clear(StatReg::LycEqualLy as u8);
+                }
+
                 if dot_x < 80 {
-                    self.registers.stat.clear(StatReg::PpuModeLo as u8);
-                    self.registers.stat.set(StatReg::PpuModeHi as u8);
+                    // Mode 2: OAM Scan
+                    if !self.registers.stat.is_clear(StatReg::PpuModeLo as u8)
+                        && !self.registers.stat.is_set(StatReg::PpuModeHi as u8)
+                    {
+                        self.registers.stat.clear(StatReg::PpuModeLo as u8);
+                        self.registers.stat.set(StatReg::PpuModeHi as u8);
+                        if self.registers.stat.is_set(StatReg::Mode2Select as u8) {
+                            self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
+                        }
+                    }
 
                     if dot_x % 2 == 0 {
                         let offset = (dot_x / 2) * 4;
                         let y_position = self.bus.read().unwrap().read(0xFE00 | offset);
 
-                        let big_obj = self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1;
+                        let big_obj = self.registers.lcdc.is_set(LcdcReg::ObjSize as u8);
                         if self.objects_in_line.1 < 10
                             && y_position > if big_obj { 0 } else { 8 }
                             && y_position <= 160u8
@@ -238,19 +256,21 @@ impl Ppu {
                     // TODO: Manage Mode 3 Length "penalties"
                     let x_pos = (dot_x - 80u16) as u8;
 
-                    self.registers.ly = y_pos;
-                    self.registers.stat.set_conditional(
-                        StatReg::LycEqualLy as u8,
-                        self.registers.ly == self.registers.lyc,
-                    );
-                    self.registers.stat.set(StatReg::PpuModeLo as u8);
-                    self.registers.stat.set(StatReg::PpuModeHi as u8);
+                    // Mode 3: Drawing pixels
+                    if !self.registers.stat.is_set(StatReg::PpuModeLo as u8)
+                        && !self.registers.stat.is_set(StatReg::PpuModeHi as u8)
+                    {
+                        self.registers.stat.set(StatReg::PpuModeLo as u8);
+                        self.registers.stat.set(StatReg::PpuModeHi as u8);
+                    }
 
                     if dot_x - 80u16 < SCREEN_WIDTH as u16 && y_pos < SCREEN_HEIGHT {
-                        if self.registers.lcdc.bit(LcdcReg::BgWindowEnable as u8) == 0b1 {
+                        if self.registers.lcdc.is_set(LcdcReg::BgWindowEnable as u8) {
                             let mut tile_data_loc: u16 = {
-                                if self.registers.lcdc.bit(LcdcReg::BgWindowTileMapDataArea as u8)
-                                    == 0b0
+                                if self
+                                    .registers
+                                    .lcdc
+                                    .is_clear(LcdcReg::BgWindowTileMapDataArea as u8)
                                 {
                                     0x9000
                                 } else {
@@ -258,19 +278,20 @@ impl Ppu {
                                 }
                             };
                             let mut tile_map_loc: u16 = {
-                                if self.registers.lcdc.bit(LcdcReg::WindowEnable as u8) == 0b1
+                                if self.registers.lcdc.is_set(LcdcReg::WindowEnable as u8)
                                     && x_pos + 7 >= self.registers.wx
                                     && y_pos > self.registers.wy
                                 {
-                                    if self.registers.lcdc.bit(LcdcReg::WindowTileMapArea as u8)
-                                        == 0b0
+                                    if self
+                                        .registers
+                                        .lcdc
+                                        .is_clear(LcdcReg::WindowTileMapArea as u8)
                                     {
                                         0x9800
                                     } else {
                                         0x9C00
                                     }
-                                } else if self.registers.lcdc.bit(LcdcReg::BgTileMapArea as u8)
-                                    == 0b0
+                                } else if self.registers.lcdc.is_clear(LcdcReg::BgTileMapArea as u8)
                                 {
                                     0x9800
                                 } else {
@@ -278,7 +299,7 @@ impl Ppu {
                                 }
                             };
                             let window_on_screen =
-                                self.registers.lcdc.bit(LcdcReg::WindowEnable as u8) == 0b1
+                                self.registers.lcdc.is_set(LcdcReg::WindowEnable as u8)
                                     && self.registers.wx >= 7
                                     && self.registers.wx < 166
                                     && x_pos + 7 >= self.registers.wx
@@ -309,10 +330,10 @@ impl Ppu {
                                     + ((y_pos as u16 + self.registers.scy as u16 % 256) % 8) * 2;
                             }
 
-                            let pixels_hi = self.bus.read().unwrap().read(tile_data_loc)
+                            let pixels_lo = self.bus.read().unwrap().read(tile_data_loc)
                                 >> (7 - x_pos % 8)
                                 & 0x1;
-                            let pixels_lo = self.bus.read().unwrap().read(tile_data_loc + 1)
+                            let pixels_hi = self.bus.read().unwrap().read(tile_data_loc + 1)
                                 >> (7 - x_pos % 8)
                                 & 0x1;
                             let color_index = pixels_hi << 1 | pixels_lo;
@@ -323,13 +344,14 @@ impl Ppu {
                         } else {
                             self.screen_pixel_array
                                 [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] = Pixel {
-                                r: 0x97,
-                                g: 0x9b,
-                                b: 0x3e,
+                                r: 0xFF,
+                                g: 0xFF,
+                                b: 0xFF,
                             }
                         }
 
-                        if self.registers.lcdc.bit(LcdcReg::ObjEnable as u8) == 0b1 {
+                        // Objects drawing
+                        if self.registers.lcdc.is_set(LcdcReg::ObjEnable as u8) {
                             let mut last_found_xpos: u8 = 0xFF;
                             let mut found_obj: Option<Object> = None;
                             for o in self.objects_in_line.0.into_iter().flatten() {
@@ -343,127 +365,121 @@ impl Ppu {
                             }
 
                             if let Some(obj) = found_obj {
-                                if obj.attributes.bit(ObjectAttributes::Priority as u8) == 0b0 {
-                                    let x_flip =
-                                        obj.attributes.bit(ObjectAttributes::XFlip as u8) == 0b1;
-                                    let y_flip =
-                                        obj.attributes.bit(ObjectAttributes::YFlip as u8) == 0b1;
+                                let x_flip = obj.attributes.is_set(ObjectAttributes::XFlip as u8);
+                                let y_flip = obj.attributes.is_set(ObjectAttributes::YFlip as u8);
 
-                                    let offset_obj: u16 =
-                                        if self.registers.lcdc.bit(LcdcReg::ObjSize as u8) == 0b1 {
-                                            if (!y_flip && obj.y_position - y_pos <= 8)
-                                                || (y_flip && obj.y_position - y_pos > 8)
-                                            {
-                                                obj.tile_index as u16
-                                            } else {
-                                                obj.tile_index as u16 & 0xFE
-                                            }
-                                        } else {
+                                let offset_obj: u16 =
+                                    if self.registers.lcdc.is_set(LcdcReg::ObjSize as u8) {
+                                        if (!y_flip && obj.y_position - y_pos <= 8)
+                                            || (y_flip && obj.y_position - y_pos > 8)
+                                        {
                                             obj.tile_index as u16
-                                        };
+                                        } else {
+                                            obj.tile_index as u16 & 0xFE
+                                        }
+                                    } else {
+                                        obj.tile_index as u16
+                                    };
 
-                                    let tile_data_loc = 0x8000
-                                        + (offset_obj * 8 * 2
-                                            + (if y_flip {
-                                                obj.y_position as u16
-                                                    - y_pos as u16
-                                                    - if self
-                                                        .registers
-                                                        .lcdc
-                                                        .bit(LcdcReg::ObjSize as u8)
-                                                        == 0b1
-                                                    {
-                                                        0
-                                                    } else {
-                                                        8
-                                                    }
-                                                    - 1
-                                            } else {
-                                                16 - (obj.y_position as u16 - y_pos as u16)
-                                            }) * 2);
-
-                                    let pixels_hi = self.bus.read().unwrap().read(tile_data_loc)
-                                        >> (7
-                                            - (if x_flip {
-                                                obj.x_position - x_pos - 1
-                                            } else {
-                                                7 - (obj.x_position - x_pos - 1)
-                                            }))
-                                        & 0x1;
-                                    let pixels_lo =
-                                        self.bus.read().unwrap().read(tile_data_loc + 1)
-                                            >> (7
-                                                - (if x_flip {
-                                                    obj.x_position - x_pos - 1
+                                let tile_data_loc = 0x8000
+                                    + (offset_obj * 8 * 2
+                                        + (if y_flip {
+                                            obj.y_position as u16
+                                                - y_pos as u16
+                                                - if self
+                                                    .registers
+                                                    .lcdc
+                                                    .is_set(LcdcReg::ObjSize as u8)
+                                                {
+                                                    0
                                                 } else {
-                                                    7 - (obj.x_position - x_pos - 1)
-                                                }))
-                                            & 0x1;
-                                    let color_index = pixels_hi << 1 | pixels_lo;
+                                                    8
+                                                }
+                                                - 1
+                                        } else {
+                                            16 - (obj.y_position as u16 - y_pos as u16)
+                                        }) * 2);
 
-                                    if color_index != 0x00 {
-                                        self.screen_pixel_array[x_pos as usize
-                                            + y_pos as usize * SCREEN_WIDTH as usize] = self
-                                            .get_pixel_from_index(
+                                let pixels_lo = self.bus.read().unwrap().read(tile_data_loc)
+                                    >> (7
+                                        - (if x_flip {
+                                            obj.x_position - x_pos - 1
+                                        } else {
+                                            7 - (obj.x_position - x_pos - 1)
+                                        }))
+                                    & 0x1;
+                                let pixels_hi = self.bus.read().unwrap().read(tile_data_loc + 1)
+                                    >> (7
+                                        - (if x_flip {
+                                            obj.x_position - x_pos - 1
+                                        } else {
+                                            7 - (obj.x_position - x_pos - 1)
+                                        }))
+                                    & 0x1;
+                                let color_index = pixels_hi << 1 | pixels_lo;
+
+                                if color_index != 0x00 {
+                                    let col = {
+                                        if obj.attributes.is_clear(ObjectAttributes::Priority as u8) {
+                                            self.get_pixel_from_index(
                                                 color_index,
                                                 if obj
                                                     .attributes
-                                                    .bit(ObjectAttributes::DMGPalette as u8)
-                                                    == 0b0
+                                                    .is_clear(ObjectAttributes::DMGPalette as u8)
                                                 {
                                                     Palettes::OBP0
                                                 } else {
                                                     Palettes::OBP1
                                                 },
-                                            );
-                                    }
+                                            )
+                                        } else {
+                                            self.get_pixel_from_index(color_index, Palettes::BGP)
+                                        }
+                                    };
+                                    self.screen_pixel_array
+                                        [x_pos as usize + y_pos as usize * SCREEN_WIDTH as usize] = col;
                                 }
                             }
                         }
                     }
 
                     if x_pos == SCREEN_WIDTH {
+                        // Mode 0: Horizontal blank
                         self.objects_in_line = ([None; 10], 0);
-                        self.registers.stat.clear(StatReg::PpuModeLo as u8);
-                        self.registers.stat.clear(StatReg::PpuModeHi as u8);
+                        if !self.registers.stat.is_clear(StatReg::PpuModeLo as u8)
+                            && !self.registers.stat.is_clear(StatReg::PpuModeHi as u8)
+                        {
+                            self.registers.stat.clear(StatReg::PpuModeLo as u8);
+                            self.registers.stat.clear(StatReg::PpuModeHi as u8);
+                            if self.registers.stat.is_set(StatReg::Mode0Select as u8) {
+                                self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
+                            }
+                        }
                     }
 
-                    if y_pos == SCREEN_HEIGHT {
+                    if y_pos == SCREEN_HEIGHT && x_pos == 0 {
+                        // Mode 1: Vertical blank
                         self.bus.read().unwrap().trigger_interrupt(Interrupts::Vblank);
                         self.registers.stat.set(StatReg::PpuModeLo as u8);
                         self.registers.stat.clear(StatReg::PpuModeHi as u8);
+                        if self.registers.stat.is_set(StatReg::Mode1Select as u8) {
+                            self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
+                        }
                     }
                 }
                 self.dots = if self.dots == 70224 { 0 } else { self.dots + 1 };
-
-                if self.registers.stat.bit(StatReg::LycSelect as u8) == 0b1
-                    && self.registers.stat.bit(StatReg::LycEqualLy as u8) == 0b1
-                {
-                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
-                } else if self.registers.stat.bit(StatReg::Mode2Select as u8) == 0b1
-                    && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                        == 0b10
-                {
-                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
-                } else if self.registers.stat.bit(StatReg::Mode1Select as u8) == 0b1
-                    && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                        == 0b01
-                {
-                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
-                } else if self.registers.stat.bit(StatReg::Mode0Select as u8) == 0b1
-                    && self.registers.stat.bit(StatReg::PpuModeHi as u8) << 1
-                        | self.registers.stat.bit(StatReg::PpuModeLo as u8)
-                        == 0b00
-                {
-                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
-                }
             }
         } else {
             // When disabled, the ppu is in Mode 0
-            self.registers.stat.clear(StatReg::PpuModeLo as u8);
-            self.registers.stat.clear(StatReg::PpuModeHi as u8);
+            if !self.registers.stat.is_clear(StatReg::PpuModeLo as u8)
+                && !self.registers.stat.is_clear(StatReg::PpuModeHi as u8)
+            {
+                self.registers.stat.clear(StatReg::PpuModeLo as u8);
+                self.registers.stat.clear(StatReg::PpuModeHi as u8);
+                if self.registers.stat.is_set(StatReg::Mode0Select as u8) {
+                    self.bus.read().unwrap().trigger_interrupt(Interrupts::Lcd);
+                }
+            }
         }
     }
 
@@ -493,10 +509,6 @@ impl Ppu {
                 }
             },
             Palettes::OBP0 => match index {
-                0b00 => {
-                    color = self.registers.obp0.bit(PaletteRegisters::ColorId0Hi as u8) << 1
-                        | self.registers.obp0.bit(PaletteRegisters::ColorId0Lo as u8);
-                }
                 0b01 => {
                     color = self.registers.obp0.bit(PaletteRegisters::ColorId1Hi as u8) << 1
                         | self.registers.obp0.bit(PaletteRegisters::ColorId1Lo as u8);
@@ -514,10 +526,6 @@ impl Ppu {
                 }
             },
             Palettes::OBP1 => match index {
-                0b00 => {
-                    color = self.registers.obp1.bit(PaletteRegisters::ColorId0Hi as u8) << 1
-                        | self.registers.obp1.bit(PaletteRegisters::ColorId0Lo as u8);
-                }
                 0b01 => {
                     color = self.registers.obp1.bit(PaletteRegisters::ColorId1Hi as u8) << 1
                         | self.registers.obp1.bit(PaletteRegisters::ColorId1Lo as u8);
@@ -538,24 +546,24 @@ impl Ppu {
 
         match color {
             0b00 => Pixel {
-                r: 0x9A,
-                g: 0x9E,
-                b: 0x3F,
+                r: 0xFF,
+                g: 0xFF,
+                b: 0xFF,
             },
             0b01 => Pixel {
-                r: 0x49,
-                g: 0x6B,
-                b: 0x22,
+                r: 0xAA,
+                g: 0xAA,
+                b: 0xAA,
             },
             0b10 => Pixel {
-                r: 0x0E,
-                g: 0x45,
-                b: 0x0B,
+                r: 0x55,
+                g: 0x55,
+                b: 0x55,
             },
             0b11 => Pixel {
-                r: 0x1B,
-                g: 0x2A,
-                b: 0x09,
+                r: 0x00,
+                g: 0x00,
+                b: 0x00,
             },
             _ => {
                 unreachable!()
